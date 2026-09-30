@@ -259,7 +259,7 @@ function App() {
             </p>
 
             <h2 className="mt-3 text-4xl font-bold tracking-normal sm:text-5xl">
-              Lima tools utama
+              Tools utama
             </h2>
 
             <p className="mt-5 text-[20px] leading-relaxed text-muted-foreground">
