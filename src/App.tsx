@@ -1,4 +1,9 @@
 import { useEffect, useState } from "react"
+import Auth from "./components/Auth"
+import MFASetup from "./components/MFASetup"
+import MFAChallenge from "./components/MFAChallenge"
+import type { User } from "@supabase/supabase-js"
+import { supabase } from "./lib/supabase"
 import {
   ArrowRight,
   BookOpen,
@@ -12,6 +17,7 @@ import {
   MessageCircle,
   Moon,
   PenLine,
+  ShieldCheck,
   Sparkles,
   Sun,
   X,
@@ -61,6 +67,10 @@ function App() {
   })
 
   const [mobileMenu, setMobileMenu] = useState(false)
+  const [showAuth, setShowAuth] = useState(false)
+  const [showMFA, setShowMFA] = useState(false)
+  const [showMFAChallenge, setShowMFAChallenge] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
     const root = document.documentElement
@@ -73,6 +83,106 @@ function App() {
       localStorage.setItem("dinoedu-theme", "light")
     }
   }, [darkMode])
+
+  useEffect(() => {
+    let mounted = true
+
+    const checkAuthentication = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (!mounted) return
+
+      setUser(session?.user ?? null)
+
+      if (!session) {
+        setShowMFAChallenge(false)
+        return
+      }
+
+      const { data: assuranceData, error: assuranceError } =
+        await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+
+      if (!mounted) return
+
+      if (assuranceError) {
+        console.error(assuranceError)
+        return
+      }
+
+      if (
+        assuranceData.currentLevel === "aal1" &&
+        assuranceData.nextLevel === "aal2"
+      ) {
+        setShowMFAChallenge(true)
+      } else {
+        setShowMFAChallenge(false)
+      }
+    }
+
+    checkAuthentication()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return
+
+      setUser(session?.user ?? null)
+
+      if (!session) {
+        setShowMFAChallenge(false)
+        return
+      }
+
+      setTimeout(() => {
+        if (!mounted) return
+
+        supabase.auth.mfa
+          .getAuthenticatorAssuranceLevel()
+          .then(({ data, error }) => {
+            if (!mounted) return
+
+            if (error) {
+              console.error(error)
+              return
+            }
+
+            if (
+              data.currentLevel === "aal1" &&
+              data.nextLevel === "aal2"
+            ) {
+              setShowMFAChallenge(true)
+            } else {
+              setShowMFAChallenge(false)
+            }
+          })
+      }, 0)
+    })
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      console.error(error)
+      return
+    }
+
+    setShowMFA(false)
+    setShowMFAChallenge(false)
+    setShowAuth(false)
+    setMobileMenu(false)
+  }
+
+  const handleMFAChallengeClose = async () => {
+    await handleSignOut()
+  }
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -155,12 +265,34 @@ function App() {
               )}
             </button>
 
-            <a
-              href="#fitur"
-              className="dino-gradient dino-button hidden rounded-full px-5 py-3 text-[14px] font-semibold text-white shadow-lg shadow-pink-500/10 md:inline-flex"
-            >
-              Mulai Sekarang
-            </a>
+            {user ? (
+              <div className="hidden items-center gap-2 md:flex">
+                <button
+                  type="button"
+                  onClick={() => setShowMFA(true)}
+                  className="dino-button inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Keamanan
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="dino-gradient dino-button rounded-full px-5 py-3 text-[14px] font-semibold text-white shadow-lg shadow-pink-500/10"
+                >
+                  Keluar
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAuth(true)}
+                className="dino-gradient dino-button hidden rounded-full px-5 py-3 text-[14px] font-semibold text-white shadow-lg shadow-pink-500/10 md:inline-flex"
+              >
+                Mulai Sekarang
+              </button>
+            )}
           </div>
         </div>
 
@@ -190,6 +322,41 @@ function App() {
               >
                 Tentang
               </a>
+
+              {user ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenu(false)
+                      setShowMFA(true)
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-left text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    Keamanan
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="dino-gradient rounded-full px-5 py-3 text-left text-[14px] font-semibold text-white"
+                  >
+                    Keluar
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenu(false)
+                    setShowAuth(true)
+                  }}
+                  className="dino-gradient rounded-full px-5 py-3 text-left text-[14px] font-semibold text-white"
+                >
+                  Mulai Sekarang
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -231,13 +398,14 @@ function App() {
               className="dino-enter mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
               style={{ animationDelay: "320ms" }}
             >
-              <a
-                href="#fitur"
+              <button
+                type="button"
+                onClick={() => setShowAuth(true)}
                 className="dino-gradient dino-button group inline-flex items-center gap-2 rounded-full px-7 py-4 text-[17px] font-semibold text-white shadow-xl shadow-pink-500/15"
               >
                 Jelajahi DinoAI
                 <ArrowRight className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
-              </a>
+              </button>
 
               <a
                 href="#tentang"
@@ -299,6 +467,7 @@ function App() {
 
                     <button
                       type="button"
+                      onClick={() => setShowAuth(true)}
                       className="mt-6 inline-flex items-center gap-2 text-[14px] font-semibold text-[#EF629F] transition-all duration-200 hover:gap-3"
                     >
                       Coba fitur
@@ -354,13 +523,14 @@ function App() {
             <Home className="h-5 w-5" />
           </a>
 
-          <a
-            href="#fitur"
+          <button
+            type="button"
+            onClick={() => setShowAuth(true)}
             className="dino-button dino-gradient flex h-12 w-full items-center justify-center rounded-full text-white shadow-lg"
             aria-label="DinoAI"
           >
             <Sparkles className="h-5 w-5" />
-          </a>
+          </button>
 
           <a
             href="#fitur"
@@ -391,6 +561,43 @@ function App() {
           </div>
         </div>
       </footer>
+
+      {showAuth && (
+        <div className="fixed inset-0 z-[100] min-h-[100dvh] overflow-y-auto bg-black/30 backdrop-blur-sm">
+          <div className="flex min-h-[100dvh] items-center justify-center p-3 sm:p-4">
+            <div className="w-full max-w-xl">
+              <Auth
+                onSuccess={() => setShowAuth(false)}
+                onClose={() => setShowAuth(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showMFA && user && !showMFAChallenge && (
+        <div className="fixed inset-0 z-[100] min-h-[100dvh] overflow-y-auto bg-black/30 backdrop-blur-sm">
+          <div className="flex min-h-[100dvh] items-center justify-center p-3 sm:p-4">
+            <div className="w-full max-w-2xl">
+              <MFASetup
+                onClose={() => setShowMFA(false)}
+                onEnabled={() => setShowMFA(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showMFAChallenge && user && (
+        <div className="fixed inset-0 z-[110] flex min-h-[100dvh] items-center justify-center overflow-hidden bg-black/40 p-3 backdrop-blur-md sm:p-4">
+          <div className="w-full max-w-md">
+            <MFAChallenge
+              onVerified={() => setShowMFAChallenge(false)}
+              onClose={handleMFAChallengeClose}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
