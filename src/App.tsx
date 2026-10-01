@@ -4,8 +4,9 @@ import Auth from "./components/Auth";
 
 import MFASetup from "./components/MFASetup";
 import MFADisable from "./components/MFADisable";
+import MFAChallenge from "./components/MFAChallenge";
 
-import type { User } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 
 import { supabase } from "./lib/supabase";
 
@@ -94,6 +95,8 @@ function App() {
 
   const [mfaEnabled, setMfaEnabled] = useState(false);
 
+  const [mfaRequired, setMfaRequired] = useState(false);
+
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -112,21 +115,65 @@ function App() {
 
   useEffect(() => {
     let mounted = true;
+    let assuranceCheckId = 0;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (mounted) {
-        setUser(session?.user ?? null);
+    const syncSession = (session: Session | null) => {
+      const checkId = ++assuranceCheckId;
+      setUser(session?.user ?? null);
+
+      if (!session) {
+        setMfaRequired(false);
+        return;
       }
-    });
+
+      window.setTimeout(() => {
+        void (async () => {
+          try {
+            const {
+              data: { session: activeSession },
+            } = await supabase.auth.getSession();
+
+            if (
+              !mounted ||
+              checkId !== assuranceCheckId ||
+              activeSession?.user.id !== session.user.id
+            ) {
+              return;
+            }
+
+            const { data, error } =
+              await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+            if (!mounted || checkId !== assuranceCheckId) {
+              return;
+            }
+
+            if (error) {
+              throw error;
+            }
+
+            setMfaRequired(
+              data.nextLevel === "aal2" && data.currentLevel !== "aal2",
+            );
+          } catch (error) {
+            if (mounted && checkId === assuranceCheckId) {
+              console.error("Gagal memeriksa level autentikasi MFA", error);
+              setMfaRequired(true);
+            }
+          }
+        })();
+      }, 0);
+    };
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      syncSession(session);
     });
 
     return () => {
       mounted = false;
+      assuranceCheckId += 1;
 
       subscription.unsubscribe();
     };
@@ -632,6 +679,21 @@ function App() {
                 />
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {mfaRequired && user && (
+        <div className="fixed inset-0 z-[110] flex min-h-[100dvh] items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm sm:p-4">
+          <div className="w-full max-w-md">
+            <MFAChallenge onVerified={() => setMfaRequired(false)} />
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="mt-3 w-full py-2 text-sm font-medium text-white/80 transition hover:text-white"
+            >
+              Keluar dari akun
+            </button>
           </div>
         </div>
       )}
