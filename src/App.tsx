@@ -1,9 +1,14 @@
-import { useEffect, useState } from "react"
-import Auth from "./components/Auth"
-import MFASetup from "./components/MFASetup"
-import MFAChallenge from "./components/MFAChallenge"
-import type { User } from "@supabase/supabase-js"
-import { supabase } from "./lib/supabase"
+import { useEffect, useState } from "react";
+
+import Auth from "./components/Auth";
+
+import MFASetup from "./components/MFASetup";
+import MFADisable from "./components/MFADisable";
+
+import type { User } from "@supabase/supabase-js";
+
+import { supabase } from "./lib/supabase";
+
 import {
   ArrowRight,
   BookOpen,
@@ -21,168 +26,138 @@ import {
   Sparkles,
   Sun,
   X,
-} from "lucide-react"
+} from "lucide-react";
 
 const features = [
   {
     title: "DinoAI Chat",
+
     description:
       "Teman AI untuk membantu belajar, bekerja, dan menyelesaikan berbagai kebutuhan",
+
     icon: MessageCircle,
   },
+
   {
     title: "AI CV Maker",
+
     description:
       "Buat CV profesional dengan lebih cepat berdasarkan informasi yang kamu masukkan",
+
     icon: FileText,
   },
+
   {
     title: "AI Surat Lamaran",
+
     description:
       "Susun surat lamaran yang rapi dan sesuai dengan posisi yang kamu tuju",
+
     icon: Mail,
   },
+
   {
     title: "AI Pembuat Soal",
+
     description:
       "Buat soal pembelajaran berdasarkan kelas, mata pelajaran, dan materi",
+
     icon: ClipboardList,
   },
+
   {
     title: "AI Modul Ajar",
+
     description:
       "Bantu menyusun rancangan modul ajar secara lebih praktis dan terstruktur",
+
     icon: BookOpen,
   },
-]
+];
 
 function App() {
   const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem("dinoedu-theme")
+    const saved = localStorage.getItem("dinoedu-theme");
 
-    if (saved === "dark") return true
-    if (saved === "light") return false
+    if (saved === "dark") return true;
 
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
-  })
+    if (saved === "light") return false;
 
-  const [mobileMenu, setMobileMenu] = useState(false)
-  const [showAuth, setShowAuth] = useState(false)
-  const [showMFA, setShowMFA] = useState(false)
-  const [showMFAChallenge, setShowMFAChallenge] = useState(false)
-  const [user, setUser] = useState<User | null>(null)
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
+
+  const [mobileMenu, setMobileMenu] = useState(false);
+
+  const [showAuth, setShowAuth] = useState(false);
+
+  const [showMFA, setShowMFA] = useState(false);
+
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const root = document.documentElement
+    const root = document.documentElement;
 
     if (darkMode) {
-      root.classList.add("dark")
-      localStorage.setItem("dinoedu-theme", "dark")
+      root.classList.add("dark");
+
+      localStorage.setItem("dinoedu-theme", "dark");
     } else {
-      root.classList.remove("dark")
-      localStorage.setItem("dinoedu-theme", "light")
+      root.classList.remove("dark");
+
+      localStorage.setItem("dinoedu-theme", "light");
     }
-  }, [darkMode])
+  }, [darkMode]);
 
   useEffect(() => {
-    let mounted = true
+    let mounted = true;
 
-    const checkAuthentication = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
-      if (!mounted) return
-
-      setUser(session?.user ?? null)
-
-      if (!session) {
-        setShowMFAChallenge(false)
-        return
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (mounted) {
+        setUser(session?.user ?? null);
       }
-
-      const { data: assuranceData, error: assuranceError } =
-        await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
-
-      if (!mounted) return
-
-      if (assuranceError) {
-        console.error(assuranceError)
-        return
-      }
-
-      if (
-        assuranceData.currentLevel === "aal1" &&
-        assuranceData.nextLevel === "aal2"
-      ) {
-        setShowMFAChallenge(true)
-      } else {
-        setShowMFAChallenge(false)
-      }
-    }
-
-    checkAuthentication()
+    });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!mounted) return
-
-      setUser(session?.user ?? null)
-
-      if (!session) {
-        setShowMFAChallenge(false)
-        return
-      }
-
-      setTimeout(() => {
-        if (!mounted) return
-
-        supabase.auth.mfa
-          .getAuthenticatorAssuranceLevel()
-          .then(({ data, error }) => {
-            if (!mounted) return
-
-            if (error) {
-              console.error(error)
-              return
-            }
-
-            if (
-              data.currentLevel === "aal1" &&
-              data.nextLevel === "aal2"
-            ) {
-              setShowMFAChallenge(true)
-            } else {
-              setShowMFAChallenge(false)
-            }
-          })
-      }, 0)
-    })
+      setUser(session?.user ?? null);
+    });
 
     return () => {
-      mounted = false
-      subscription.unsubscribe()
-    }
-  }, [])
+      mounted = false;
+
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut();
 
     if (error) {
-      console.error(error)
-      return
+      console.error(error);
+
+      return;
     }
 
-    setShowMFA(false)
-    setShowMFAChallenge(false)
-    setShowAuth(false)
-    setMobileMenu(false)
-  }
+    setShowMFA(false);
 
-  const handleMFAChallengeClose = async () => {
-    await handleSignOut()
-  }
+    setShowAuth(false);
+
+    setMobileMenu(false);
+  };
+
+  const openSecurity = async () => {
+    const { data, error } = await supabase.auth.mfa.listFactors();
+
+    const enabled =
+      !error && data.totp?.some((factor) => factor.status === "verified");
+
+    setMfaEnabled(Boolean(enabled));
+
+    setShowMFA(true);
+  };
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -198,6 +173,7 @@ function App() {
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
           <a
             href="#beranda"
+
             className="dino-interactive flex items-center gap-3"
           >
             <div className="dino-gradient flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-lg shadow-pink-500/10">
@@ -218,6 +194,7 @@ function App() {
           <nav className="hidden items-center gap-7 md:flex">
             <a
               href="#beranda"
+
               className="text-[14px] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
             >
               Beranda
@@ -225,6 +202,7 @@ function App() {
 
             <a
               href="#fitur"
+
               className="text-[14px] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
             >
               Fitur AI
@@ -232,6 +210,7 @@ function App() {
 
             <a
               href="#tentang"
+
               className="text-[14px] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
             >
               Tentang
@@ -241,8 +220,11 @@ function App() {
           <div className="flex items-center gap-2">
             <button
               type="button"
+
               onClick={() => setDarkMode((value) => !value)}
+
               className="dino-button flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl dark:bg-white/5"
+
               aria-label="Ubah mode tampilan"
             >
               {darkMode ? (
@@ -254,8 +236,11 @@ function App() {
 
             <button
               type="button"
+
               onClick={() => setMobileMenu((value) => !value)}
+
               className="dino-button flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl md:hidden dark:bg-white/5"
+
               aria-label="Buka menu"
             >
               {mobileMenu ? (
@@ -269,7 +254,9 @@ function App() {
               <div className="hidden items-center gap-2 md:flex">
                 <button
                   type="button"
-                  onClick={() => setShowMFA(true)}
+
+                  onClick={openSecurity}
+
                   className="dino-button inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
                 >
                   <ShieldCheck className="h-4 w-4" />
@@ -278,7 +265,9 @@ function App() {
 
                 <button
                   type="button"
+
                   onClick={handleSignOut}
+
                   className="dino-gradient dino-button rounded-full px-5 py-3 text-[14px] font-semibold text-white shadow-lg shadow-pink-500/10"
                 >
                   Keluar
@@ -287,7 +276,9 @@ function App() {
             ) : (
               <button
                 type="button"
+
                 onClick={() => setShowAuth(true)}
+
                 className="dino-gradient dino-button hidden rounded-full px-5 py-3 text-[14px] font-semibold text-white shadow-lg shadow-pink-500/10 md:inline-flex"
               >
                 Mulai Sekarang
@@ -301,7 +292,9 @@ function App() {
             <div className="mx-auto flex max-w-7xl flex-col gap-4">
               <a
                 href="#beranda"
+
                 onClick={() => setMobileMenu(false)}
+
                 className="text-[14px] font-medium transition-colors duration-200 hover:text-[#EF629F]"
               >
                 Beranda
@@ -309,7 +302,9 @@ function App() {
 
               <a
                 href="#fitur"
+
                 onClick={() => setMobileMenu(false)}
+
                 className="text-[14px] font-medium transition-colors duration-200 hover:text-[#EF629F]"
               >
                 Fitur AI
@@ -317,7 +312,9 @@ function App() {
 
               <a
                 href="#tentang"
+
                 onClick={() => setMobileMenu(false)}
+
                 className="text-[14px] font-medium transition-colors duration-200 hover:text-[#EF629F]"
               >
                 Tentang
@@ -327,10 +324,13 @@ function App() {
                 <>
                   <button
                     type="button"
+
                     onClick={() => {
-                      setMobileMenu(false)
-                      setShowMFA(true)
+                      setMobileMenu(false);
+
+                      openSecurity();
                     }}
+
                     className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-left text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
                   >
                     <ShieldCheck className="h-4 w-4" />
@@ -339,7 +339,9 @@ function App() {
 
                   <button
                     type="button"
+
                     onClick={handleSignOut}
+
                     className="dino-gradient rounded-full px-5 py-3 text-left text-[14px] font-semibold text-white"
                   >
                     Keluar
@@ -348,10 +350,13 @@ function App() {
               ) : (
                 <button
                   type="button"
+
                   onClick={() => {
-                    setMobileMenu(false)
-                    setShowAuth(true)
+                    setMobileMenu(false);
+
+                    setShowAuth(true);
                   }}
+
                   className="dino-gradient rounded-full px-5 py-3 text-left text-[14px] font-semibold text-white"
                 >
                   Mulai Sekarang
@@ -365,11 +370,13 @@ function App() {
       <main>
         <section
           id="beranda"
+
           className="mx-auto max-w-7xl px-5 pb-32 pt-16 sm:px-6 sm:pb-24 sm:pt-20 lg:px-8 lg:pb-32 lg:pt-28"
         >
           <div className="mx-auto max-w-6xl text-center">
             <div
               className="dino-glass dino-enter mx-auto inline-flex items-center gap-2 rounded-full px-4 py-2 text-[14px] font-medium"
+
               style={{ animationDelay: "80ms" }}
             >
               <Sparkles className="h-4 w-4 text-[#EF629F]" />
@@ -378,6 +385,7 @@ function App() {
 
             <h1
               className="dino-enter mx-auto mt-8 max-w-5xl text-3xl font-bold leading-[1.25] tracking-normal sm:text-6xl sm:leading-[1.12] lg:text-7xl lg:leading-[1.08]"
+
               style={{ animationDelay: "160ms" }}
             >
               Satu ruang untuk
@@ -388,19 +396,24 @@ function App() {
 
             <p
               className="dino-enter mx-auto mt-7 max-w-3xl text-[20px] leading-relaxed text-muted-foreground"
+
               style={{ animationDelay: "240ms" }}
             >
               DinoEdu Space menghadirkan tools AI sederhana untuk pendidikan,
-              karier, dan kebutuhan digital dalam satu ruang yang mudah digunakan
+              karier, dan kebutuhan digital dalam satu ruang yang mudah
+              digunakan
             </p>
 
             <div
               className="dino-enter mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
+
               style={{ animationDelay: "320ms" }}
             >
               <button
                 type="button"
+
                 onClick={() => setShowAuth(true)}
+
                 className="dino-gradient dino-button group inline-flex items-center gap-2 rounded-full px-7 py-4 text-[17px] font-semibold text-white shadow-xl shadow-pink-500/15"
               >
                 Jelajahi DinoAI
@@ -409,6 +422,7 @@ function App() {
 
               <a
                 href="#tentang"
+
                 className="dino-button inline-flex items-center gap-2 rounded-full border border-border bg-white/40 px-7 py-4 text-[17px] font-medium backdrop-blur-xl dark:bg-white/5"
               >
                 Pelajari DinoEdu
@@ -419,6 +433,7 @@ function App() {
 
         <section
           id="fitur"
+
           className="mx-auto max-w-7xl px-6 pb-28 lg:px-8"
         >
           <div className="dino-enter mb-12 max-w-2xl">
@@ -431,21 +446,23 @@ function App() {
             </h2>
 
             <p className="mt-5 text-[20px] leading-relaxed text-muted-foreground">
-              Dibangun untuk membuat pekerjaan yang berulang menjadi lebih cepat,
-              sederhana, dan terarah
+              Dibangun untuk membuat pekerjaan yang berulang menjadi lebih
+              cepat, sederhana, dan terarah
             </p>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature, index) => {
-              const Icon = feature.icon
+              const Icon = feature.icon;
 
               return (
                 <div
                   key={feature.title}
+
                   className={`dino-glass dino-interactive dino-enter group relative overflow-hidden rounded-[28px] p-7 ${
                     index === 0 ? "lg:col-span-2" : ""
                   }`}
+
                   style={{
                     animationDelay: `${360 + index * 80}ms`,
                   }}
@@ -467,7 +484,9 @@ function App() {
 
                     <button
                       type="button"
+
                       onClick={() => setShowAuth(true)}
+
                       className="mt-6 inline-flex items-center gap-2 text-[14px] font-semibold text-[#EF629F] transition-all duration-200 hover:gap-3"
                     >
                       Coba fitur
@@ -475,17 +494,19 @@ function App() {
                     </button>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         </section>
 
         <section
           id="tentang"
+
           className="mx-auto max-w-7xl px-6 pb-28 lg:px-8"
         >
           <div
             className="dino-glass dino-enter relative overflow-hidden rounded-[36px] p-8 sm:p-12 lg:p-16"
+
             style={{ animationDelay: "760ms" }}
           >
             <div className="dino-float-slow absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#EF629F]/15 blur-3xl" />
@@ -517,7 +538,9 @@ function App() {
         <nav className="dino-mobile-nav dino-glass grid h-16 w-full max-w-[320px] grid-cols-4 items-center gap-1 rounded-full p-2 shadow-2xl shadow-black/10">
           <a
             href="#beranda"
+
             className="dino-button flex h-12 w-full items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+
             aria-label="Beranda"
           >
             <Home className="h-5 w-5" />
@@ -525,8 +548,11 @@ function App() {
 
           <button
             type="button"
+
             onClick={() => setShowAuth(true)}
+
             className="dino-button dino-gradient flex h-12 w-full items-center justify-center rounded-full text-white shadow-lg"
+
             aria-label="DinoAI"
           >
             <Sparkles className="h-5 w-5" />
@@ -534,7 +560,9 @@ function App() {
 
           <a
             href="#fitur"
+
             className="dino-button flex h-12 w-full items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+
             aria-label="Fitur AI"
           >
             <Layers3 className="h-5 w-5" />
@@ -542,7 +570,9 @@ function App() {
 
           <a
             href="#tentang"
+
             className="dino-button flex h-12 w-full items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+
             aria-label="Tentang"
           >
             <Info className="h-5 w-5" />
@@ -568,6 +598,7 @@ function App() {
             <div className="w-full max-w-xl">
               <Auth
                 onSuccess={() => setShowAuth(false)}
+
                 onClose={() => setShowAuth(false)}
               />
             </div>
@@ -575,31 +606,37 @@ function App() {
         </div>
       )}
 
-      {showMFA && user && !showMFAChallenge && (
+      {showMFA && user && (
         <div className="fixed inset-0 z-[100] min-h-[100dvh] overflow-y-auto bg-black/30 backdrop-blur-sm">
           <div className="flex min-h-[100dvh] items-center justify-center p-3 sm:p-4">
             <div className="w-full max-w-2xl">
-              <MFASetup
-                onClose={() => setShowMFA(false)}
-                onEnabled={() => setShowMFA(false)}
-              />
+              {mfaEnabled ? (
+                <MFADisable
+                  onClose={() => setShowMFA(false)}
+
+                  onDisabled={() => {
+                    setMfaEnabled(false);
+
+                    setShowMFA(false);
+                  }}
+                />
+              ) : (
+                <MFASetup
+                  onClose={() => setShowMFA(false)}
+
+                  onEnabled={() => {
+                    setMfaEnabled(true);
+
+                    setShowMFA(false);
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>
       )}
-
-      {showMFAChallenge && user && (
-        <div className="fixed inset-0 z-[110] flex min-h-[100dvh] items-center justify-center overflow-hidden bg-black/40 p-3 backdrop-blur-md sm:p-4">
-          <div className="w-full max-w-md">
-            <MFAChallenge
-              onVerified={() => setShowMFAChallenge(false)}
-              onClose={handleMFAChallengeClose}
-            />
-          </div>
-        </div>
-      )}
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
