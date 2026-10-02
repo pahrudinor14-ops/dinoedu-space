@@ -1,17 +1,12 @@
 import { useEffect, useState } from "react";
-
 import Auth from "./components/Auth";
-
 import MFASetup from "./components/MFASetup";
-
 import MFADisable from "./components/MFADisable";
-
 import MFAChallenge from "./components/MFAChallenge";
 import Dashboard from "./components/Dashboard";
-
 import type { Session, User } from "@supabase/supabase-js";
-
 import { supabase } from "./lib/supabase";
+import DinoAIChat from "./components/DinoAIChat"
 
 import {
   ArrowRight,
@@ -92,17 +87,16 @@ function App() {
   });
 
   const [mobileMenu, setMobileMenu] = useState(false);
-
   const [showAuth, setShowAuth] = useState(false);
-
   const [showMFA, setShowMFA] = useState(false);
-
   const [mfaEnabled, setMfaEnabled] = useState(false);
-
   const [mfaRequired, setMfaRequired] = useState(false);
-
-  const [showDashboard, setShowDashboard] = useState(
-    () => window.location.pathname === "/app",
+  const [showDashboard, setShowDashboard] = useState(() =>
+    window.location.pathname === "/app" ||
+    window.location.pathname === "/app/dinoai",
+  );
+  const [showDinoAI, setShowDinoAI] = useState(
+    () => window.location.pathname === "/app/dinoai",
   );
 
   const [user, setUser] = useState<User | null>(null);
@@ -201,9 +195,13 @@ function App() {
       syncSession(session);
 
       if (event === "SIGNED_IN" && session) {
-        setShowDashboard(true);
+        const path = window.location.pathname;
+        const isDinoAIPath = path === "/app/dinoai";
 
-        if (window.location.pathname !== "/app") {
+        setShowDashboard(true);
+        setShowDinoAI(isDinoAIPath);
+
+        if (path !== "/app" && !isDinoAIPath) {
           window.history.replaceState({}, "", "/app");
         }
       }
@@ -247,7 +245,10 @@ function App() {
 
   useEffect(() => {
     const handlePopState = () => {
-      setShowDashboard(window.location.pathname === "/app");
+      const path = window.location.pathname;
+
+      setShowDashboard(path === "/app" || path === "/app/dinoai");
+      setShowDinoAI(path === "/app/dinoai");
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -259,11 +260,8 @@ function App() {
 
   const openDashboard = () => {
     setMobileMenu(false);
-
     setShowAuth(false);
-
     setShowDashboard(true);
-
     if (window.location.pathname !== "/app") {
       window.history.pushState({}, "", "/app");
     }
@@ -273,6 +271,17 @@ function App() {
     setShowDashboard(false);
 
     window.history.pushState({}, "", "/");
+  };
+
+  const openDinoAI = () => {
+  setMobileMenu(false)
+  setShowDinoAI(true)
+  window.history.pushState({}, "", "/app/dinoai")
+  };
+
+const closeDinoAI = () => {
+  setShowDinoAI(false)
+  window.history.pushState({}, "", "/app")
   };
 
   return (
@@ -511,17 +520,17 @@ function App() {
         </header>
       )}
 
-      {showDashboard && user ? (
+      {showDinoAI && user ? (
+        <DinoAIChat email={user.email} onClose={closeDinoAI} />
+      ) : showDashboard && user ? (
         <Dashboard
           email={user.email}
           darkMode={darkMode}
           onToggleTheme={() => setDarkMode((value) => !value)}
-
           onSecurity={openSecurity}
-
           onSignOut={handleSignOut}
-
           onBackHome={backHome}
+          onOpenDinoAI={openDinoAI}
         />
       ) : (
         <>

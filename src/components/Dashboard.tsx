@@ -20,6 +20,7 @@ interface DashboardProps {
   onSecurity: () => void
   onSignOut: () => void
   onBackHome: () => void
+  onOpenDinoAI: () => void
 }
 
 const tools = [
@@ -62,6 +63,7 @@ export default function Dashboard({
   onSecurity,
   onSignOut,
   onBackHome,
+  onOpenDinoAI,
 }: DashboardProps) {
   return (
     <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -198,6 +200,9 @@ export default function Dashboard({
 
                     <button
                       type="button"
+                      onClick={
+                        tool.title === "DinoAI Chat" ? onOpenDinoAI : undefined
+                      }
                       className="mt-5 inline-flex items-center gap-2 text-[14px] font-semibold text-[#EF629F] transition-all duration-200 hover:gap-3"
                     >
                       Pakai Sekarang
