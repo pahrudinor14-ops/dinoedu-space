@@ -6,7 +6,7 @@ import MFAChallenge from "./components/MFAChallenge";
 import Dashboard from "./components/Dashboard";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
-import DinoAIChat from "./components/DinoAIChat"
+import DinoAIChat from "./components/DinoAIChat";
 
 import {
   ArrowRight,
@@ -91,9 +91,10 @@ function App() {
   const [showMFA, setShowMFA] = useState(false);
   const [mfaEnabled, setMfaEnabled] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
-  const [showDashboard, setShowDashboard] = useState(() =>
-    window.location.pathname === "/app" ||
-    window.location.pathname === "/app/dinoai",
+  const [showDashboard, setShowDashboard] = useState(
+    () =>
+      window.location.pathname === "/app" ||
+      window.location.pathname === "/app/dinoai",
   );
   const [showDinoAI, setShowDinoAI] = useState(
     () => window.location.pathname === "/app/dinoai",
@@ -116,8 +117,7 @@ function App() {
   }, [darkMode]);
 
   useEffect(() => {
-    const modalOpen =
-      showAuth || (Boolean(user) && (showMFA || mfaRequired));
+    const modalOpen = showAuth || (Boolean(user) && (showMFA || mfaRequired));
 
     if (!modalOpen) return;
 
@@ -274,14 +274,14 @@ function App() {
   };
 
   const openDinoAI = () => {
-  setMobileMenu(false)
-  setShowDinoAI(true)
-  window.history.pushState({}, "", "/app/dinoai")
+    setMobileMenu(false);
+    setShowDinoAI(true);
+    window.history.pushState({}, "", "/app/dinoai");
   };
 
-const closeDinoAI = () => {
-  setShowDinoAI(false)
-  window.history.pushState({}, "", "/app")
+  const closeDinoAI = () => {
+    setShowDinoAI(false);
+    window.history.pushState({}, "", "/app");
   };
 
   return (
@@ -296,143 +296,32 @@ const closeDinoAI = () => {
 
       {!(showDashboard && user) && (
         <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
-          <a
-            href="#beranda"
-
-            className="dino-interactive flex items-center gap-3"
-          >
-            <div className="dino-gradient flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-lg shadow-pink-500/10">
-              <Sparkles className="h-5 w-5 text-white" />
-            </div>
-
-            <div>
-              <div className="text-lg font-semibold tracking-tight">
-                DinoEdu Space
-              </div>
-
-              <div className="text-[14px] text-muted-foreground">
-                Education • Creative • Digital
-              </div>
-            </div>
-          </a>
-
-          <nav className="hidden items-center gap-7 md:flex">
+          <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
             <a
               href="#beranda"
 
-              className="text-[14px] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
+              className="dino-interactive flex items-center gap-3"
             >
-              Beranda
-            </a>
-
-            <a
-              href="#fitur"
-
-              className="text-[14px] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
-            >
-              Fitur AI
-            </a>
-
-            <a
-              href="#tentang"
-
-              className="text-[14px] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
-            >
-              Tentang
-            </a>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-
-              onClick={() => setDarkMode((value) => !value)}
-
-              className="dino-button flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl dark:bg-white/5"
-
-              aria-label="Ubah mode tampilan"
-            >
-              {darkMode ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </button>
-
-            <button
-              type="button"
-
-              onClick={() => setMobileMenu((value) => !value)}
-
-              className="dino-button flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl md:hidden dark:bg-white/5"
-
-              aria-label="Buka menu"
-            >
-              {mobileMenu ? (
-                <X className="h-5 w-5" />
-              ) : (
-                <Menu className="h-5 w-5" />
-              )}
-            </button>
-
-            {user ? (
-              <div className="hidden items-center gap-2 md:flex">
-                <button
-                  type="button"
-
-                  onClick={openDashboard}
-
-                  className="dino-button inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
-                </button>
-
-                <button
-                  type="button"
-
-                  onClick={openSecurity}
-
-                  className="dino-button inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
-                >
-                  <ShieldCheck className="h-4 w-4" />
-                  Keamanan
-                </button>
-
-                <button
-                  type="button"
-
-                  onClick={handleSignOut}
-
-                  className="dino-gradient dino-button rounded-full px-5 py-3 text-[14px] font-semibold text-white shadow-lg shadow-pink-500/10"
-                >
-                  Keluar
-                </button>
+              <div className="dino-gradient flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-lg shadow-pink-500/10">
+                <Sparkles className="h-5 w-5 text-white" />
               </div>
-            ) : (
-              <button
-                type="button"
 
-                onClick={() => setShowAuth(true)}
+              <div>
+                <div className="text-lg font-semibold tracking-tight">
+                  DinoEdu Space
+                </div>
 
-                className="dino-gradient dino-button hidden rounded-full px-5 py-3 text-[14px] font-semibold text-white shadow-lg shadow-pink-500/10 md:inline-flex"
-              >
-                Mulai Sekarang
-              </button>
-            )}
-          </div>
-        </div>
+                <div className="text-[14px] text-muted-foreground">
+                  Education • Creative • Digital
+                </div>
+              </div>
+            </a>
 
-        {mobileMenu && (
-          <div className="dino-enter border-t border-border/50 px-6 py-5 md:hidden">
-            <div className="mx-auto flex max-w-7xl flex-col gap-4">
+            <nav className="hidden items-center gap-7 md:flex">
               <a
                 href="#beranda"
 
-                onClick={() => setMobileMenu(false)}
-
-                className="text-[14px] font-medium transition-colors duration-200 hover:text-[#EF629F]"
+                className="text-[14px] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
               >
                 Beranda
               </a>
@@ -440,9 +329,7 @@ const closeDinoAI = () => {
               <a
                 href="#fitur"
 
-                onClick={() => setMobileMenu(false)}
-
-                className="text-[14px] font-medium transition-colors duration-200 hover:text-[#EF629F]"
+                className="text-[14px] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
               >
                 Fitur AI
               </a>
@@ -450,25 +337,53 @@ const closeDinoAI = () => {
               <a
                 href="#tentang"
 
-                onClick={() => setMobileMenu(false)}
-
-                className="text-[14px] font-medium transition-colors duration-200 hover:text-[#EF629F]"
+                className="text-[14px] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
               >
                 Tentang
               </a>
+            </nav>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+
+                onClick={() => setDarkMode((value) => !value)}
+
+                className="dino-button flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl dark:bg-white/5"
+
+                aria-label="Ubah mode tampilan"
+              >
+                {darkMode ? (
+                  <Sun className="h-5 w-5" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )}
+              </button>
+
+              <button
+                type="button"
+
+                onClick={() => setMobileMenu((value) => !value)}
+
+                className="dino-button flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl md:hidden dark:bg-white/5"
+
+                aria-label="Buka menu"
+              >
+                {mobileMenu ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
+              </button>
 
               {user ? (
-                <>
+                <div className="hidden items-center gap-2 md:flex">
                   <button
                     type="button"
 
-                    onClick={() => {
-                      setMobileMenu(false);
+                    onClick={openDashboard}
 
-                      openDashboard();
-                    }}
-
-                    className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-left text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
+                    className="dino-button inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
                   >
                     <LayoutDashboard className="h-4 w-4" />
                     Dashboard
@@ -477,13 +392,9 @@ const closeDinoAI = () => {
                   <button
                     type="button"
 
-                    onClick={() => {
-                      setMobileMenu(false);
+                    onClick={openSecurity}
 
-                      openSecurity();
-                    }}
-
-                    className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-left text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
+                    className="dino-button inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
                   >
                     <ShieldCheck className="h-4 w-4" />
                     Keamanan
@@ -494,34 +405,123 @@ const closeDinoAI = () => {
 
                     onClick={handleSignOut}
 
-                    className="dino-gradient rounded-full px-5 py-3 text-left text-[14px] font-semibold text-white"
+                    className="dino-gradient dino-button rounded-full px-5 py-3 text-[14px] font-semibold text-white shadow-lg shadow-pink-500/10"
                   >
                     Keluar
                   </button>
-                </>
+                </div>
               ) : (
                 <button
                   type="button"
 
-                  onClick={() => {
-                    setMobileMenu(false);
+                  onClick={() => setShowAuth(true)}
 
-                    setShowAuth(true);
-                  }}
-
-                  className="dino-gradient rounded-full px-5 py-3 text-left text-[14px] font-semibold text-white"
+                  className="dino-gradient dino-button hidden rounded-full px-5 py-3 text-[14px] font-semibold text-white shadow-lg shadow-pink-500/10 md:inline-flex"
                 >
                   Mulai Sekarang
                 </button>
               )}
             </div>
           </div>
-        )}
+
+          {mobileMenu && (
+            <div className="dino-enter border-t border-border/50 px-6 py-5 md:hidden">
+              <div className="mx-auto flex max-w-7xl flex-col gap-4">
+                <a
+                  href="#beranda"
+
+                  onClick={() => setMobileMenu(false)}
+
+                  className="text-[14px] font-medium transition-colors duration-200 hover:text-[#EF629F]"
+                >
+                  Beranda
+                </a>
+
+                <a
+                  href="#fitur"
+
+                  onClick={() => setMobileMenu(false)}
+
+                  className="text-[14px] font-medium transition-colors duration-200 hover:text-[#EF629F]"
+                >
+                  Fitur AI
+                </a>
+
+                <a
+                  href="#tentang"
+
+                  onClick={() => setMobileMenu(false)}
+
+                  className="text-[14px] font-medium transition-colors duration-200 hover:text-[#EF629F]"
+                >
+                  Tentang
+                </a>
+
+                {user ? (
+                  <>
+                    <button
+                      type="button"
+
+                      onClick={() => {
+                        setMobileMenu(false);
+
+                        openDashboard();
+                      }}
+
+                      className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-left text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
+                    >
+                      <LayoutDashboard className="h-4 w-4" />
+                      Dashboard
+                    </button>
+
+                    <button
+                      type="button"
+
+                      onClick={() => {
+                        setMobileMenu(false);
+
+                        openSecurity();
+                      }}
+
+                      className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-left text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                      Keamanan
+                    </button>
+
+                    <button
+                      type="button"
+
+                      onClick={handleSignOut}
+
+                      className="dino-gradient rounded-full px-5 py-3 text-left text-[14px] font-semibold text-white"
+                    >
+                      Keluar
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+
+                    onClick={() => {
+                      setMobileMenu(false);
+
+                      setShowAuth(true);
+                    }}
+
+                    className="dino-gradient rounded-full px-5 py-3 text-left text-[14px] font-semibold text-white"
+                  >
+                    Mulai Sekarang
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </header>
       )}
 
       {showDinoAI && user ? (
-        <DinoAIChat email={user.email} onClose={closeDinoAI} />
+        <DinoAIChat email={user.email} userId={user.id} onClose={closeDinoAI} />
       ) : showDashboard && user ? (
         <Dashboard
           email={user.email}

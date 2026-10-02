@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   ArrowLeft,
+  Check,
   Clock3,
   HeartHandshake,
   Loader2,
   MessageSquare,
   PanelLeft,
+  Pencil,
   Plus,
   Send,
   Sparkles,
@@ -29,6 +31,7 @@ import { supabase } from "../lib/supabase";
 
 interface DinoAIChatProps {
   email?: string | null;
+  userId: string;
 
   onClose: () => void;
 }
@@ -204,6 +207,27 @@ function isChatConversation(value: unknown): value is ChatConversation {
   );
 }
 
+function parseStoredConversation(value: unknown): ChatConversation | null {
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+
+  const row = value as Record<string, unknown>;
+  const updatedAt =
+    typeof row.updated_at === "string"
+      ? Date.parse(row.updated_at)
+      : Number.NaN;
+
+  const conversation = {
+    id: row.id,
+    title: row.title,
+    updatedAt,
+    messages: row.messages,
+  };
+
+  return isChatConversation(conversation) ? conversation : null;
+}
+
 function loadConversations(storageKey: string): ChatConversation[] {
   try {
     const saved: unknown = JSON.parse(
@@ -350,12 +374,14 @@ function getPlanLabel(plan: string) {
 
 export default function DinoAIChat({
   email,
+  userId,
 
   onClose,
 }: DinoAIChatProps) {
-  const storageKey = `dinoedu-chat-history:${
+  const legacyStorageKey = `dinoedu-chat-history:${
     email?.trim().toLowerCase() || "guest"
   }`;
+  const storageKey = `dinoedu-chat-history:${userId}`;
 
   const [input, setInput] = useState("");
 
@@ -372,6 +398,16 @@ export default function DinoAIChat({
   const [activeConversationId, setActiveConversationId] = useState(
     () => conversations[0].id,
   );
+
+  const [historyOwnerId, setHistoryOwnerId] = useState<string | null>(null);
+
+  const [historySyncNotice, setHistorySyncNotice] = useState("");
+
+  const [editingConversationId, setEditingConversationId] = useState<
+    string | null
+  >(null);
+
+  const [editingConversationTitle, setEditingConversationTitle] = useState("");
 
   /* DINOAI QUOTA */
 
@@ -442,6 +478,57 @@ export default function DinoAIChat({
     });
   }, [activeConversationId, messages, loading]);
 
+  /* DINOAI LOAD ACCOUNT HISTORY */
+
+  useEffect(() => {
+    let cancelled = false;
+    setHistoryOwnerId(null);
+
+    const loadAccountHistory = async () => {
+      const { data, error } = await supabase
+        .from("dinoai_chat_conversations")
+        .select("id, title, messages, updated_at")
+        .order("updated_at", { ascending: false });
+
+      if (cancelled) {
+        return;
+      }
+
+      if (error) {
+        console.error("Gagal memuat riwayat chat:", error);
+        return;
+      }
+
+      const accountConversations = (data ?? [])
+        .map(parseStoredConversation)
+        .filter((conversation): conversation is ChatConversation =>
+          Boolean(conversation),
+        );
+
+      if (accountConversations.length > 0) {
+        setConversations(accountConversations);
+        setActiveConversationId(accountConversations[0].id);
+      } else {
+        const localKey = window.localStorage.getItem(storageKey)
+          ? storageKey
+          : legacyStorageKey;
+        const localConversations = loadConversations(localKey);
+
+        setConversations(localConversations);
+        setActiveConversationId(localConversations[0].id);
+      }
+
+      setHistorySyncNotice("");
+      setHistoryOwnerId(userId);
+    };
+
+    void loadAccountHistory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [legacyStorageKey, storageKey, userId]);
+
   /* DINOAI SAVE HISTORY */
 
   useEffect(() => {
@@ -451,6 +538,51 @@ export default function DinoAIChat({
       conversations,
     );
   }, [storageKey, conversations]);
+
+  /* DINOAI SYNC ACCOUNT HISTORY */
+
+  useEffect(() => {
+    if (historyOwnerId !== userId || conversations.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const syncAccountHistory = async () => {
+      const rows = conversations.map((conversation) => ({
+        id: conversation.id,
+        user_id: userId,
+        title: conversation.title,
+        messages: conversation.messages,
+        updated_at: new Date(conversation.updatedAt).toISOString(),
+      }));
+
+      const { error } = await supabase
+        .from("dinoai_chat_conversations")
+        .upsert(rows, { onConflict: "id" });
+
+      if (cancelled) {
+        return;
+      }
+
+      if (error) {
+        console.error("Gagal menyinkronkan riwayat chat:", error);
+        setHistorySyncNotice(
+          "Riwayat belum tersinkron ke akun. Periksa koneksi lalu coba lagi.",
+        );
+        return;
+      }
+
+      setHistorySyncNotice("");
+      window.localStorage.removeItem(legacyStorageKey);
+    };
+
+    void syncAccountHistory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [conversations, historyOwnerId, legacyStorageKey, userId]);
 
   /* DINOAI INITIAL QUOTA */
 
@@ -502,20 +634,55 @@ export default function DinoAIChat({
 
   /* DINOAI DELETE CHAT */
 
-  const deleteConversation = (conversationId: string) => {
-    if (conversations.length <= 1) {
-      return;
+  const deleteConversation = async (conversationId: string) => {
+    if (historyOwnerId === userId) {
+      const { error } = await supabase
+        .from("dinoai_chat_conversations")
+        .delete()
+        .eq("id", conversationId)
+        .eq("user_id", userId);
+
+      if (error) {
+        console.error("Gagal menghapus riwayat chat:", error);
+        setHistorySyncNotice("Chat belum terhapus dari akun. Coba lagi.");
+        return;
+      }
     }
 
     const remaining = conversations.filter(
       (conversation) => conversation.id !== conversationId,
     );
+    const nextConversations =
+      remaining.length > 0 ? remaining : [createConversation()];
 
-    setConversations(remaining);
+    setConversations(nextConversations);
 
     if (activeConversationId === conversationId) {
-      setActiveConversationId(remaining[0].id);
+      setActiveConversationId(nextConversations[0].id);
     }
+  };
+
+  const beginRenameConversation = (conversation: ChatConversation) => {
+    setEditingConversationId(conversation.id);
+    setEditingConversationTitle(conversation.title);
+  };
+
+  const saveConversationTitle = (conversationId: string) => {
+    const title = editingConversationTitle.trim();
+
+    if (!title) {
+      return;
+    }
+
+    setConversations((current) =>
+      current.map((conversation) =>
+        conversation.id === conversationId
+          ? { ...conversation, title, updatedAt: Date.now() }
+          : conversation,
+      ),
+    );
+    setEditingConversationId(null);
+    setEditingConversationTitle("");
   };
 
   /* DINOAI SEND */
@@ -896,6 +1063,15 @@ export default function DinoAIChat({
         Riwayat
       </div>
 
+      {historySyncNotice && (
+        <p
+          className="mb-2 px-2 text-[11px] leading-5 text-muted-foreground"
+          role="status"
+        >
+          {historySyncNotice}
+        </p>
+      )}
+
       <div className="chat-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto">
         {[...conversations]
 
@@ -912,36 +1088,78 @@ export default function DinoAIChat({
                   active ? "bg-[#EF629F]/10" : "hover:bg-muted/70"
                 }`}
               >
-                <button
-                  type="button"
-
-                  onClick={() => selectConversation(conversation.id)}
-
-                  aria-current={active ? "page" : undefined}
-
-                  className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left"
-                >
-                  <MessageSquare className="h-4 w-4 shrink-0 text-[#EF629F]" />
-
-                  <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
-                    {conversation.title}
-                  </span>
-                </button>
-
-                {conversations.length > 1 && (
-                  <button
-                    type="button"
-
-                    onClick={() => deleteConversation(conversation.id)}
-
-                    aria-label={`Hapus ${conversation.title}`}
-
-                    title="Hapus percakapan"
-
-                    className="mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-opacity hover:bg-background hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+                {editingConversationId === conversation.id ? (
+                  <form
+                    className="flex min-w-0 flex-1 items-center gap-1 px-2 py-2"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      saveConversationTitle(conversation.id);
+                    }}
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                    <input
+                      autoFocus
+                      aria-label="Nama percakapan"
+                      className="min-w-0 flex-1 rounded-lg border border-border/70 bg-background px-2 py-1.5 text-[13px] outline-none focus:border-[#EF629F]/60"
+                      maxLength={80}
+                      onChange={(event) =>
+                        setEditingConversationTitle(event.target.value)
+                      }
+                      value={editingConversationTitle}
+                    />
+                    <button
+                      type="submit"
+                      aria-label="Simpan nama percakapan"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#EF629F] hover:bg-background"
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Batal mengganti nama"
+                      onClick={() => {
+                        setEditingConversationId(null);
+                        setEditingConversationTitle("");
+                      }}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-background"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => selectConversation(conversation.id)}
+                      aria-current={active ? "page" : undefined}
+                      className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left"
+                    >
+                      <MessageSquare className="h-4 w-4 shrink-0 text-[#EF629F]" />
+
+                      <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
+                        {conversation.title}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => beginRenameConversation(conversation)}
+                      aria-label={`Ganti nama ${conversation.title}`}
+                      title="Ganti nama"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-background hover:text-foreground md:mr-1 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-visible:opacity-100"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => void deleteConversation(conversation.id)}
+                      aria-label={`Hapus ${conversation.title}`}
+                      title="Hapus percakapan"
+                      className="mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-background hover:text-destructive md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-visible:opacity-100"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </>
                 )}
               </div>
             );
