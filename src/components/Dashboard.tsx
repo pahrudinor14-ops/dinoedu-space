@@ -21,6 +21,7 @@ interface DashboardProps {
   onSignOut: () => void
   onBackHome: () => void
   onOpenDinoAI: () => void
+  onOpenAICV: () => void
 }
 
 const tools = [
@@ -64,6 +65,7 @@ export default function Dashboard({
   onSignOut,
   onBackHome,
   onOpenDinoAI,
+  onOpenAICV,
 }: DashboardProps) {
   return (
     <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -99,7 +101,11 @@ export default function Dashboard({
             <button
               type="button"
               onClick={onToggleTheme}
-              aria-label={darkMode ? "Aktifkan mode terang" : "Aktifkan mode gelap"}
+              aria-label={
+                darkMode
+                  ? "Aktifkan mode terang"
+                  : "Aktifkan mode gelap"
+              }
               title={darkMode ? "Mode terang" : "Mode gelap"}
               className="dino-button flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl dark:bg-white/5"
             >
@@ -155,7 +161,9 @@ export default function Dashboard({
               {email && (
                 <p className="mt-4 text-[14px] text-muted-foreground">
                   Masuk sebagai{" "}
-                  <span className="font-medium text-foreground">{email}</span>
+                  <span className="font-medium text-foreground">
+                    {email}
+                  </span>
                 </p>
               )}
             </div>
@@ -198,16 +206,29 @@ export default function Dashboard({
                       {tool.description}
                     </p>
 
-                    <button
-                      type="button"
-                      onClick={
-                        tool.title === "DinoAI Chat" ? onOpenDinoAI : undefined
-                      }
-                      className="mt-5 inline-flex items-center gap-2 text-[14px] font-semibold text-[#EF629F] transition-all duration-200 hover:gap-3"
-                    >
-                      Pakai Sekarang
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
+                    {tool.title === "DinoAI Chat" ||
+                    tool.title === "AI CV Maker" ? (
+                      <button
+                        type="button"
+                        onClick={
+                          tool.title === "DinoAI Chat"
+                            ? onOpenDinoAI
+                            : onOpenAICV
+                        }
+                        className="mt-5 inline-flex items-center gap-2 text-[14px] font-semibold text-[#EF629F] transition-all duration-200 hover:gap-3"
+                      >
+                        Pakai Sekarang
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        className="mt-5 inline-flex items-center gap-2 text-[14px] font-semibold text-muted-foreground/60"
+                      >
+                        Segera hadir
+                      </button>
+                    )}
                   </div>
                 </div>
               )

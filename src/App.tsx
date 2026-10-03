@@ -7,6 +7,8 @@ import Dashboard from "./components/Dashboard";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
 import DinoAIChat from "./components/DinoAIChat";
+import NumeaPage from "./components/NumeaPage"
+import AICVMaker from "./components/AICVMaker"
 
 import {
   ArrowRight,
@@ -76,11 +78,10 @@ const features = [
 ];
 
 function App() {
-  const [darkMode, setDarkMode] = useState(() => {
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem("dinoedu-theme");
 
     if (saved === "dark") return true;
-
     if (saved === "light") return false;
 
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -99,6 +100,10 @@ function App() {
   const [showDinoAI, setShowDinoAI] = useState(
     () => window.location.pathname === "/app/dinoai",
   );
+
+  const [showAICV, setShowAICV] = useState(
+  () => window.location.pathname === "/app/cv",
+  )
 
   const [user, setUser] = useState<User | null>(null);
 
@@ -244,11 +249,22 @@ function App() {
   };
 
   useEffect(() => {
-    const handlePopState = () => {
-      const path = window.location.pathname;
+  const handlePopState = () => {
+    const path = window.location.pathname;
 
-      setShowDashboard(path === "/app" || path === "/app/dinoai");
-      setShowDinoAI(path === "/app/dinoai");
+    setShowDashboard(
+        path === "/app" ||
+          path === "/app/dinoai" ||
+          path === "/app/cv",
+      );
+
+      setShowDinoAI(
+        path === "/app/dinoai",
+      );
+
+      setShowAICV(
+        path === "/app/cv",
+      );
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -279,12 +295,32 @@ function App() {
     window.history.pushState({}, "", "/app/dinoai");
   };
 
+  const openAICV = () => {
+  setMobileMenu(false)
+  setShowDashboard(false)
+  setShowDinoAI(false)
+  setShowAICV(true)
+  window.history.pushState({}, "", "/app/cv")
+  }
+
   const closeDinoAI = () => {
     setShowDinoAI(false);
     window.history.pushState({}, "", "/app");
   };
 
-  return (
+  const closeAICV = () => {
+  setShowAICV(false)
+  setShowDashboard(true)
+  window.history.pushState({}, "", "/app")
+  }
+
+  return window.location.pathname === "/numea" ? (
+    <NumeaPage
+      onBack={() => {
+        window.location.href = "/";
+      }}
+    />
+  ) : (
     <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="dino-float absolute left-[-140px] top-[80px] h-[320px] w-[320px] rounded-full bg-[#EECDA3]/35 blur-3xl" />
@@ -294,7 +330,7 @@ function App() {
         <div className="dino-pulse-soft absolute bottom-[-180px] left-[35%] h-[400px] w-[400px] rounded-full bg-[#EECDA3]/15 blur-3xl" />
       </div>
 
-      {!(showDashboard && user) && (
+      {!((showDashboard || showAICV) && user) && (
         <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
           <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
             <a
@@ -520,19 +556,28 @@ function App() {
         </header>
       )}
 
-      {showDinoAI && user ? (
-        <DinoAIChat email={user.email} userId={user.id} onClose={closeDinoAI} />
-      ) : showDashboard && user ? (
-        <Dashboard
-          email={user.email}
-          darkMode={darkMode}
-          onToggleTheme={() => setDarkMode((value) => !value)}
-          onSecurity={openSecurity}
-          onSignOut={handleSignOut}
-          onBackHome={backHome}
-          onOpenDinoAI={openDinoAI}
-        />
-      ) : (
+      {showAICV && user ? (
+          <AICVMaker
+            onBack={closeAICV}
+          />
+        ) : showDinoAI && user ? (
+          <DinoAIChat
+            email={user.email}
+            userId={user.id}
+            onClose={closeDinoAI}
+          />
+        ) : showDashboard && user ? (
+          <Dashboard
+            email={user.email}
+            darkMode={darkMode}
+            onToggleTheme={() => setDarkMode((value) => !value)}
+            onSecurity={openSecurity}
+            onSignOut={handleSignOut}
+            onBackHome={backHome}
+            onOpenDinoAI={openDinoAI}
+            onOpenAICV={openAICV}
+          />
+        ) : (
         <>
           <main>
             <section
