@@ -5,7 +5,6 @@ import {
   Loader2,
   LockKeyhole,
   Mail,
-  Sparkles,
   X,
 } from "lucide-react"
 import { supabase } from "../lib/supabase"
@@ -171,8 +170,12 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
           )}
 
           <div className="mb-5 pr-10 text-center sm:mb-6">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-[#EECDA3] to-[#EF629F] text-white shadow-lg">
-              <Sparkles className="h-5 w-5" />
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg">
+              <img
+                src="/logodino.PNG"
+                alt="Logo DinoEdu"
+                className="h-full w-full scale-110 object-contain"
+              />
             </div>
 
             <h2 className="text-xl font-bold sm:text-2xl">

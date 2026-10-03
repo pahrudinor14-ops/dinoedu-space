@@ -10,7 +10,6 @@ import {
   Pencil,
   Phone,
   Plus,
-  Sparkles,
   Trash2,
   UserRound,
 } from "lucide-react"
@@ -431,7 +430,11 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
             </button>
 
             <div className="flex items-center gap-2 text-[14px] font-semibold">
-              <Sparkles className="h-4 w-4 text-[#EF629F]" />
+              <img
+                src="/logodino.PNG"
+                alt=""
+                className="h-5 w-5 scale-110 object-contain"
+              />
               AI CV Maker
             </div>
           </div>
@@ -445,7 +448,11 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
 
               <div className="relative max-w-3xl">
                 <div className="flex items-center gap-2 text-[14px] font-semibold text-[#EF629F]">
-                  <Sparkles className="h-4 w-4" />
+                  <img
+                    src="/logodino.PNG"
+                    alt=""
+                    className="h-4 w-4 scale-125 object-contain"
+                  />
                   DinoEdu AI
                 </div>
 
@@ -777,7 +784,11 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
                       : "cursor-not-allowed opacity-50"
                   }`}
                 >
-                  <Sparkles className="mr-2 inline-block h-4 w-4" />
+                  <img
+                    src="/logodino.PNG"
+                    alt=""
+                    className="mr-2 inline-block h-4 w-4 scale-125 object-contain"
+                  />
                   {aiLoading
                     ? "Sedang menyusun CV..."
                     : aiResult

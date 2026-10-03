@@ -25,7 +25,6 @@ import {
   Moon,
   PenLine,
   ShieldCheck,
-  Sparkles,
   Sun,
   X,
 } from "lucide-react";
@@ -338,8 +337,12 @@ function App() {
 
               className="dino-interactive flex items-center gap-3"
             >
-              <div className="dino-gradient flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-lg shadow-pink-500/10">
-                <Sparkles className="h-5 w-5 text-white" />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-pink-500/10">
+                <img
+                  src="/logodino.PNG"
+                  alt="Logo DinoEdu"
+                  className="h-full w-full scale-110 object-contain"
+                />
               </div>
 
               <div>
@@ -591,7 +594,11 @@ function App() {
 
                   style={{ animationDelay: "80ms" }}
                 >
-                  <Sparkles className="h-4 w-4 text-[#EF629F]" />
+                  <img
+                    src="/logodino.PNG"
+                    alt=""
+                    className="h-4 w-4 scale-125 object-contain"
+                  />
                   AI untuk Belajar, Bekerja, dan Berkarya
                 </div>
 
@@ -767,7 +774,11 @@ function App() {
 
                 aria-label="DinoAI"
               >
-                <Sparkles className="h-5 w-5" />
+                <img
+                  src="/logodino.PNG"
+                  alt=""
+                  className="h-8 w-8 rounded-lg bg-white p-0.5 object-contain"
+                />
               </button>
 
               <a

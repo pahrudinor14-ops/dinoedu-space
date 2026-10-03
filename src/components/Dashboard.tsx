@@ -9,7 +9,6 @@ import {
   MessageCircle,
   Moon,
   ShieldCheck,
-  Sparkles,
   Sun,
 } from "lucide-react"
 
@@ -83,8 +82,12 @@ export default function Dashboard({
             onClick={onBackHome}
             className="dino-interactive flex items-center gap-3 text-left"
           >
-            <div className="dino-gradient flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-lg shadow-pink-500/10">
-              <Sparkles className="h-5 w-5 text-white" />
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-pink-500/10">
+              <img
+                src="/logodino.PNG"
+                alt="Logo DinoEdu"
+                className="h-full w-full scale-110 object-contain"
+              />
             </div>
 
             <div>
@@ -145,7 +148,11 @@ export default function Dashboard({
 
             <div className="relative">
               <div className="flex items-center gap-2 text-[14px] font-semibold text-[#EF629F]">
-                <Sparkles className="h-4 w-4" />
+                <img
+                  src="/logodino.PNG"
+                  alt=""
+                  className="h-5 w-5 scale-110 object-contain"
+                />
                 DinoEdu Space
               </div>
 

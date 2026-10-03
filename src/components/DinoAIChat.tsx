@@ -11,7 +11,6 @@ import {
   Pencil,
   Plus,
   Send,
-  Sparkles,
   Trash2,
   UsersRound,
   X,
@@ -958,8 +957,12 @@ export default function DinoAIChat({
   const renderQuotaEmpty = () => (
     <div className="dino-glass rounded-[28px] p-5 shadow-xl shadow-black/5 sm:p-6">
       <div className="mx-auto max-w-xl text-center">
-        <div className="dino-gradient mx-auto flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-lg shadow-pink-500/10">
-          <Sparkles className="h-5 w-5" />
+        <div className="mx-auto flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-pink-500/10">
+          <img
+            src="/logodino.PNG"
+            alt=""
+            className="h-full w-full scale-110 object-contain"
+          />
         </div>
 
         <h3 className="mt-4 text-base font-semibold">
@@ -1018,8 +1021,12 @@ export default function DinoAIChat({
     <div className="flex h-full flex-col p-4">
       <div className="mb-5 flex items-center justify-between px-1">
         <div className="flex items-center gap-3">
-          <div className="dino-gradient flex h-10 w-10 items-center justify-center rounded-2xl text-white shadow-sm">
-            <Sparkles className="h-5 w-5" />
+          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm">
+            <img
+              src="/logodino.PNG"
+              alt=""
+              className="h-full w-full scale-110 object-contain"
+            />
           </div>
 
           <div>
@@ -1228,8 +1235,12 @@ export default function DinoAIChat({
                 <PanelLeft className="h-5 w-5" />
               </button>
 
-              <div className="dino-gradient flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-lg shadow-pink-500/10">
-                <Sparkles className="h-5 w-5 text-white" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-pink-500/10">
+                <img
+                  src="/logodino.PNG"
+                  alt=""
+                  className="h-full w-full scale-110 object-contain"
+                />
               </div>
 
               <div className="min-w-0">
@@ -1261,8 +1272,12 @@ export default function DinoAIChat({
                   }`}
                 >
                   {message.role === "assistant" && (
-                    <div className="dino-gradient mb-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-sm">
-                      <Sparkles className="h-4 w-4" />
+                    <div className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                      <img
+                        src="/logodino.PNG"
+                        alt=""
+                        className="h-full w-full scale-110 object-contain"
+                      />
                     </div>
                   )}
 
@@ -1480,8 +1495,12 @@ export default function DinoAIChat({
 
               {loading && (
                 <div className="flex items-end gap-3">
-                  <div className="dino-gradient mb-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-sm">
-                    <Sparkles className="h-4 w-4" />
+                  <div className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                    <img
+                      src="/logodino.PNG"
+                      alt=""
+                      className="h-full w-full scale-110 object-contain"
+                    />
                   </div>
 
                   <div className="dino-glass flex items-center gap-2 rounded-[24px] rounded-bl-md px-5 py-4 text-[14px] text-muted-foreground">

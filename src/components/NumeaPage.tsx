@@ -5,7 +5,6 @@ import {
   Coins,
   Crown,
   Heart,
-  Sparkles,
   Users,
 } from "lucide-react"
 
@@ -40,7 +39,11 @@ export default function NumeaPage({
           </button>
 
           <div className="flex items-center gap-2 text-[14px] font-semibold">
-            <Sparkles className="h-4 w-4 text-[#EF629F]" />
+            <img
+              src="/logodino.PNG"
+              alt=""
+              className="h-4 w-4 scale-125 object-contain"
+            />
             NUMEA EDU
           </div>
         </div>
