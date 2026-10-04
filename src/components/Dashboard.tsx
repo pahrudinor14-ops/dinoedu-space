@@ -10,82 +10,118 @@ import {
   Moon,
   ShieldCheck,
   Sun,
-} from "lucide-react"
+} from "lucide-react";
 
 interface DashboardProps {
-  email?: string | null
-  darkMode: boolean
-  onToggleTheme: () => void
-  onSecurity: () => void
-  onSignOut: () => void
-  onBackHome: () => void
-  onOpenDinoAI: () => void
-  onOpenAICV: () => void
+  email?: string | null;
+
+  darkMode: boolean;
+
+  onToggleTheme: () => void;
+
+  onSecurity: () => void;
+
+  onSignOut: () => void;
+
+  onBackHome: () => void;
+
+  onOpenDinoAI: () => void;
+
+  onOpenAICV: () => void;
+
+  onOpenAISuratLamaran: () => void;
 }
 
 const tools = [
   {
     title: "DinoAI Chat",
+
     description:
       "Teman AI untuk belajar, bekerja, dan menyelesaikan berbagai kebutuhan",
+
     icon: MessageCircle,
   },
+
   {
     title: "AI CV Maker",
-    description:
-      "Buat CV profesional berdasarkan informasi yang kamu masukkan",
+
+    description: "Buat CV profesional berdasarkan informasi yang kamu masukkan",
+
     icon: FileText,
   },
+
   {
     title: "AI Surat Lamaran",
+
     description:
       "Susun surat lamaran yang rapi dan sesuai posisi yang kamu tuju",
+
     icon: Mail,
   },
+
   {
     title: "AI Pembuat Soal",
-    description:
-      "Buat soal pembelajaran berdasarkan kelas dan materi",
+
+    description: "Buat soal pembelajaran berdasarkan kelas dan materi",
+
     icon: ClipboardList,
   },
+
   {
     title: "AI Modul Ajar",
-    description:
-      "Bantu menyusun modul ajar secara praktis dan terstruktur",
+
+    description: "Bantu menyusun modul ajar secara praktis dan terstruktur",
+
     icon: BookOpen,
   },
-]
+];
 
 export default function Dashboard({
   email,
+
   darkMode,
+
   onToggleTheme,
+
   onSecurity,
+
   onSignOut,
+
   onBackHome,
+
   onOpenDinoAI,
+
   onOpenAICV,
+
+  onOpenAISuratLamaran,
 }: DashboardProps) {
   return (
     <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
       {/* DINOEDU SPACE DASHBOARD BACKGROUND */}
+
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="dino-float absolute left-[-140px] top-[100px] h-[320px] w-[320px] rounded-full bg-[#EECDA3]/30 blur-3xl" />
+
         <div className="dino-float-slow absolute right-[-120px] top-[180px] h-[360px] w-[360px] rounded-full bg-[#EF629F]/20 blur-3xl" />
       </div>
 
       {/* DINOEDU SPACE DASHBOARD HEADER */}
+
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <button
             type="button"
+
             onClick={onBackHome}
+
             className="dino-interactive flex items-center gap-3 text-left"
           >
             <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-pink-500/10">
               <img
                 src="/logodino.PNG"
+
                 alt="Logo DinoEdu"
+
                 className="h-full w-full scale-110 object-contain"
               />
             </div>
@@ -94,22 +130,23 @@ export default function Dashboard({
               <div className="text-lg font-semibold tracking-tight">
                 DinoEdu Space
               </div>
-              <div className="text-[14px] text-muted-foreground">
-                Dashboard
-              </div>
+
+              <div className="text-[14px] text-muted-foreground">Dashboard</div>
             </div>
           </button>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
+
               onClick={onToggleTheme}
+
               aria-label={
-                darkMode
-                  ? "Aktifkan mode terang"
-                  : "Aktifkan mode gelap"
+                darkMode ? "Aktifkan mode terang" : "Aktifkan mode gelap"
               }
+
               title={darkMode ? "Mode terang" : "Mode gelap"}
+
               className="dino-button flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl dark:bg-white/5"
             >
               {darkMode ? (
@@ -121,19 +158,25 @@ export default function Dashboard({
 
             <button
               type="button"
+
               onClick={onSecurity}
+
               className="dino-button inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-4 py-3 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5 sm:px-5"
             >
               <ShieldCheck className="h-4 w-4" />
+
               <span className="hidden sm:inline">Keamanan</span>
             </button>
 
             <button
               type="button"
+
               onClick={onSignOut}
+
               className="dino-gradient dino-button inline-flex items-center gap-2 rounded-full px-4 py-3 text-[14px] font-semibold text-white shadow-lg shadow-pink-500/10 sm:px-5"
             >
               <LogOut className="h-4 w-4" />
+
               <span className="hidden sm:inline">Keluar</span>
             </button>
           </div>
@@ -142,6 +185,7 @@ export default function Dashboard({
 
       <main className="mx-auto max-w-7xl px-5 pb-20 pt-10 sm:px-6 sm:pt-14 lg:px-8">
         {/* DINOEDU SPACE WELCOME */}
+
         <section className="dino-enter">
           <div className="dino-glass relative overflow-hidden rounded-[32px] p-7 sm:p-10">
             <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#EF629F]/10 blur-3xl" />
@@ -150,7 +194,9 @@ export default function Dashboard({
               <div className="flex items-center gap-2 text-[14px] font-semibold text-[#EF629F]">
                 <img
                   src="/logodino.PNG"
+
                   alt=""
+
                   className="h-5 w-5 scale-110 object-contain"
                 />
                 DinoEdu Space
@@ -168,9 +214,7 @@ export default function Dashboard({
               {email && (
                 <p className="mt-4 text-[14px] text-muted-foreground">
                   Masuk sebagai{" "}
-                  <span className="font-medium text-foreground">
-                    {email}
-                  </span>
+                  <span className="font-medium text-foreground">{email}</span>
                 </p>
               )}
             </div>
@@ -178,6 +222,7 @@ export default function Dashboard({
         </section>
 
         {/* DINOEDU SPACE AI TOOLS */}
+
         <section className="mt-10">
           <div className="mb-6">
             <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
@@ -191,11 +236,12 @@ export default function Dashboard({
 
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {tools.map((tool) => {
-              const Icon = tool.icon
+              const Icon = tool.icon;
 
               return (
                 <div
                   key={tool.title}
+
                   className="dino-glass dino-interactive group relative overflow-hidden rounded-[28px] p-6"
                 >
                   <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-[#EF629F]/10 blur-2xl transition-all duration-500 group-hover:scale-125" />
@@ -205,23 +251,26 @@ export default function Dashboard({
                       <Icon className="h-6 w-6 text-white" />
                     </div>
 
-                    <h3 className="mt-5 text-xl font-semibold">
-                      {tool.title}
-                    </h3>
+                    <h3 className="mt-5 text-xl font-semibold">{tool.title}</h3>
 
                     <p className="mt-2 text-[14px] leading-7 text-muted-foreground">
                       {tool.description}
                     </p>
 
                     {tool.title === "DinoAI Chat" ||
-                    tool.title === "AI CV Maker" ? (
+                    tool.title === "AI CV Maker" ||
+                    tool.title === "AI Surat Lamaran" ? (
                       <button
                         type="button"
+
                         onClick={
                           tool.title === "DinoAI Chat"
                             ? onOpenDinoAI
-                            : onOpenAICV
+                            : tool.title === "AI CV Maker"
+                              ? onOpenAICV
+                              : onOpenAISuratLamaran
                         }
+
                         className="mt-5 inline-flex items-center gap-2 text-[14px] font-semibold text-[#EF629F] transition-all duration-200 hover:gap-3"
                       >
                         Pakai Sekarang
@@ -230,7 +279,9 @@ export default function Dashboard({
                     ) : (
                       <button
                         type="button"
+
                         disabled
+
                         className="mt-5 inline-flex items-center gap-2 text-[14px] font-semibold text-muted-foreground/60"
                       >
                         Segera hadir
@@ -238,12 +289,13 @@ export default function Dashboard({
                     )}
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         </section>
 
         {/* NUMEA EDU */}
+
         <section className="mt-10">
           <div className="dino-glass relative overflow-hidden rounded-[32px] p-7 sm:p-10">
             <div className="absolute -bottom-24 -left-24 h-60 w-60 rounded-full bg-[#EECDA3]/20 blur-3xl" />
@@ -270,6 +322,7 @@ export default function Dashboard({
 
               <button
                 type="button"
+
                 className="dino-gradient dino-button inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-pink-500/10"
               >
                 Jelajahi NUMEA EDU
@@ -280,5 +333,5 @@ export default function Dashboard({
         </section>
       </main>
     </div>
-  )
+  );
 }

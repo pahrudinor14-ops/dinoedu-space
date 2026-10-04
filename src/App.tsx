@@ -1,14 +1,26 @@
 import { useEffect, useState } from "react";
+
 import Auth from "./components/Auth";
+
 import MFASetup from "./components/MFASetup";
+
 import MFADisable from "./components/MFADisable";
+
 import MFAChallenge from "./components/MFAChallenge";
+
 import Dashboard from "./components/Dashboard";
+
 import type { Session, User } from "@supabase/supabase-js";
+
 import { supabase } from "./lib/supabase";
+
 import DinoAIChat from "./components/DinoAIChat";
-import NumeaPage from "./components/NumeaPage"
-import AICVMaker from "./components/AICVMaker"
+
+import NumeaPage from "./components/NumeaPage";
+
+import AICVMaker from "./components/AICVMaker";
+
+import AISuratLamaran from "./components/AISuratLamaran";
 
 import {
   ArrowRight,
@@ -81,28 +93,41 @@ function App() {
     const saved = localStorage.getItem("dinoedu-theme");
 
     if (saved === "dark") return true;
+
     if (saved === "light") return false;
 
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
 
   const [mobileMenu, setMobileMenu] = useState(false);
+
   const [showAuth, setShowAuth] = useState(false);
+
   const [showMFA, setShowMFA] = useState(false);
+
   const [mfaEnabled, setMfaEnabled] = useState(false);
+
   const [mfaRequired, setMfaRequired] = useState(false);
+
   const [showDashboard, setShowDashboard] = useState(
     () =>
       window.location.pathname === "/app" ||
-      window.location.pathname === "/app/dinoai",
+      window.location.pathname === "/app/dinoai" ||
+      window.location.pathname === "/app/cv" ||
+      window.location.pathname === "/app/surat",
   );
+
   const [showDinoAI, setShowDinoAI] = useState(
     () => window.location.pathname === "/app/dinoai",
   );
 
   const [showAICV, setShowAICV] = useState(
-  () => window.location.pathname === "/app/cv",
-  )
+    () => window.location.pathname === "/app/cv",
+  );
+
+  const [showAISurat, setShowAISurat] = useState(
+    () => window.location.pathname === "/app/surat",
+  );
 
   const [user, setUser] = useState<User | null>(null);
 
@@ -126,13 +151,16 @@ function App() {
     if (!modalOpen) return;
 
     const previousBodyOverflow = document.body.style.overflow;
+
     const previousHtmlOverflow = document.documentElement.style.overflow;
 
     document.body.style.overflow = "hidden";
+
     document.documentElement.style.overflow = "hidden";
 
     return () => {
       document.body.style.overflow = previousBodyOverflow;
+
       document.documentElement.style.overflow = previousHtmlOverflow;
     };
   }, [showAuth, showMFA, mfaRequired, user]);
@@ -201,11 +229,17 @@ function App() {
       if (event === "SIGNED_IN" && session) {
         const path = window.location.pathname;
         const isDinoAIPath = path === "/app/dinoai";
+        const isAICVPath = path === "/app/cv";
+        const isAISuratPath = path === "/app/surat";
 
-        setShowDashboard(true);
+        setShowDashboard(
+          path === "/app" || isDinoAIPath || isAICVPath || isAISuratPath,
+        );
         setShowDinoAI(isDinoAIPath);
+        setShowAICV(isAICVPath);
+        setShowAISurat(isAISuratPath);
 
-        if (path !== "/app" && !isDinoAIPath) {
+        if (path !== "/app" && !isDinoAIPath && !isAICVPath && !isAISuratPath) {
           window.history.replaceState({}, "", "/app");
         }
       }
@@ -248,22 +282,18 @@ function App() {
   };
 
   useEffect(() => {
-  const handlePopState = () => {
-    const path = window.location.pathname;
+    const handlePopState = () => {
+      const path = window.location.pathname;
 
-    setShowDashboard(
+      setShowDashboard(
         path === "/app" ||
           path === "/app/dinoai" ||
-          path === "/app/cv",
+          path === "/app/cv" ||
+          path === "/app/surat",
       );
-
-      setShowDinoAI(
-        path === "/app/dinoai",
-      );
-
-      setShowAICV(
-        path === "/app/cv",
-      );
+      setShowDinoAI(path === "/app/dinoai");
+      setShowAICV(path === "/app/cv");
+      setShowAISurat(path === "/app/surat");
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -277,6 +307,10 @@ function App() {
     setMobileMenu(false);
     setShowAuth(false);
     setShowDashboard(true);
+    setShowDinoAI(false);
+    setShowAICV(false);
+    setShowAISurat(false);
+
     if (window.location.pathname !== "/app") {
       window.history.pushState({}, "", "/app");
     }
@@ -284,34 +318,62 @@ function App() {
 
   const backHome = () => {
     setShowDashboard(false);
-
+    setShowDinoAI(false);
+    setShowAICV(false);
+    setShowAISurat(false);
     window.history.pushState({}, "", "/");
   };
 
   const openDinoAI = () => {
     setMobileMenu(false);
+    setShowDashboard(false);
     setShowDinoAI(true);
+    setShowAICV(false);
+    setShowAISurat(false);
     window.history.pushState({}, "", "/app/dinoai");
   };
 
   const openAICV = () => {
-  setMobileMenu(false)
-  setShowDashboard(false)
-  setShowDinoAI(false)
-  setShowAICV(true)
-  window.history.pushState({}, "", "/app/cv")
-  }
+    setMobileMenu(false);
+    setShowDashboard(false);
+    setShowDinoAI(false);
+    setShowAICV(true);
+    setShowAISurat(false);
+    window.history.pushState({}, "", "/app/cv");
+  };
+
+  const openAISurat = () => {
+    setMobileMenu(false);
+    setShowDashboard(false);
+    setShowDinoAI(false);
+    setShowAICV(false);
+    setShowAISurat(true);
+    window.history.pushState({}, "", "/app/surat");
+  };
 
   const closeDinoAI = () => {
     setShowDinoAI(false);
+    setShowDashboard(true);
+    setShowAICV(false);
+    setShowAISurat(false);
     window.history.pushState({}, "", "/app");
   };
 
   const closeAICV = () => {
-  setShowAICV(false)
-  setShowDashboard(true)
-  window.history.pushState({}, "", "/app")
-  }
+    setShowAICV(false);
+    setShowDashboard(true);
+    setShowDinoAI(false);
+    setShowAISurat(false);
+    window.history.pushState({}, "", "/app");
+  };
+
+  const closeAISurat = () => {
+    setShowAISurat(false);
+    setShowDashboard(true);
+    setShowDinoAI(false);
+    setShowAICV(false);
+    window.history.pushState({}, "", "/app");
+  };
 
   return window.location.pathname === "/numea" ? (
     <NumeaPage
@@ -329,7 +391,7 @@ function App() {
         <div className="dino-pulse-soft absolute bottom-[-180px] left-[35%] h-[400px] w-[400px] rounded-full bg-[#EECDA3]/15 blur-3xl" />
       </div>
 
-      {!((showDashboard || showAICV) && user) && (
+      {!((showDashboard || showAICV || showAISurat) && user) && (
         <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
           <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
             <a
@@ -340,7 +402,9 @@ function App() {
               <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-pink-500/10">
                 <img
                   src="/logodino.PNG"
+
                   alt="Logo DinoEdu"
+
                   className="h-full w-full scale-110 object-contain"
                 />
               </div>
@@ -559,28 +623,39 @@ function App() {
         </header>
       )}
 
-      {showAICV && user ? (
-          <AICVMaker
-            onBack={closeAICV}
-          />
-        ) : showDinoAI && user ? (
-          <DinoAIChat
-            email={user.email}
-            userId={user.id}
-            onClose={closeDinoAI}
-          />
-        ) : showDashboard && user ? (
-          <Dashboard
-            email={user.email}
-            darkMode={darkMode}
-            onToggleTheme={() => setDarkMode((value) => !value)}
-            onSecurity={openSecurity}
-            onSignOut={handleSignOut}
-            onBackHome={backHome}
-            onOpenDinoAI={openDinoAI}
-            onOpenAICV={openAICV}
-          />
-        ) : (
+      {showAISurat && user ? (
+        <AISuratLamaran onBack={closeAISurat} />
+      ) : showAICV && user ? (
+        <AICVMaker onBack={closeAICV} />
+      ) : showDinoAI && user ? (
+        <DinoAIChat
+          email={user.email}
+
+          userId={user.id}
+
+          onClose={closeDinoAI}
+        />
+      ) : showDashboard && user ? (
+        <Dashboard
+          email={user.email}
+
+          darkMode={darkMode}
+
+          onToggleTheme={() => setDarkMode((value) => !value)}
+
+          onSecurity={openSecurity}
+
+          onSignOut={handleSignOut}
+
+          onBackHome={backHome}
+
+          onOpenDinoAI={openDinoAI}
+
+          onOpenAICV={openAICV}
+
+          onOpenAISuratLamaran={openAISurat}
+        />
+      ) : (
         <>
           <main>
             <section
@@ -596,7 +671,9 @@ function App() {
                 >
                   <img
                     src="/logodino.PNG"
+
                     alt=""
+
                     className="h-4 w-4 scale-125 object-contain"
                   />
                   AI untuk Belajar, Bekerja, dan Berkarya
@@ -776,7 +853,9 @@ function App() {
               >
                 <img
                   src="/logodino.PNG"
+
                   alt=""
+
                   className="h-8 w-8 rounded-lg bg-white p-0.5 object-contain"
                 />
               </button>
