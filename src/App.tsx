@@ -391,7 +391,7 @@ function App() {
         <div className="dino-pulse-soft absolute bottom-[-180px] left-[35%] h-[400px] w-[400px] rounded-full bg-[#EECDA3]/15 blur-3xl" />
       </div>
 
-      {!((showDashboard || showAICV || showAISurat) && user) && (
+      {!((showDashboard || showDinoAI || showAICV || showAISurat) && user) && (
         <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
           <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
             <a
