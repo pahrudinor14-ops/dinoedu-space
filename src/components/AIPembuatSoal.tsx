@@ -548,29 +548,37 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
 
     <div className="modal-scrollbar-hidden min-h-dvh overflow-x-hidden overflow-y-auto bg-background text-foreground">
 
-      <style>{`
+      <style>{`        select,
+        select option {
+          background-color: #FFFFFF !important;
+          color: #2B2729 !important;
+        }
 
-        select option {
+        select option:checked {
+          background-color: #EF629F !important;
+          color: #FFFFFF !important;
+        }
 
-  background-color: var(--card);
+        .dark select,
+        html.dark select {
+          color-scheme: dark !important;
+          background-color: #1D191F !important;
+          color: #F8F4F5 !important;
+        }
 
-  color: var(--card-foreground);
+        .dark select option,
+        html.dark select option {
+          background-color: #1D191F !important;
+          color: #F8F4F5 !important;
+          -webkit-text-fill-color: #F8F4F5 !important;
+        }
 
-}
-
-.dark select {
-
-  color-scheme: dark;
-
-}
-
-.dark select option {
-
-  background-color: #1D191F;
-
-  color: #F8F4F5;
-
-}
+        .dark select option:checked,
+        html.dark select option:checked {
+          background-color: #EF629F !important;
+          color: #FFFFFF !important;
+          -webkit-text-fill-color: #FFFFFF !important;
+        }
 
 @media print {
           @page { size: A4; margin: 12mm; }
@@ -1111,7 +1119,7 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
 
                 {quizResult ? (
 
-                  <div className="rounded-2xl border border-border/70 bg-card p-7 text-card-foreground shadow-xl sm:p-8">
+                  <div className="question-screen-card rounded-2xl border border-border/70 bg-card p-7 text-card-foreground shadow-xl sm:p-8">
 
                     <div className="border-b border-border pb-5">
 
@@ -1131,7 +1139,7 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
 
                           }
 
-                          className="w-full border-b border-border bg-transparent pb-2 text-xl font-bold text-foreground outline-none"
+                          className="w-full border-b border-border bg-transparent pb-2 text-xl font-bold text-foreground outline-none placeholder:text-muted-foreground"
 
                         />
 
@@ -1165,7 +1173,7 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
 
                           }
 
-                          className="mt-4 w-full rounded-xl border border-border bg-background/60 p-3 text-[12px] leading-5 text-foreground outline-none dark:bg-white/5"
+                          className="mt-4 w-full rounded-xl border border-border bg-background/60 p-3 text-[12px] leading-5 text-foreground outline-none placeholder:text-muted-foreground dark:bg-white/5"
 
                         />
 
@@ -1203,7 +1211,7 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
 
                               </span>
 
-                              <span className="question-no-print rounded-full bg-[#EF629F]/10 px-2 py-1 text-[10px] font-semibold text-[#C4477C]">
+                              <span className="question-no-print rounded-full bg-[#EF629F]/10 px-2 py-1 text-[10px] font-semibold text-[#EF629F]">
 
                                 {item.cognitiveLevel}
 
@@ -1245,7 +1253,7 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
 
                                 onChange={(event) => updateQuestion(index, "question", event.target.value)}
 
-                                className="w-full rounded-xl border border-border bg-background/60 p-3 text-[13px] leading-6 text-foreground outline-none dark:bg-white/5"
+                                className="w-full rounded-xl border border-border bg-background/60 p-3 text-[13px] leading-6 text-foreground outline-none placeholder:text-muted-foreground dark:bg-white/5"
 
                               />
 
@@ -1293,7 +1301,7 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
 
                           ) : (
 
-                            <p className="text-[13px] font-medium leading-6">{item.question || "Pertanyaan belum diisi"}</p>
+                            <p className="text-[13px] font-medium leading-6 text-foreground">{item.question || "Pertanyaan belum diisi"}</p>
 
                           )}
 
@@ -1359,7 +1367,7 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
 
                           {isEditingResult ? (
 
-                            <div className="question-no-print mt-3 space-y-3 rounded-xl border border-border/70 bg-muted/50 p-3 dark:bg-white/5">
+                            <div className="question-no-print mt-3 space-y-3 rounded-xl border border-border/70 bg-muted/70 p-3 dark:bg-white/5">
 
                               <input
 
@@ -1391,7 +1399,7 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
 
                           ) : (
 
-                            <div className="question-no-print mt-3 rounded-xl border border-border/70 bg-muted/50 p-3 text-[12px] leading-5 text-muted-foreground dark:bg-white/5">
+                            <div className="question-no-print mt-3 rounded-xl border border-border/70 bg-muted/70 p-3 text-[12px] leading-5 text-muted-foreground dark:bg-white/5">
 
                               <p>
 
