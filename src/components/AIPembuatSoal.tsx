@@ -551,49 +551,55 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
       <style>{`
 
         select option {
-  background-color: var(--card);
-  color: var(--card-foreground);
+
+  background-color: var(--card);
+
+  color: var(--card-foreground);
+
 }
+
 .dark select {
-  color-scheme: dark;
+
+  color-scheme: dark;
+
 }
+
 .dark select option {
-  background-color: #1D191F;
-  color: #F8F4F5;
+
+  background-color: #1D191F;
+
+  color: #F8F4F5;
+
 }
+
 @media print {
-
-          @page { size: A4; margin: 12mm; }
-
-          body * { visibility: hidden !important; }
-
-          .question-print-area, .question-print-area * { visibility: visible !important; }
-
-          .question-print-area {
-
-            position: absolute !important;
-
-            inset: 0 !important;
-
-            width: 100% !important;
-
-            margin: 0 !important;
-
-            padding: 8mm !important;
-
-            background: white !important;
-
-            color: black !important;
-
-            box-shadow: none !important;
-
-          }
-
-          .question-no-print { display: none !important; }
-
-          .question-print-break { break-inside: avoid; page-break-inside: avoid; }
-
-        }
+          @page { size: A4; margin: 12mm; }
+          html, body {
+            width: 100% !important;
+            min-height: 0 !important;
+            background: #ffffff !important;
+          }
+          body * { visibility: hidden !important; }
+          .question-print-area,
+          .question-print-area * { visibility: visible !important; }
+          .question-print-area {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            box-shadow: none !important;
+            border: 0 !important;
+          }
+          .question-no-print { display: none !important; }
+          .question-print-break {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+          }
+        }
 
       `}</style>
 
@@ -1105,7 +1111,7 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
 
                 {quizResult ? (
 
-                  <div className="question-print-area rounded-2xl border border-border/70 bg-card p-7 text-card-foreground shadow-xl sm:p-8">
+                  <div className="rounded-2xl border border-border/70 bg-card p-7 text-card-foreground shadow-xl sm:p-8">
 
                     <div className="border-b border-border pb-5">
 
@@ -1175,7 +1181,7 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
 
                     </div>
 
-                    <div className="mt-7 space-y-6">
+                    <div className="question-print-area mt-7 space-y-6">
 
                       {quizResult.questions.map((item, index) => (
 
