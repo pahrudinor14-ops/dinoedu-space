@@ -24,1489 +24,1630 @@ import AISuratLamaran from "./components/AISuratLamaran";
 
 import AIPembuatSoal from "./components/AIPembuatSoal";
 
+import AIModulAjar from "./components/AIModulAjar";
+
 import {
-  ArrowRight,
 
-  LayoutDashboard,
+  ArrowRight,
 
-  BookOpen,
+  LayoutDashboard,
 
-  ClipboardList,
+  BookOpen,
 
-  FileText,
+  ClipboardList,
 
-  Home,
+  FileText,
 
-  Info,
+  Home,
 
-  Layers3,
+  Info,
 
-  Mail,
+  Layers3,
 
-  Menu,
+  Mail,
 
-  MessageCircle,
+  Menu,
 
-  Moon,
+  MessageCircle,
 
-  PenLine,
+  Moon,
 
-  ShieldCheck,
+  PenLine,
 
-  Sun,
+  ShieldCheck,
 
-  X,
+  Sun,
+
+  X,
+
 } from "lucide-react";
 
 const features = [
 
-  {
-    title: "DinoAI Chat",
+  {
 
-    description:
+    title: "DinoAI Chat",
 
-      "Teman AI untuk membantu belajar, bekerja, dan menyelesaikan berbagai kebutuhan",
+    description:
 
-    icon: MessageCircle,
+      "Teman AI untuk membantu belajar, bekerja, dan menyelesaikan berbagai kebutuhan",
 
-  },
+    icon: MessageCircle,
 
-  {
-    title: "AI CV Maker",
+  },
 
-    description:
+  {
 
-      "Buat CV profesional dengan lebih cepat berdasarkan informasi yang kamu masukkan",
+    title: "AI CV Maker",
 
-    icon: FileText,
+    description:
 
-  },
+      "Buat CV profesional dengan lebih cepat berdasarkan informasi yang kamu masukkan",
 
-  {
-    title: "AI Surat Lamaran",
+    icon: FileText,
 
-    description:
+  },
 
-      "Susun surat lamaran yang rapi dan sesuai dengan posisi yang kamu tuju",
+  {
 
-    icon: Mail,
+    title: "AI Surat Lamaran",
 
-  },
+    description:
 
-  {
-    title: "AI Pembuat Soal",
+      "Susun surat lamaran yang rapi dan sesuai dengan posisi yang kamu tuju",
 
-    description:
+    icon: Mail,
 
-      "Buat soal pembelajaran berdasarkan kelas, mata pelajaran, dan materi",
+  },
 
-    icon: ClipboardList,
+  {
 
-  },
+    title: "AI Pembuat Soal",
 
-  {
-    title: "AI Modul Ajar",
+    description:
 
-    description:
+      "Buat soal pembelajaran berdasarkan kelas, mata pelajaran, dan materi",
 
-      "Bantu menyusun rancangan modul ajar secara lebih praktis dan terstruktur",
+    icon: ClipboardList,
 
-    icon: BookOpen,
+  },
 
-  },
+  {
+
+    title: "AI Modul Ajar",
+
+    description:
+
+      "Bantu menyusun rancangan modul ajar secara lebih praktis dan terstruktur",
+
+    icon: BookOpen,
+
+  },
 
 ];
 
 function App() {
-  const [darkMode, setDarkMode] = useState<boolean>(() => {
-    const saved = localStorage.getItem("dinoedu-theme");
 
-    if (saved === "dark") return true;
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
 
-    if (saved === "light") return false;
+    const saved = localStorage.getItem("dinoedu-theme");
 
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+    if (saved === "dark") return true;
 
-  });
+    if (saved === "light") return false;
 
-  const [mobileMenu, setMobileMenu] = useState(false);
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-  const [showAuth, setShowAuth] = useState(false);
+  });
 
-  const [showMFA, setShowMFA] = useState(false);
+  const [mobileMenu, setMobileMenu] = useState(false);
 
-  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
 
-  const [mfaRequired, setMfaRequired] = useState(false);
+  const [showMFA, setShowMFA] = useState(false);
 
-  const [showDashboard, setShowDashboard] = useState(
+  const [mfaEnabled, setMfaEnabled] = useState(false);
 
-    () =>
+  const [mfaRequired, setMfaRequired] = useState(false);
 
-      window.location.pathname === "/app" ||
+  const [showDashboard, setShowDashboard] = useState(
 
-      window.location.pathname === "/app/dinoai" ||
+    () =>
 
-      window.location.pathname === "/app/cv" ||
+      window.location.pathname === "/app" ||
 
-      window.location.pathname === "/app/surat" ||
+      window.location.pathname === "/app/dinoai" ||
 
-      window.location.pathname === "/app/soal",
+      window.location.pathname === "/app/cv" ||
 
-  );
+      window.location.pathname === "/app/surat" ||
 
-  const [showDinoAI, setShowDinoAI] = useState(
+      window.location.pathname === "/app/soal" ||
 
-    () => window.location.pathname === "/app/dinoai",
+      window.location.pathname === "/app/modul-ajar",
 
-  );
+  );
 
-  const [showAICV, setShowAICV] = useState(
+  const [showDinoAI, setShowDinoAI] = useState(
 
-    () => window.location.pathname === "/app/cv",
+    () => window.location.pathname === "/app/dinoai",
 
-  );
+  );
 
-  const [showAISurat, setShowAISurat] = useState(
+  const [showAICV, setShowAICV] = useState(
 
-    () => window.location.pathname === "/app/surat",
+    () => window.location.pathname === "/app/cv",
 
-  );
+  );
 
-  const [showAIPembuatSoal, setShowAIPembuatSoal] = useState(
+  const [showAISurat, setShowAISurat] = useState(
 
-    () => window.location.pathname === "/app/soal",
+    () => window.location.pathname === "/app/surat",
 
-  );
+  );
 
-const [user, setUser] = useState<User | null>(null);
+  const [showAIPembuatSoal, setShowAIPembuatSoal] = useState(
 
-  useEffect(() => {
-    const root = document.documentElement;
+    () => window.location.pathname === "/app/soal",
 
-    if (darkMode) {
-      root.classList.add("dark");
+  );
 
-      localStorage.setItem("dinoedu-theme", "dark");
+  const [showAIModulAjar, setShowAIModulAjar] = useState(
 
-    } else {
-      root.classList.remove("dark");
+    () => window.location.pathname === "/app/modul-ajar",
 
-      localStorage.setItem("dinoedu-theme", "light");
+  );
 
-    }
+  const [user, setUser] = useState<User | null>(null);
 
-  }, [darkMode]);
+  useEffect(() => {
 
-  useEffect(() => {
-    const modalOpen = showAuth || (Boolean(user) && (showMFA || mfaRequired));
+    const root = document.documentElement;
 
-    if (!modalOpen) return;
+    if (darkMode) {
 
-    const previousBodyOverflow = document.body.style.overflow;
+      root.classList.add("dark");
 
-    const previousHtmlOverflow = document.documentElement.style.overflow;
+      localStorage.setItem("dinoedu-theme", "dark");
 
-    document.body.style.overflow = "hidden";
+    } else {
 
-    document.documentElement.style.overflow = "hidden";
+      root.classList.remove("dark");
 
-    return () => {
-      document.body.style.overflow = previousBodyOverflow;
+      localStorage.setItem("dinoedu-theme", "light");
 
-      document.documentElement.style.overflow = previousHtmlOverflow;
+    }
 
-    };
+  }, [darkMode]);
 
-  }, [showAuth, showMFA, mfaRequired, user]);
+  useEffect(() => {
 
-  useEffect(() => {
-    let mounted = true;
+    const modalOpen = showAuth || (Boolean(user) && (showMFA || mfaRequired));
 
-    let assuranceCheckId = 0;
+    if (!modalOpen) return;
 
-    const syncSession = (session: Session | null) => {
-      const checkId = ++assuranceCheckId;
+    const previousBodyOverflow = document.body.style.overflow;
 
-      setUser(session?.user ?? null);
+    const previousHtmlOverflow = document.documentElement.style.overflow;
 
-      if (!session) {
-        setMfaRequired(false);
+    document.body.style.overflow = "hidden";
 
-        return;
+    document.documentElement.style.overflow = "hidden";
 
-      }
+    return () => {
 
-      window.setTimeout(() => {
-        void (async () => {
-          try {
-            const {
-              data: { session: activeSession },
+      document.body.style.overflow = previousBodyOverflow;
 
-            } = await supabase.auth.getSession();
+      document.documentElement.style.overflow = previousHtmlOverflow;
 
-            if (
+    };
 
-              !mounted ||
+  }, [showAuth, showMFA, mfaRequired, user]);
 
-              checkId !== assuranceCheckId ||
+  useEffect(() => {
 
-              activeSession?.user.id !== session.user.id
+    let mounted = true;
 
-            ) {
-              return;
+    let assuranceCheckId = 0;
 
-            }
+    const syncSession = (session: Session | null) => {
 
-            const { data, error } =
+      const checkId = ++assuranceCheckId;
 
-              await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      setUser(session?.user ?? null);
 
-            if (!mounted || checkId !== assuranceCheckId) {
-              return;
+      if (!session) {
 
-            }
+        setMfaRequired(false);
 
-            if (error) {
-              throw error;
+        return;
 
-            }
+      }
 
-            setMfaRequired(
+      window.setTimeout(() => {
 
-              data.nextLevel === "aal2" && data.currentLevel !== "aal2",
+        void (async () => {
 
-            );
+          try {
 
-          } catch (error) {
-            if (mounted && checkId === assuranceCheckId) {
-              console.error("Gagal memeriksa level autentikasi MFA", error);
+            const {
 
-              setMfaRequired(true);
+              data: { session: activeSession },
 
-            }
+            } = await supabase.auth.getSession();
 
-          }
+            if (
 
-        })();
+              !mounted ||
 
-      }, 0);
+              checkId !== assuranceCheckId ||
 
-    };
+              activeSession?.user.id !== session.user.id
 
-    const {
-      data: { subscription },
+            ) {
 
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      syncSession(session);
+              return;
 
-      if (event === "SIGNED_IN" && session) {
-        const path = window.location.pathname;
+            }
 
-        const isDinoAIPath = path === "/app/dinoai";
+            const { data, error } =
 
-        const isAICVPath = path === "/app/cv";
+              await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
-        const isAISuratPath = path === "/app/surat";
+            if (!mounted || checkId !== assuranceCheckId) {
 
-          const isAIPembuatSoalPath = path === "/app/soal";
+              return;
 
-        setShowDashboard(
+            }
 
-          path === "/app" ||
+            if (error) {
 
-            isDinoAIPath ||
+              throw error;
 
-            isAICVPath ||
+            }
 
-            isAISuratPath ||
+            setMfaRequired(
 
-            isAIPembuatSoalPath,
+              data.nextLevel === "aal2" && data.currentLevel !== "aal2",
 
-        );
+            );
 
-        setShowDinoAI(isDinoAIPath);
+          } catch (error) {
 
-        setShowAICV(isAICVPath);
+            if (mounted && checkId === assuranceCheckId) {
 
-        setShowAISurat(isAISuratPath);
+              console.error("Gagal memeriksa level autentikasi MFA", error);
 
-          setShowAIPembuatSoal(isAIPembuatSoalPath);
+              setMfaRequired(true);
 
-        if (
+            }
 
-          path !== "/app" &&
+          }
 
-          !isDinoAIPath &&
+        })();
 
-          !isAICVPath &&
+      }, 0);
 
-          !isAISuratPath &&
+    };
 
-          !isAIPembuatSoalPath
+    const {
 
-        ) {
-          window.history.replaceState({}, "", "/app");
+      data: { subscription },
 
-        }
+    } = supabase.auth.onAuthStateChange((event, session) => {
 
-      }
+      syncSession(session);
 
-    });
+      if (event === "SIGNED_IN" && session) {
 
-    return () => {
-      mounted = false;
+        const path = window.location.pathname;
 
-      assuranceCheckId += 1;
+        const isDinoAIPath = path === "/app/dinoai";
 
-      subscription.unsubscribe();
+        const isAICVPath = path === "/app/cv";
 
-    };
+        const isAISuratPath = path === "/app/surat";
 
-  }, []);
+          const isAIPembuatSoalPath = path === "/app/soal";
 
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
+          const isAIModulAjarPath = path === "/app/modul-ajar";
 
-    if (error) {
-      console.error(error);
+        setShowDashboard(
 
-      return;
+          path === "/app" ||
 
-    }
+            isDinoAIPath ||
 
-    setShowMFA(false);
+            isAICVPath ||
 
-    setShowAuth(false);
+            isAISuratPath ||
 
-    setMobileMenu(false);
+            isAIPembuatSoalPath ||
+            isAIModulAjarPath,
 
-  };
+        );
 
-  const openSecurity = async () => {
-    const { data, error } = await supabase.auth.mfa.listFactors();
+        setShowDinoAI(isDinoAIPath);
 
-    const enabled =
+        setShowAICV(isAICVPath);
 
-      !error && data.totp?.some((factor) => factor.status === "verified");
+        setShowAISurat(isAISuratPath);
 
-    setMfaEnabled(Boolean(enabled));
+          setShowAIPembuatSoal(isAIPembuatSoalPath);
 
-    setShowMFA(true);
+          setShowAIModulAjar(isAIModulAjarPath);
 
-  };
+        if (
 
-  useEffect(() => {
-    const handlePopState = () => {
-      const path = window.location.pathname;
+          path !== "/app" &&
 
-      setShowDashboard(
+          !isDinoAIPath &&
 
-        path === "/app" ||
+          !isAICVPath &&
 
-          path === "/app/dinoai" ||
+          !isAISuratPath &&
 
-          path === "/app/cv" ||
+          !isAIPembuatSoalPath &&
+          !isAIModulAjarPath
 
-          path === "/app/surat" ||
+        ) {
 
-          path === "/app/soal",
+          window.history.replaceState({}, "", "/app");
 
-      );
+        }
 
-      setShowDinoAI(path === "/app/dinoai");
+      }
 
-      setShowAICV(path === "/app/cv");
+    });
 
-      setShowAISurat(path === "/app/surat");
+    return () => {
 
-      setShowAIPembuatSoal(path === "/app/soal");
+      mounted = false;
 
-    };
+      assuranceCheckId += 1;
 
-    window.addEventListener("popstate", handlePopState);
+      subscription.unsubscribe();
 
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
+    };
 
-    };
+  }, []);
 
-  }, []);
+  const handleSignOut = async () => {
 
-  const openDashboard = () => {
-    setMobileMenu(false);
+    const { error } = await supabase.auth.signOut();
 
-    setShowAuth(false);
+    if (error) {
 
-    setShowDashboard(true);
+      console.error(error);
 
-    setShowDinoAI(false);
+      return;
 
-    setShowAICV(false);
+    }
 
-    setShowAISurat(false);
+    setShowMFA(false);
 
-    setShowAIPembuatSoal(false);
+    setShowAuth(false);
 
-    if (window.location.pathname !== "/app") {
-      window.history.pushState({}, "", "/app");
+    setMobileMenu(false);
 
-    }
+  };
 
-  };
+  const openSecurity = async () => {
 
-  const backHome = () => {
-    setShowDashboard(false);
+    const { data, error } = await supabase.auth.mfa.listFactors();
 
-    setShowDinoAI(false);
+    const enabled =
 
-    setShowAICV(false);
+      !error && data.totp?.some((factor) => factor.status === "verified");
 
-    setShowAISurat(false);
+    setMfaEnabled(Boolean(enabled));
 
-    setShowAIPembuatSoal(false);
+    setShowMFA(true);
 
-    window.history.pushState({}, "", "/");
+  };
 
-  };
+  useEffect(() => {
 
-  const openDinoAI = () => {
-    setMobileMenu(false);
+    const handlePopState = () => {
 
-    setShowDashboard(false);
+      const path = window.location.pathname;
 
-    setShowDinoAI(true);
+      setShowDashboard(
 
-    setShowAICV(false);
+        path === "/app" ||
 
-    setShowAISurat(false);
+          path === "/app/dinoai" ||
 
-    setShowAIPembuatSoal(false);
+          path === "/app/cv" ||
 
-    window.history.pushState({}, "", "/app/dinoai");
+          path === "/app/surat" ||
 
-  };
+          path === "/app/soal" ||
 
-  const openAICV = () => {
-    setMobileMenu(false);
+          path === "/app/modul-ajar",
 
-    setShowDashboard(false);
+      );
 
-    setShowDinoAI(false);
+      setShowDinoAI(path === "/app/dinoai");
 
-    setShowAICV(true);
+      setShowAICV(path === "/app/cv");
 
-    setShowAISurat(false);
+      setShowAISurat(path === "/app/surat");
 
-    setShowAIPembuatSoal(false);
+      setShowAIPembuatSoal(path === "/app/soal");
 
-    window.history.pushState({}, "", "/app/cv");
+      setShowAIModulAjar(path === "/app/modul-ajar");
 
-  };
+    };
 
-  const openAISurat = () => {
-    setMobileMenu(false);
+    window.addEventListener("popstate", handlePopState);
 
-    setShowDashboard(false);
+    return () => {
 
-    setShowDinoAI(false);
+      window.removeEventListener("popstate", handlePopState);
 
-    setShowAICV(false);
+    };
 
-    setShowAISurat(true);
+  }, []);
 
-    setShowAIPembuatSoal(false);
+  const openDashboard = () => {
 
-    window.history.pushState({}, "", "/app/surat");
+    setMobileMenu(false);
 
-  };
+    setShowAuth(false);
 
-  const openAIPembuatSoal = () => {
-    setMobileMenu(false);
+    setShowDashboard(true);
 
-    setShowDashboard(false);
+    setShowDinoAI(false);
 
-    setShowDinoAI(false);
+    setShowAICV(false);
 
-    setShowAICV(false);
+    setShowAISurat(false);
 
-    setShowAISurat(false);
+    setShowAIPembuatSoal(false);
 
-    setShowAIPembuatSoal(true);
+    setShowAIModulAjar(false);
 
-    window.history.pushState({}, "", "/app/soal");
+    if (window.location.pathname !== "/app") {
 
-  };
+      window.history.pushState({}, "", "/app");
 
-  const closeDinoAI = () => {
-    setShowDinoAI(false);
+    }
 
-    setShowDashboard(true);
+  };
 
-    setShowAIPembuatSoal(false);
+  const backHome = () => {
 
-    setShowAICV(false);
+    setShowDashboard(false);
 
-    setShowAISurat(false);
+    setShowDinoAI(false);
 
-    window.history.pushState({}, "", "/app");
+    setShowAICV(false);
 
-  };
+    setShowAISurat(false);
 
-  const closeAICV = () => {
-    setShowAICV(false);
+    setShowAIPembuatSoal(false);
 
-    setShowDashboard(true);
+    setShowAIModulAjar(false);
 
-    setShowAIPembuatSoal(false);
+    window.history.pushState({}, "", "/");
 
-    setShowDinoAI(false);
+  };
 
-    setShowAISurat(false);
+  const openDinoAI = () => {
 
-    window.history.pushState({}, "", "/app");
+    setMobileMenu(false);
 
-  };
+    setShowDashboard(false);
 
-  const closeAISurat = () => {
-    setShowAISurat(false);
+    setShowDinoAI(true);
 
-    setShowDashboard(true);
+    setShowAICV(false);
 
-    setShowAIPembuatSoal(false);
+    setShowAISurat(false);
 
-    setShowDinoAI(false);
+    setShowAIPembuatSoal(false);
 
-    setShowAICV(false);
+    setShowAIModulAjar(false);
 
-    window.history.pushState({}, "", "/app");
+    window.history.pushState({}, "", "/app/dinoai");
 
-  };
+  };
 
-  const closeAIPembuatSoal = () => {
-    setShowAIPembuatSoal(false);
+  const openAICV = () => {
 
-    setShowDashboard(true);
+    setMobileMenu(false);
 
-    setShowDinoAI(false);
+    setShowDashboard(false);
 
-    setShowAICV(false);
+    setShowDinoAI(false);
 
-    setShowAISurat(false);
+    setShowAICV(true);
 
-    window.history.pushState({}, "", "/app");
+    setShowAISurat(false);
 
-  };
+    setShowAIPembuatSoal(false);
 
-  return window.location.pathname === "/numea" ? (
+    setShowAIModulAjar(false);
 
-    <NumeaPage
+    window.history.pushState({}, "", "/app/cv");
 
-      onBack={() => {
-        window.location.href = "/";
+  };
 
-      }}
+  const openAISurat = () => {
 
-    />
+    setMobileMenu(false);
 
-  ) : (
+    setShowDashboard(false);
 
-    <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
+    setShowDinoAI(false);
 
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    setShowAICV(false);
 
-        <div className="dino-float absolute left-[-140px] top-[80px] h-[320px] w-[320px] rounded-full bg-[#EECDA3]/35 blur-3xl" />
+    setShowAISurat(true);
 
-        <div className="dino-float-slow absolute right-[-120px] top-[180px] h-[360px] w-[360px] rounded-full bg-[#EF629F]/20 blur-3xl" />
+    setShowAIPembuatSoal(false);
 
-        <div className="dino-pulse-soft absolute bottom-[-180px] left-[35%] h-[400px] w-[400px] rounded-full bg-[#EECDA3]/15 blur-3xl" />
+    setShowAIModulAjar(false);
 
-      </div>
+    window.history.pushState({}, "", "/app/surat");
 
-      {!((showDashboard || showDinoAI || showAICV || showAISurat || showAIPembuatSoal) && user) && (
+  };
 
-        <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
+  const openAIPembuatSoal = () => {
 
-          <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
+    setMobileMenu(false);
 
-            <a
+    setShowDashboard(false);
 
-              href="#beranda"
+    setShowDinoAI(false);
 
-              className="dino-interactive flex items-center gap-3"
+    setShowAICV(false);
 
-            >
+    setShowAISurat(false);
 
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-pink-500/10">
+    setShowAIPembuatSoal(true);
 
-                <img
+    window.history.pushState({}, "", "/app/soal");
 
-                  src="/logodino.PNG"
+  };
 
-                  alt="Logo DinoEdu"
+  const openAIModulAjar = () => {
 
-                  className="h-full w-full scale-110 object-contain"
+    setMobileMenu(false);
 
-                />
+    setShowDashboard(false);
 
-              </div>
+    setShowDinoAI(false);
 
-              <div>
+    setShowAICV(false);
 
-                <div className="text-lg font-semibold tracking-tight">
+    setShowAISurat(false);
 
-                  DinoEdu Space
+    setShowAIPembuatSoal(false);
 
-                </div>
+    setShowAIModulAjar(true);
 
-                <div className="text-[14px] text-muted-foreground">
+    window.history.pushState({}, "", "/app/modul-ajar");
 
-                  Education • Creative • Digital
+  };
 
-                </div>
+  const closeAIModulAjar = () => {
 
-              </div>
+    setShowAIModulAjar(false);
 
-            </a>
+    setShowDashboard(true);
 
-            <nav className="hidden items-center gap-7 md:flex">
+    setShowDinoAI(false);
 
-              <a
+    setShowAICV(false);
 
-                href="#beranda"
+    setShowAISurat(false);
 
-                className="text-[14px] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
+    setShowAIPembuatSoal(false);
 
-              >
+    window.history.pushState({}, "", "/app");
 
-                Beranda
+  };
 
-              </a>
+  const closeDinoAI = () => {
 
-              <a
+    setShowDinoAI(false);
 
-                href="#fitur"
+    setShowDashboard(true);
 
-                className="text-[14px] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
+    setShowAIPembuatSoal(false);
 
-              >
+    setShowAIModulAjar(false);
 
-                Fitur AI
+    setShowAICV(false);
 
-              </a>
+    setShowAISurat(false);
 
-              <a
+    window.history.pushState({}, "", "/app");
 
-                href="#tentang"
+  };
 
-                className="text-[14px] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
+  const closeAICV = () => {
 
-              >
+    setShowAICV(false);
 
-                Tentang
+    setShowDashboard(true);
 
-              </a>
+    setShowAIPembuatSoal(false);
 
-            </nav>
+    setShowAIModulAjar(false);
 
-            <div className="flex items-center gap-2">
+    setShowDinoAI(false);
 
-              <button
+    setShowAISurat(false);
 
-                type="button"
+    window.history.pushState({}, "", "/app");
 
-                onClick={() => setDarkMode((value) => !value)}
+  };
 
-                className="dino-button flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl dark:bg-white/5"
+  const closeAISurat = () => {
 
-                aria-label="Ubah mode tampilan"
+    setShowAISurat(false);
 
-              >
+    setShowDashboard(true);
 
-                {darkMode ? (
+    setShowAIPembuatSoal(false);
 
-                  <Sun className="h-5 w-5" />
+    setShowAIModulAjar(false);
 
-                ) : (
+    setShowDinoAI(false);
 
-                  <Moon className="h-5 w-5" />
+    setShowAICV(false);
 
-                )}
+    window.history.pushState({}, "", "/app");
 
-              </button>
+  };
 
-              <button
+  const closeAIPembuatSoal = () => {
 
-                type="button"
+    setShowAIPembuatSoal(false);
 
-                onClick={() => setMobileMenu((value) => !value)}
+    setShowAIModulAjar(false);
 
-                className="dino-button flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl md:hidden dark:bg-white/5"
+    setShowDashboard(true);
 
-                aria-label="Buka menu"
+    setShowDinoAI(false);
 
-              >
+    setShowAICV(false);
 
-                {mobileMenu ? (
+    setShowAISurat(false);
 
-                  <X className="h-5 w-5" />
+    window.history.pushState({}, "", "/app");
 
-                ) : (
+  };
 
-                  <Menu className="h-5 w-5" />
+  return window.location.pathname === "/numea" ? (
 
-                )}
+    <NumeaPage
 
-              </button>
+      onBack={() => {
 
-              {user ? (
+        window.location.href = "/";
 
-                <div className="hidden items-center gap-2 md:flex">
+      }}
 
-                  <button
+    />
 
-                    type="button"
+  ) : (
 
-                    onClick={openDashboard}
+    <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
 
-                    className="dino-button inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
 
-                  >
+        <div className="dino-float absolute left-[-140px] top-[80px] h-[320px] w-[320px] rounded-full bg-[#EECDA3]/35 blur-3xl" />
 
-                    <LayoutDashboard className="h-4 w-4" />
+        <div className="dino-float-slow absolute right-[-120px] top-[180px] h-[360px] w-[360px] rounded-full bg-[#EF629F]/20 blur-3xl" />
 
-                    Dashboard
+        <div className="dino-pulse-soft absolute bottom-[-180px] left-[35%] h-[400px] w-[400px] rounded-full bg-[#EECDA3]/15 blur-3xl" />
 
-                  </button>
+      </div>
 
-                  <button
+      {!((showDashboard || showDinoAI || showAICV || showAISurat || showAIPembuatSoal || showAIModulAjar) && user) && (
 
-                    type="button"
+        <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
 
-                    onClick={openSecurity}
+          <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
 
-                    className="dino-button inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
+            <a
 
-                  >
+              href="#beranda"
 
-                    <ShieldCheck className="h-4 w-4" />
+              className="dino-interactive flex items-center gap-3"
 
-                    Keamanan
+            >
 
-                  </button>
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-pink-500/10">
 
-                  <button
+                <img
 
-                    type="button"
+                  src="/logodino.PNG"
 
-                    onClick={handleSignOut}
+                  alt="Logo DinoEdu"
 
-                    className="dino-gradient dino-button rounded-full px-5 py-3 text-[14px] font-semibold text-white shadow-lg shadow-pink-500/10"
+                  className="h-full w-full scale-110 object-contain"
 
-                  >
+                />
 
-                    Keluar
+              </div>
 
-                  </button>
+              <div>
 
-                </div>
+                <div className="text-lg font-semibold tracking-tight">
 
-              ) : (
+                  DinoEdu Space
 
-                <button
+                </div>
 
-                  type="button"
+                <div className="text-[14px] text-muted-foreground">
 
-                  onClick={() => setShowAuth(true)}
+                  Education • Creative • Digital
 
-                  className="dino-gradient dino-button hidden rounded-full px-5 py-3 text-[14px] font-semibold text-white shadow-lg shadow-pink-500/10 md:inline-flex"
+                </div>
 
-                >
+              </div>
 
-                  Mulai Sekarang
+            </a>
 
-                </button>
+            <nav className="hidden items-center gap-7 md:flex">
 
-              )}
+              <a
 
-            </div>
+                href="#beranda"
 
-          </div>
+                className="text-[14px] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
 
-          {mobileMenu && (
+              >
 
-            <div className="dino-enter border-t border-border/50 px-6 py-5 md:hidden">
+                Beranda
 
-              <div className="mx-auto flex max-w-7xl flex-col gap-4">
+              </a>
 
-                <a
+              <a
 
-                  href="#beranda"
+                href="#fitur"
 
-                  onClick={() => setMobileMenu(false)}
+                className="text-[14px] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
 
-                  className="text-[14px] font-medium transition-colors duration-200 hover:text-[#EF629F]"
+              >
 
-                >
+                Fitur AI
 
-                  Beranda
+              </a>
 
-                </a>
+              <a
 
-                <a
+                href="#tentang"
 
-                  href="#fitur"
+                className="text-[14px] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
 
-                  onClick={() => setMobileMenu(false)}
+              >
 
-                  className="text-[14px] font-medium transition-colors duration-200 hover:text-[#EF629F]"
+                Tentang
 
-                >
+              </a>
 
-                  Fitur AI
+            </nav>
 
-                </a>
+            <div className="flex items-center gap-2">
 
-                <a
+              <button
 
-                  href="#tentang"
+                type="button"
 
-                  onClick={() => setMobileMenu(false)}
+                onClick={() => setDarkMode((value) => !value)}
 
-                  className="text-[14px] font-medium transition-colors duration-200 hover:text-[#EF629F]"
+                className="dino-button flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl dark:bg-white/5"
 
-                >
+                aria-label="Ubah mode tampilan"
 
-                  Tentang
+              >
 
-                </a>
+                {darkMode ? (
 
-                {user ? (
+                  <Sun className="h-5 w-5" />
 
-                  <>
+                ) : (
 
-                    <button
+                  <Moon className="h-5 w-5" />
 
-                      type="button"
+                )}
 
-                      onClick={() => {
-                        setMobileMenu(false);
+              </button>
 
-                        openDashboard();
+              <button
 
-                      }}
+                type="button"
 
-                      className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-left text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
+                onClick={() => setMobileMenu((value) => !value)}
 
-                    >
+                className="dino-button flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl md:hidden dark:bg-white/5"
 
-                      <LayoutDashboard className="h-4 w-4" />
+                aria-label="Buka menu"
 
-                      Dashboard
+              >
 
-                    </button>
+                {mobileMenu ? (
 
-                    <button
+                  <X className="h-5 w-5" />
 
-                      type="button"
+                ) : (
 
-                      onClick={() => {
-                        setMobileMenu(false);
+                  <Menu className="h-5 w-5" />
 
-                        openSecurity();
+                )}
 
-                      }}
+              </button>
 
-                      className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-left text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
+              {user ? (
 
-                    >
+                <div className="hidden items-center gap-2 md:flex">
 
-                      <ShieldCheck className="h-4 w-4" />
+                  <button
 
-                      Keamanan
+                    type="button"
 
-                    </button>
+                    onClick={openDashboard}
 
-                    <button
+                    className="dino-button inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
 
-                      type="button"
+                  >
 
-                      onClick={handleSignOut}
+                    <LayoutDashboard className="h-4 w-4" />
 
-                      className="dino-gradient rounded-full px-5 py-3 text-left text-[14px] font-semibold text-white"
+                    Dashboard
 
-                    >
+                  </button>
 
-                      Keluar
+                  <button
 
-                    </button>
+                    type="button"
 
-                  </>
+                    onClick={openSecurity}
 
-                ) : (
+                    className="dino-button inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
 
-                  <button
+                  >
 
-                    type="button"
+                    <ShieldCheck className="h-4 w-4" />
 
-                    onClick={() => {
-                      setMobileMenu(false);
+                    Keamanan
 
-                      setShowAuth(true);
+                  </button>
 
-                    }}
+                  <button
 
-                    className="dino-gradient rounded-full px-5 py-3 text-left text-[14px] font-semibold text-white"
+                    type="button"
 
-                  >
+                    onClick={handleSignOut}
 
-                    Mulai Sekarang
+                    className="dino-gradient dino-button rounded-full px-5 py-3 text-[14px] font-semibold text-white shadow-lg shadow-pink-500/10"
 
-                  </button>
+                  >
 
-                )}
+                    Keluar
 
-              </div>
+                  </button>
 
-            </div>
+                </div>
 
-          )}
+              ) : (
 
-        </header>
+                <button
 
-      )}
+                  type="button"
 
-      {showAIPembuatSoal && user ? (
+                  onClick={() => setShowAuth(true)}
 
-        <AIPembuatSoal onBack={closeAIPembuatSoal} />
+                  className="dino-gradient dino-button hidden rounded-full px-5 py-3 text-[14px] font-semibold text-white shadow-lg shadow-pink-500/10 md:inline-flex"
 
-      ) : showAISurat && user ? (
+                >
 
-        <AISuratLamaran onBack={closeAISurat} />
+                  Mulai Sekarang
 
-      ) : showAICV && user ? (
+                </button>
 
-        <AICVMaker onBack={closeAICV} />
+              )}
 
-      ) : showDinoAI && user ? (
+            </div>
 
-        <DinoAIChat
+          </div>
 
-          email={user.email}
+          {mobileMenu && (
 
-          userId={user.id}
+            <div className="dino-enter border-t border-border/50 px-6 py-5 md:hidden">
 
-          onClose={closeDinoAI}
+              <div className="mx-auto flex max-w-7xl flex-col gap-4">
 
-        />
+                <a
 
-      ) : showDashboard && user ? (
+                  href="#beranda"
 
-        <Dashboard
+                  onClick={() => setMobileMenu(false)}
 
-          email={user.email}
+                  className="text-[14px] font-medium transition-colors duration-200 hover:text-[#EF629F]"
 
-          darkMode={darkMode}
+                >
 
-          onToggleTheme={() => setDarkMode((value) => !value)}
+                  Beranda
 
-          onSecurity={openSecurity}
+                </a>
 
-          onSignOut={handleSignOut}
+                <a
 
-          onBackHome={backHome}
+                  href="#fitur"
 
-          onOpenDinoAI={openDinoAI}
+                  onClick={() => setMobileMenu(false)}
 
-          onOpenAICV={openAICV}
+                  className="text-[14px] font-medium transition-colors duration-200 hover:text-[#EF629F]"
 
-          onOpenAISurat={openAISurat}
+                >
 
-          onOpenAISoal={openAIPembuatSoal}
+                  Fitur AI
 
-        />
+                </a>
 
-      ) : (
+                <a
 
-        <>
+                  href="#tentang"
 
-          <main>
+                  onClick={() => setMobileMenu(false)}
 
-            <section
+                  className="text-[14px] font-medium transition-colors duration-200 hover:text-[#EF629F]"
 
-              id="beranda"
+                >
 
-              className="mx-auto max-w-7xl px-5 pb-32 pt-16 sm:px-6 sm:pb-24 sm:pt-20 lg:px-8 lg:pb-32 lg:pt-28"
+                  Tentang
 
-            >
+                </a>
 
-              <div className="mx-auto max-w-6xl text-center">
+                {user ? (
 
-                <div
+                  <>
 
-                  className="dino-glass dino-enter mx-auto inline-flex items-center gap-2 rounded-full px-4 py-2 text-[14px] font-medium"
+                    <button
 
-                  style={{ animationDelay: "80ms" }}
+                      type="button"
 
-                >
+                      onClick={() => {
 
-                  <img
+                        setMobileMenu(false);
 
-                    src="/logodino.PNG"
+                        openDashboard();
 
-                    alt=""
+                      }}
 
-                    className="h-4 w-4 scale-125 object-contain"
+                      className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-left text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
 
-                  />
+                    >
 
-                  AI untuk Belajar, Bekerja, dan Berkarya
+                      <LayoutDashboard className="h-4 w-4" />
 
-                </div>
+                      Dashboard
 
-                <h1
+                    </button>
 
-                  className="dino-enter mx-auto mt-8 max-w-5xl text-3xl font-bold leading-[1.25] tracking-normal sm:text-6xl sm:leading-[1.12] lg:text-7xl lg:leading-[1.08]"
+                    <button
 
-                  style={{ animationDelay: "160ms" }}
+                      type="button"
 
-                >
+                      onClick={() => {
 
-                  Satu ruang untuk
+                        setMobileMenu(false);
 
-                  <span className="block bg-gradient-to-r from-[#EECDA3] to-[#EF629F] bg-clip-text pb-1 text-transparent">
+                        openSecurity();
 
-                    berbagai kebutuhanmu
+                      }}
 
-                  </span>
+                      className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-5 py-3 text-left text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
 
-                </h1>
+                    >
 
-                <p
+                      <ShieldCheck className="h-4 w-4" />
 
-                  className="dino-enter mx-auto mt-7 max-w-3xl text-[20px] leading-relaxed text-muted-foreground"
+                      Keamanan
 
-                  style={{ animationDelay: "240ms" }}
+                    </button>
 
-                >
+                    <button
 
-                  DinoEdu Space menghadirkan tools AI sederhana untuk
+                      type="button"
 
-                  pendidikan, karier, dan kebutuhan digital dalam satu ruang
+                      onClick={handleSignOut}
 
-                  yang mudah digunakan
+                      className="dino-gradient rounded-full px-5 py-3 text-left text-[14px] font-semibold text-white"
 
-                </p>
+                    >
 
-                <div
+                      Keluar
 
-                  className="dino-enter mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
+                    </button>
 
-                  style={{ animationDelay: "320ms" }}
+                  </>
 
-                >
+                ) : (
 
-                  <button
+                  <button
 
-                    type="button"
+                    type="button"
 
-                    onClick={() => setShowAuth(true)}
+                    onClick={() => {
 
-                    className="dino-gradient dino-button group inline-flex items-center gap-2 rounded-full px-7 py-4 text-[17px] font-semibold text-white shadow-xl shadow-pink-500/15"
+                      setMobileMenu(false);
 
-                  >
+                      setShowAuth(true);
 
-                    Jelajahi DinoAI
+                    }}
 
-                    <ArrowRight className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
+                    className="dino-gradient rounded-full px-5 py-3 text-left text-[14px] font-semibold text-white"
 
-                  </button>
+                  >
 
-                  <a
+                    Mulai Sekarang
 
-                    href="#tentang"
+                  </button>
 
-                    className="dino-button inline-flex items-center gap-2 rounded-full border border-border bg-white/40 px-7 py-4 text-[17px] font-medium backdrop-blur-xl dark:bg-white/5"
+                )}
 
-                  >
+              </div>
 
-                    Pelajari DinoEdu
+            </div>
 
-                  </a>
+          )}
 
-                </div>
+        </header>
 
-              </div>
+      )}
 
-            </section>
+      {showAIModulAjar && user ? (
 
-            <section
+        <AIModulAjar onBack={closeAIModulAjar} />
 
-              id="fitur"
+      ) : showAIPembuatSoal && user ? (
 
-              className="mx-auto max-w-7xl px-6 pb-28 lg:px-8"
+        <AIPembuatSoal onBack={closeAIPembuatSoal} />
 
-            >
+      ) : showAISurat && user ? (
 
-              <div className="dino-enter mb-12 max-w-2xl">
+        <AISuratLamaran onBack={closeAISurat} />
 
-                <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
+      ) : showAICV && user ? (
 
-                  DinoEdu AI
+        <AICVMaker onBack={closeAICV} />
 
-                </p>
+      ) : showDinoAI && user ? (
 
-                <h2 className="mt-3 text-4xl font-bold tracking-normal sm:text-5xl">
+        <DinoAIChat
 
-                  Tools utama
+          email={user.email}
 
-                </h2>
+          userId={user.id}
 
-                <p className="mt-5 text-[20px] leading-relaxed text-muted-foreground">
+          onClose={closeDinoAI}
 
-                  Dibangun untuk membuat pekerjaan yang berulang menjadi lebih
+        />
 
-                  cepat, sederhana, dan terarah
+      ) : showDashboard && user ? (
 
-                </p>
+        <Dashboard
 
-              </div>
+          email={user.email}
 
-              <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          darkMode={darkMode}
 
-                {features.map((feature, index) => {
-                  const Icon = feature.icon;
+          onToggleTheme={() => setDarkMode((value) => !value)}
 
-                  return (
+          onSecurity={openSecurity}
 
-                    <div
+          onSignOut={handleSignOut}
 
-                      key={feature.title}
+          onBackHome={backHome}
 
-                      className={`dino-glass dino-interactive dino-enter group relative overflow-hidden rounded-[28px] p-7 ${
-                        index === 0 ? "lg:col-span-2" : ""
+          onOpenDinoAI={openDinoAI}
 
-                      }`}
+          onOpenAICV={openAICV}
 
-                      style={{
-                        animationDelay: `${360 + index * 80}ms`,
+          onOpenAISurat={openAISurat}
 
-                      }}
+          onOpenAISoal={openAIPembuatSoal}
 
-                    >
+          onOpenAIModulAjar={openAIModulAjar}
 
-                      <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[#EF629F]/10 blur-2xl transition-all duration-500 group-hover:scale-125 group-hover:bg-[#EF629F]/20" />
+        />
 
-                      <div className="relative">
+      ) : (
 
-                        <div className="dino-gradient flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg transition-transform duration-300 group-hover:scale-105">
+        <>
 
-                          <Icon className="h-6 w-6 text-white" />
+          <main>
 
-                        </div>
+            <section
 
-                        <h3 className="mt-6 text-2xl font-semibold">
+              id="beranda"
 
-                          {feature.title}
+              className="mx-auto max-w-7xl px-5 pb-32 pt-16 sm:px-6 sm:pb-24 sm:pt-20 lg:px-8 lg:pb-32 lg:pt-28"
 
-                        </h3>
+            >
 
-                        <p className="mt-3 text-[14px] leading-7 text-muted-foreground">
+              <div className="mx-auto max-w-6xl text-center">
 
-                          {feature.description}
+                <div
 
-                        </p>
+                  className="dino-glass dino-enter mx-auto inline-flex items-center gap-2 rounded-full px-4 py-2 text-[14px] font-medium"
 
-                        <button
+                  style={{ animationDelay: "80ms" }}
 
-                          type="button"
+                >
 
-                          onClick={() => setShowAuth(true)}
+                  <img
 
-                          className="mt-6 inline-flex items-center gap-2 text-[14px] font-semibold text-[#EF629F] transition-all duration-200 hover:gap-3"
+                    src="/logodino.PNG"
 
-                        >
+                    alt=""
 
-                          Coba fitur
+                    className="h-4 w-4 scale-125 object-contain"
 
-                          <ArrowRight className="h-4 w-4" />
+                  />
 
-                        </button>
+                  AI untuk Belajar, Bekerja, dan Berkarya
 
-                      </div>
+                </div>
 
-                    </div>
+                <h1
 
-                  );
+                  className="dino-enter mx-auto mt-8 max-w-5xl text-3xl font-bold leading-[1.25] tracking-normal sm:text-6xl sm:leading-[1.12] lg:text-7xl lg:leading-[1.08]"
 
-                })}
+                  style={{ animationDelay: "160ms" }}
 
-              </div>
+                >
 
-            </section>
+                  Satu ruang untuk
 
-            <section
+                  <span className="block bg-gradient-to-r from-[#EECDA3] to-[#EF629F] bg-clip-text pb-1 text-transparent">
 
-              id="tentang"
+                    berbagai kebutuhanmu
 
-              className="mx-auto max-w-7xl px-6 pb-28 lg:px-8"
+                  </span>
 
-            >
+                </h1>
 
-              <div
+                <p
 
-                className="dino-glass dino-enter relative overflow-hidden rounded-[36px] p-8 sm:p-12 lg:p-16"
+                  className="dino-enter mx-auto mt-7 max-w-3xl text-[20px] leading-relaxed text-muted-foreground"
 
-                style={{ animationDelay: "760ms" }}
+                  style={{ animationDelay: "240ms" }}
 
-              >
+                >
 
-                <div className="dino-float-slow absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#EF629F]/15 blur-3xl" />
+                  DinoEdu Space menghadirkan tools AI sederhana untuk
 
-                <div className="dino-float absolute -bottom-28 -left-24 h-72 w-72 rounded-full bg-[#EECDA3]/20 blur-3xl" />
+                  pendidikan, karier, dan kebutuhan digital dalam satu ruang
 
-                <div className="relative max-w-3xl">
+                  yang mudah digunakan
 
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EF629F]/10">
+                </p>
 
-                    <PenLine className="h-6 w-6 text-[#EF629F]" />
+                <div
 
-                  </div>
+                  className="dino-enter mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
 
-                  <h2 className="mt-7 text-4xl font-bold tracking-normal sm:text-5xl">
+                  style={{ animationDelay: "320ms" }}
 
-                    Bukan sekadar website
+                >
 
-                    <span className="block text-[#EF629F]">
+                  <button
 
-                      Ini ruang digitalmu
+                    type="button"
 
-                    </span>
+                    onClick={() => setShowAuth(true)}
 
-                  </h2>
+                    className="dino-gradient dino-button group inline-flex items-center gap-2 rounded-full px-7 py-4 text-[17px] font-semibold text-white shadow-xl shadow-pink-500/15"
 
-                  <p className="mt-5 text-[20px] leading-relaxed text-muted-foreground">
+                  >
 
-                    DinoEdu Space akan berkembang menjadi ruang digital yang
+                    Jelajahi DinoAI
 
-                    menggabungkan AI, pendidikan, karier, dan kreativitas
+                    <ArrowRight className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
 
-                  </p>
+                  </button>
 
-                </div>
+                  <a
 
-              </div>
+                    href="#tentang"
 
-            </section>
+                    className="dino-button inline-flex items-center gap-2 rounded-full border border-border bg-white/40 px-7 py-4 text-[17px] font-medium backdrop-blur-xl dark:bg-white/5"
 
-          </main>
+                  >
 
-          <div className="fixed inset-x-0 bottom-5 z-50 flex justify-center px-4 md:hidden">
+                    Pelajari DinoEdu
 
-            <nav className="dino-mobile-nav dino-glass grid h-16 w-full max-w-[320px] grid-cols-4 items-center gap-1 rounded-full p-2 shadow-2xl shadow-black/10">
+                  </a>
 
-              <a
+                </div>
 
-                href="#beranda"
+              </div>
 
-                className="dino-button flex h-12 w-full items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+            </section>
 
-                aria-label="Beranda"
+            <section
 
-              >
+              id="fitur"
 
-                <Home className="h-5 w-5" />
+              className="mx-auto max-w-7xl px-6 pb-28 lg:px-8"
 
-              </a>
+            >
 
-              <button
+              <div className="dino-enter mb-12 max-w-2xl">
 
-                type="button"
+                <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
 
-                onClick={() => setShowAuth(true)}
+                  DinoEdu AI
 
-                className="dino-button dino-gradient flex h-12 w-full items-center justify-center rounded-full text-white shadow-lg"
+                </p>
 
-                aria-label="DinoAI"
+                <h2 className="mt-3 text-4xl font-bold tracking-normal sm:text-5xl">
 
-              >
+                  Tools utama
 
-                <img
+                </h2>
 
-                  src="/logodino.PNG"
+                <p className="mt-5 text-[20px] leading-relaxed text-muted-foreground">
 
-                  alt=""
+                  Dibangun untuk membuat pekerjaan yang berulang menjadi lebih
 
-                  className="h-8 w-8 rounded-lg bg-white p-0.5 object-contain"
+                  cepat, sederhana, dan terarah
 
-                />
+                </p>
 
-              </button>
+              </div>
 
-              <a
+              <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
 
-                href="#fitur"
+                {features.map((feature, index) => {
 
-                className="dino-button flex h-12 w-full items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+                  const Icon = feature.icon;
 
-                aria-label="Fitur AI"
+                  return (
 
-              >
+                    <div
 
-                <Layers3 className="h-5 w-5" />
+                      key={feature.title}
 
-              </a>
+                      className={`dino-glass dino-interactive dino-enter group relative overflow-hidden rounded-[28px] p-7 ${
 
-              <a
+                        index === 0 ? "lg:col-span-2" : ""
 
-                href="#tentang"
+                      }`}
 
-                className="dino-button flex h-12 w-full items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+                      style={{
 
-                aria-label="Tentang"
+                        animationDelay: `${360 + index * 80}ms`,
 
-              >
+                      }}
 
-                <Info className="h-5 w-5" />
+                    >
 
-              </a>
+                      <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[#EF629F]/10 blur-2xl transition-all duration-500 group-hover:scale-125 group-hover:bg-[#EF629F]/20" />
 
-            </nav>
+                      <div className="relative">
 
-          </div>
+                        <div className="dino-gradient flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg transition-transform duration-300 group-hover:scale-105">
 
-          <footer className="border-t border-border/50 pb-24 md:pb-0">
+                          <Icon className="h-6 w-6 text-white" />
 
-            <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-8 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+                        </div>
 
-              <div className="text-[14px] text-muted-foreground">
+                        <h3 className="mt-6 text-2xl font-semibold">
 
-                © 2026 DinoEdu Space
+                          {feature.title}
 
-              </div>
+                        </h3>
 
-              <div className="text-[14px] text-muted-foreground">
+                        <p className="mt-3 text-[14px] leading-7 text-muted-foreground">
 
-                Education • Creative • Digital
+                          {feature.description}
 
-              </div>
+                        </p>
 
-            </div>
+                        <button
 
-          </footer>
+                          type="button"
 
-        </>
+                          onClick={() => setShowAuth(true)}
 
-      )}
+                          className="mt-6 inline-flex items-center gap-2 text-[14px] font-semibold text-[#EF629F] transition-all duration-200 hover:gap-3"
 
-      {showAuth && (
+                        >
 
-        <div className="modal-scrollbar-hidden fixed inset-0 z-[100] min-h-[100dvh] overflow-y-auto bg-black/30 backdrop-blur-sm">
+                          Coba fitur
 
-          <div className="flex min-h-[100dvh] items-center justify-center p-3 sm:p-4">
+                          <ArrowRight className="h-4 w-4" />
 
-            <div className="w-full max-w-xl">
+                        </button>
 
-              <Auth
+                      </div>
 
-                onSuccess={() => {
-                  setShowAuth(false);
+                    </div>
 
-                  openDashboard();
+                  );
 
-                }}
+                })}
 
-                onClose={() => setShowAuth(false)}
+              </div>
 
-              />
+            </section>
 
-            </div>
+            <section
 
-          </div>
+              id="tentang"
 
-        </div>
+              className="mx-auto max-w-7xl px-6 pb-28 lg:px-8"
 
-      )}
+            >
 
-      {showMFA && user && (
+              <div
 
-        <div className="modal-scrollbar-hidden fixed inset-0 z-[100] min-h-[100dvh] overflow-y-auto bg-black/30 backdrop-blur-sm">
+                className="dino-glass dino-enter relative overflow-hidden rounded-[36px] p-8 sm:p-12 lg:p-16"
 
-          <div className="flex min-h-[100dvh] items-center justify-center p-3 sm:p-4">
+                style={{ animationDelay: "760ms" }}
 
-            <div className="w-full max-w-2xl">
+              >
 
-              {mfaEnabled ? (
+                <div className="dino-float-slow absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#EF629F]/15 blur-3xl" />
 
-                <MFADisable
+                <div className="dino-float absolute -bottom-28 -left-24 h-72 w-72 rounded-full bg-[#EECDA3]/20 blur-3xl" />
 
-                  onClose={() => setShowMFA(false)}
+                <div className="relative max-w-3xl">
 
-                  onDisabled={() => {
-                    setMfaEnabled(false);
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EF629F]/10">
 
-                    setShowMFA(false);
+                    <PenLine className="h-6 w-6 text-[#EF629F]" />
 
-                  }}
+                  </div>
 
-                />
+                  <h2 className="mt-7 text-4xl font-bold tracking-normal sm:text-5xl">
 
-              ) : (
+                    Bukan sekadar website
 
-                <MFASetup
+                    <span className="block text-[#EF629F]">
 
-                  onClose={() => setShowMFA(false)}
+                      Ini ruang digitalmu
 
-                  onEnabled={() => {
-                    setMfaEnabled(true);
+                    </span>
 
-                    setShowMFA(false);
+                  </h2>
 
-                  }}
+                  <p className="mt-5 text-[20px] leading-relaxed text-muted-foreground">
 
-                />
+                    DinoEdu Space akan berkembang menjadi ruang digital yang
 
-              )}
+                    menggabungkan AI, pendidikan, karier, dan kreativitas
 
-            </div>
+                  </p>
 
-          </div>
+                </div>
 
-        </div>
+              </div>
 
-      )}
+            </section>
 
-      {mfaRequired && user && (
+          </main>
 
-        <div className="modal-scrollbar-hidden fixed inset-0 z-[110] flex min-h-[100dvh] items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm sm:p-4">
+          <div className="fixed inset-x-0 bottom-5 z-50 flex justify-center px-4 md:hidden">
 
-          <div className="w-full max-w-md">
+            <nav className="dino-mobile-nav dino-glass grid h-16 w-full max-w-[320px] grid-cols-4 items-center gap-1 rounded-full p-2 shadow-2xl shadow-black/10">
 
-            <MFAChallenge onVerified={() => setMfaRequired(false)} />
+              <a
 
-            <button
+                href="#beranda"
 
-              type="button"
+                className="dino-button flex h-12 w-full items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
 
-              onClick={handleSignOut}
+                aria-label="Beranda"
 
-              className="mt-3 w-full py-2 text-sm font-medium text-white/80 transition hover:text-white"
+              >
 
-            >
+                <Home className="h-5 w-5" />
 
-              Keluar dari akun
+              </a>
 
-            </button>
+              <button
 
-          </div>
+                type="button"
 
-        </div>
+                onClick={() => setShowAuth(true)}
 
-      )}
+                className="dino-button dino-gradient flex h-12 w-full items-center justify-center rounded-full text-white shadow-lg"
 
-    </div>
+                aria-label="DinoAI"
 
-  );
+              >
+
+                <img
+
+                  src="/logodino.PNG"
+
+                  alt=""
+
+                  className="h-8 w-8 rounded-lg bg-white p-0.5 object-contain"
+
+                />
+
+              </button>
+
+              <a
+
+                href="#fitur"
+
+                className="dino-button flex h-12 w-full items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+
+                aria-label="Fitur AI"
+
+              >
+
+                <Layers3 className="h-5 w-5" />
+
+              </a>
+
+              <a
+
+                href="#tentang"
+
+                className="dino-button flex h-12 w-full items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+
+                aria-label="Tentang"
+
+              >
+
+                <Info className="h-5 w-5" />
+
+              </a>
+
+            </nav>
+
+          </div>
+
+          <footer className="border-t border-border/50 pb-24 md:pb-0">
+
+            <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-8 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+
+              <div className="text-[14px] text-muted-foreground">
+
+                © 2026 DinoEdu Space
+
+              </div>
+
+              <div className="text-[14px] text-muted-foreground">
+
+                Education • Creative • Digital
+
+              </div>
+
+            </div>
+
+          </footer>
+
+        </>
+
+      )}
+
+      {showAuth && (
+
+        <div className="modal-scrollbar-hidden fixed inset-0 z-[100] min-h-[100dvh] overflow-y-auto bg-black/30 backdrop-blur-sm">
+
+          <div className="flex min-h-[100dvh] items-center justify-center p-3 sm:p-4">
+
+            <div className="w-full max-w-xl">
+
+              <Auth
+
+                onSuccess={() => {
+
+                  setShowAuth(false);
+
+                  openDashboard();
+
+                }}
+
+                onClose={() => setShowAuth(false)}
+
+              />
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+      {showMFA && user && (
+
+        <div className="modal-scrollbar-hidden fixed inset-0 z-[100] min-h-[100dvh] overflow-y-auto bg-black/30 backdrop-blur-sm">
+
+          <div className="flex min-h-[100dvh] items-center justify-center p-3 sm:p-4">
+
+            <div className="w-full max-w-2xl">
+
+              {mfaEnabled ? (
+
+                <MFADisable
+
+                  onClose={() => setShowMFA(false)}
+
+                  onDisabled={() => {
+
+                    setMfaEnabled(false);
+
+                    setShowMFA(false);
+
+                  }}
+
+                />
+
+              ) : (
+
+                <MFASetup
+
+                  onClose={() => setShowMFA(false)}
+
+                  onEnabled={() => {
+
+                    setMfaEnabled(true);
+
+                    setShowMFA(false);
+
+                  }}
+
+                />
+
+              )}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+      {mfaRequired && user && (
+
+        <div className="modal-scrollbar-hidden fixed inset-0 z-[110] flex min-h-[100dvh] items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm sm:p-4">
+
+          <div className="w-full max-w-md">
+
+            <MFAChallenge onVerified={() => setMfaRequired(false)} />
+
+            <button
+
+              type="button"
+
+              onClick={handleSignOut}
+
+              className="mt-3 w-full py-2 text-sm font-medium text-white/80 transition hover:text-white"
+
+            >
+
+              Keluar dari akun
+
+            </button>
+
+          </div>
+
+        </div>
+
+      )}
+
+    </div>
+
+  );
+
 }
 
 export default App;
