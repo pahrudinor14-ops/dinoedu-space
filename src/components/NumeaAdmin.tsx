@@ -45,7 +45,7 @@ export default function NumeaAdmin({ onBack }: NumeaAdminProps) {
   const [message, setMessage] = useState("")
   const [rejectReason, setRejectReason] = useState("")
   const [members, setMembers] = useState<Member[]>([])
-  const [adminAccounts, setAdminAccounts] = useState<NumeaAdminAccount[]>([])
+  const [adminAccounts] = useState<NumeaAdminAccount[]>([])
   const [memberLoading, setMemberLoading] = useState(true)
   const loadMembers = async () => {
     setMemberLoading(true)
