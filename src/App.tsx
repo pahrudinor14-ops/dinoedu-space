@@ -341,6 +341,7 @@ function App() {
       if (event === "SIGNED_IN" && session) {
 
         const path = window.location.pathname;
+          const isNumeaPath = path === "/numea";
 
         const isDinoAIPath = path === "/app/dinoai";
 
@@ -363,7 +364,8 @@ function App() {
             isAISuratPath ||
 
             isAIPembuatSoalPath ||
-            isAIModulAjarPath,
+
+            isAIModulAjarPath,
 
         );
 
@@ -380,6 +382,7 @@ function App() {
         if (
 
           path !== "/app" &&
+          !isNumeaPath &&
 
           !isDinoAIPath &&
 
@@ -388,7 +391,8 @@ function App() {
           !isAISuratPath &&
 
           !isAIPembuatSoalPath &&
-          !isAIModulAjarPath
+
+          !isAIModulAjarPath
 
         ) {
 
@@ -451,22 +455,19 @@ function App() {
     const handlePopState = () => {
 
       const path = window.location.pathname;
+      const isNumeaPath = path === "/numea";
 
-      setShowDashboard(
-
-        path === "/app" ||
-
-          path === "/app/dinoai" ||
-
-          path === "/app/cv" ||
-
-          path === "/app/surat" ||
-
-          path === "/app/soal" ||
-
-          path === "/app/modul-ajar",
-
-      );
+      setShowDashboard(
+        !isNumeaPath &&
+        (
+          path === "/app" ||
+          path === "/app/dinoai" ||
+          path === "/app/cv" ||
+          path === "/app/surat" ||
+          path === "/app/soal" ||
+          path === "/app/modul-ajar"
+        )
+      );
 
       setShowDinoAI(path === "/app/dinoai");
 
@@ -726,11 +727,25 @@ function App() {
 
     <NumeaPage
 
+      darkMode={darkMode}
+
+      onToggleTheme={() => setDarkMode((value) => !value)}
+
       onBack={() => {
 
-        window.location.href = "/";
+        window.location.href = "/"
 
       }}
+
+      onOpenDinoAI={openDinoAI}
+
+      onOpenAICV={openAICV}
+
+      onOpenAISurat={openAISurat}
+
+      onOpenAISoal={openAIPembuatSoal}
+
+      onOpenAIModulAjar={openAIModulAjar}
 
     />
 

@@ -999,7 +999,7 @@ export default function DinoAIChat({
           </a>
 
           <a
-            href="/numea#paket"
+            href="/numea"
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#EF629F]/25 bg-[#EF629F]/5 px-4 py-3 text-sm font-semibold transition-colors hover:border-[#EF629F]/40 hover:bg-[#EF629F]/10 dark:bg-[#EF629F]/5 dark:hover:bg-[#EF629F]/10"
           >
             <HeartHandshake className="h-4 w-4 text-[#EF629F]" />
