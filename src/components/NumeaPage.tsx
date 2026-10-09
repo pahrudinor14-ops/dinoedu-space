@@ -23,6 +23,8 @@ import {
 } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import NumeaAdmin from "./NumeaAdmin"
+import NumeaLearn from "./numea/pages/NumeaLearn"
+import NumeaCommunity from "./numea/pages/NumeaCommunity"
 interface NumeaPageProps {
   onBack: () => void
   darkMode?: boolean
@@ -75,6 +77,7 @@ const aiTools = [
     action: "modul",
   },
 ]
+
 function getToolAction(
   action: string,
   props: NumeaPageProps,
@@ -109,6 +112,12 @@ export default function NumeaPage(props: NumeaPageProps) {
   }, [])
   if (showAdmin) {
     return <NumeaAdmin onBack={() => setShowAdmin(false)} darkMode={darkMode} />
+  }
+  if (activeTab === "Learn") {
+    return <NumeaLearn onBack={() => { setActiveTab("Beranda"); window.history.replaceState({}, "", "/numea#beranda") }} darkMode={darkMode} onToggleTheme={props.onToggleTheme} />
+  }
+  if (activeTab === "Community") {
+    return <NumeaCommunity onBack={() => { setActiveTab("Beranda"); window.history.replaceState({}, "", "/numea#beranda") }} darkMode={darkMode} onToggleTheme={props.onToggleTheme} />
   }
   const handleNavClick = (label: string) => {
     const targetId = label.toLowerCase().replace(" ", "-")
@@ -225,6 +234,27 @@ export default function NumeaPage(props: NumeaPageProps) {
             </div>
           </div>
         </header>
+        <nav aria-label="Navigasi NUMEA EDU" className="sticky top-[72px] z-30 flex gap-2 overflow-x-auto border-b border-border/50 bg-background/85 px-4 py-3 backdrop-blur-xl lg:hidden">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            return (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => handleNavClick(item.label)}
+                aria-current={activeTab === item.label ? "page" : undefined}
+                className={`inline-flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-[12px] font-medium transition-colors ${
+                  activeTab === item.label
+                    ? "bg-gradient-to-r from-[#F6C64F]/25 via-[#FF7411]/15 to-[#E95C9E]/15 text-foreground"
+                    : "text-muted-foreground hover:bg-white/50 dark:hover:bg-white/5"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {item.label}
+              </button>
+            )
+          })}
+        </nav>
         <main className="mx-auto max-w-[1500px] px-4 pb-20 pt-7 sm:px-6 lg:px-8">
           <section id="beranda" className="relative scroll-mt-24 overflow-hidden rounded-[32px] border border-border/60 bg-white/45 p-7 shadow-[0_20px_70px_rgba(87,78,82,0.08)] backdrop-blur-2xl dark:bg-white/5 sm:p-10 lg:p-14">
             <div className="absolute -right-20 -top-28 h-72 w-72 rounded-full bg-[#E95C9E]/15 blur-3xl" />
@@ -253,7 +283,7 @@ export default function NumeaPage(props: NumeaPageProps) {
                     Mulai Belajar
                     <ArrowRight className="h-4 w-4" />
                   </button>
-                  <button type="button" className="dino-button inline-flex items-center gap-2 rounded-full border border-border/70 bg-white/45 px-6 py-3.5 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5">
+                  <button type="button" onClick={() => handleNavClick("Explore")} className="dino-button inline-flex items-center gap-2 rounded-full border border-border/70 bg-white/45 px-6 py-3.5 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5">
                     Jelajahi NUMEA
                     <Compass className="h-4 w-4" />
                   </button>
@@ -300,7 +330,7 @@ export default function NumeaPage(props: NumeaPageProps) {
                 <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#E95C9E]">Core Space</p>
                 <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Belajar, berkarya, dan menemukan</h2>
               </div>
-              <button type="button" className="hidden items-center gap-1 text-[12px] font-semibold text-muted-foreground hover:text-foreground sm:flex">
+              <button type="button" onClick={() => handleNavClick("Learn")} className="hidden items-center gap-1 text-[12px] font-semibold text-muted-foreground hover:text-foreground sm:flex">
                 Lihat semua
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
@@ -311,13 +341,13 @@ export default function NumeaPage(props: NumeaPageProps) {
                 ["Create", "Tempat membuat karya, dokumen, ide, dan kebutuhan digital dengan lebih mudah", PenLine, "from-[#FF7411]/20 to-[#E95C9E]/10"],
                 ["Explore", "Temukan inspirasi, komunitas, event, dan peluang baru di dalam ekosistem NUMEA", Compass, "from-[#E95C9E]/20 to-[#F6C64F]/10"],
               ].map(([title, description, Icon, gradient]) => (
-                <div id={(title as string).toLowerCase()} key={title as string} className={`group scroll-mt-24 rounded-[28px] border border-border/60 bg-gradient-to-br ${gradient as string} p-6 transition-transform duration-300 hover:-translate-y-1`}>
+                <div key={title as string} id={(title as string) === "Learn" ? "core-learn" : (title as string).toLowerCase()} className={`group scroll-mt-24 rounded-[28px] border border-border/60 bg-gradient-to-br ${gradient as string} p-6 transition-transform duration-300 hover:-translate-y-1`}>
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/70 dark:bg-white/10">
                     <Icon className="h-5 w-5 text-[#FF7411]" />
                   </div>
                   <h3 className="mt-6 text-2xl font-bold">{title as string}</h3>
                   <p className="mt-3 text-[14px] leading-7 text-muted-foreground">{description as string}</p>
-                  <button type="button" className="mt-5 inline-flex items-center gap-2 text-[12px] font-semibold text-[#E95C9E]">
+                  <button type="button" onClick={() => handleNavClick(title as string)} className="mt-5 inline-flex items-center gap-2 text-[12px] font-semibold text-[#E95C9E]">
                     Jelajahi
                     <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                   </button>
@@ -389,7 +419,7 @@ export default function NumeaPage(props: NumeaPageProps) {
               </div>
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 {["Strategi belajar yang lebih efektif", "Ide aktivitas pembelajaran kreatif", "Inspirasi karya dan proyek digital", "Wawasan pendidikan dan teknologi"].map((item) => (
-                  <button key={item} type="button" className="flex items-center justify-between rounded-2xl border border-border/60 bg-white/40 px-4 py-4 text-left text-[12px] font-medium transition-colors hover:border-[#E95C9E]/30 hover:bg-white/60 dark:bg-white/5 dark:hover:bg-white/10">
+                  <button key={item} type="button" onClick={() => handleNavClick("Learn")} className="flex items-center justify-between rounded-2xl border border-border/60 bg-white/40 px-4 py-4 text-left text-[12px] font-medium transition-colors hover:border-[#E95C9E]/30 hover:bg-white/60 dark:bg-white/5 dark:hover:bg-white/10">
                     <span>{item}</span>
                     <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   </button>
@@ -402,7 +432,7 @@ export default function NumeaPage(props: NumeaPageProps) {
                 <Sparkles className="h-6 w-6" />
                 <h2 className="mt-6 text-2xl font-bold">Tumbuh bersama NUMEA</h2>
                 <p className="mt-3 text-[13px] leading-6 text-white/85">Satu ruang untuk belajar, mencipta, mengeksplorasi, dan membangun koneksi yang bermakna</p>
-                <button type="button" className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-[12px] font-bold text-[#E95C9E]">
+                <button type="button" onClick={() => handleNavClick("Community")} className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-[12px] font-bold text-[#E95C9E]">
                   Jelajahi ruang
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
