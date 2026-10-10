@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Abaikan PDF komik DinoMath
+/public/dinomath-komik.pdf
