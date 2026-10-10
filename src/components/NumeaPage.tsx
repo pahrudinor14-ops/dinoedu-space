@@ -1,32 +1,88 @@
 import { useEffect, useState } from "react"
+
 import {
+
   ArrowLeft,
+
   ArrowRight,
+
+  Bell,
+
+  CheckCheck,
+
   BookOpen,
+
   CalendarDays,
+
   Compass,
+
   FileText,
+
   GraduationCap,
+
   Lightbulb,
+
   MessageCircle,
+
   Moon,
+
   PenLine,
+
   Search,
+
   Settings2,
+
   ShieldCheck,
+
   Sparkles,
+
   Sun,
+
   Users,
+
+  UserRound,
+
   WandSparkles,
+
+  X,
+
 } from "lucide-react"
+
 import { supabase } from "../lib/supabase"
+
 import NumeaAdmin from "./NumeaAdmin"
+
 import NumeaLearn from "./numea/pages/NumeaLearn"
+
 import NumeaCommunity from "./numea/pages/NumeaCommunity"
+
 import NumeaCertificates from "./numea/pages/NumeaCertificates"
+
 import NumeaConsultation from "./numea/pages/NumeaConsultation"
+
 import NumeaEvents from "./numea/pages/NumeaEvents"
+
 import NumeaStudio from "./numea/pages/NumeaStudio"
+
+import NumeaProfile from "./numea/pages/NumeaProfile"
+
+type NumeaNotification = {
+
+  id: string
+
+  title: string
+
+  message: string
+
+  type: string
+
+  link: string | null
+
+  read_at: string | null
+
+  created_at: string
+
+}
 
 interface NumeaPageProps {
 
@@ -72,7 +128,9 @@ const aiTools = [
 
     title: "DinoAI Chat",
 
-    description: "Teman AI untuk belajar, berdiskusi, dan menyelesaikan berbagai kebutuhan",
+    description:
+
+      "Teman AI untuk belajar, berdiskusi, dan menyelesaikan berbagai kebutuhan",
 
     icon: MessageCircle,
 
@@ -96,7 +154,9 @@ const aiTools = [
 
     title: "AI Surat Lamaran",
 
-    description: "Susun surat lamaran yang rapi sesuai posisi yang kamu tuju",
+    description:
+
+      "Susun surat lamaran yang rapi sesuai posisi yang kamu tuju",
 
     icon: PenLine,
 
@@ -108,7 +168,9 @@ const aiTools = [
 
     title: "AI Pembuat Soal",
 
-    description: "Buat soal pembelajaran berdasarkan kebutuhan kelas dan materi",
+    description:
+
+      "Buat soal pembelajaran berdasarkan kebutuhan kelas dan materi",
 
     icon: BookOpen,
 
@@ -120,7 +182,9 @@ const aiTools = [
 
     title: "AI Modul Ajar",
 
-    description: "Susun rancangan modul ajar secara praktis dan terstruktur",
+    description:
+
+      "Susun rancangan modul ajar secara praktis dan terstruktur",
 
     icon: GraduationCap,
 
@@ -168,7 +232,13 @@ export default function NumeaPage(props: NumeaPageProps) {
 
     const hash = window.location.hash.replace("#", "")
 
-    const matched = navItems.find((item) => item.label.toLowerCase().replace(" ", "-") === hash)
+    const matched = navItems.find(
+
+      (item) =>
+
+        item.label.toLowerCase().replace(" ", "-") === hash,
+
+    )
 
     return matched?.label ?? "Beranda"
 
@@ -177,6 +247,18 @@ export default function NumeaPage(props: NumeaPageProps) {
   const [isAdmin, setIsAdmin] = useState(false)
 
   const [showAdmin, setShowAdmin] = useState(false)
+
+  const [showProfile, setShowProfile] = useState(false)
+
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null)
+
+  const [notifications, setNotifications] = useState<NumeaNotification[]>([])
+
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+
+  const [notificationsLoading, setNotificationsLoading] = useState(false)
+
+  const [notificationsError, setNotificationsError] = useState("")
 
   const [menuSearch, setMenuSearch] = useState("")
 
@@ -194,119 +276,493 @@ export default function NumeaPage(props: NumeaPageProps) {
 
   }, [])
 
+  useEffect(() => {
+
+    let cancelled = false
+
+    async function loadProfileAvatar() {
+
+      try {
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+        if (authError) throw authError
+
+        if (!user) return
+
+        const { data, error } = await supabase
+
+          .from("numea_profiles")
+
+          .select("avatar_path")
+
+          .eq("user_id", user.id)
+
+          .maybeSingle()
+
+        if (error) throw error
+
+        if (!data?.avatar_path) {
+
+          if (!cancelled) setProfileAvatarUrl(null)
+
+          return
+
+        }
+
+        const { data: signedData, error: signedError } = await supabase.storage
+
+          .from("numea-profile-photos")
+
+          .createSignedUrl(data.avatar_path, 60 * 60)
+
+        if (signedError) throw signedError
+
+        if (!cancelled) setProfileAvatarUrl(signedData.signedUrl)
+
+      } catch (error) {
+
+        console.error("Gagal memuat foto profil NUMEA EDU:", error)
+
+      }
+
+    }
+
+    void loadProfileAvatar()
+
+    return () => {
+
+      cancelled = true
+
+    }
+
+  }, [])
+
+  useEffect(() => {
+
+    let cancelled = false
+
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
+    async function loadNotifications() {
+
+      setNotificationsLoading(true)
+
+      setNotificationsError("")
+
+      try {
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+        if (authError) throw authError
+
+        if (!user) {
+
+          if (!cancelled) setNotifications([])
+
+          return
+
+        }
+
+        const { data, error } = await supabase
+
+          .from("numea_notifications")
+
+          .select("id, title, message, type, link, read_at, created_at")
+
+          .eq("user_id", user.id)
+
+          .order("created_at", { ascending: false })
+
+          .limit(30)
+
+        if (error) throw error
+
+        if (!cancelled) setNotifications((data ?? []) as NumeaNotification[])
+
+        channel = supabase
+
+          .channel(`numea-notifications-${user.id}`)
+
+          .on(
+
+            "postgres_changes",
+
+            {
+
+              event: "*",
+
+              schema: "public",
+
+              table: "numea_notifications",
+
+              filter: `user_id=eq.${user.id}`,
+
+            },
+
+            async () => {
+
+              const { data: refreshed, error: refreshError } = await supabase
+
+                .from("numea_notifications")
+
+                .select("id, title, message, type, link, read_at, created_at")
+
+                .eq("user_id", user.id)
+
+                .order("created_at", { ascending: false })
+
+                .limit(30)
+
+              if (refreshError) {
+
+                console.error("Gagal memperbarui notifikasi:", refreshError)
+
+                return
+
+              }
+
+              if (!cancelled) setNotifications((refreshed ?? []) as NumeaNotification[])
+
+            },
+
+          )
+
+          .subscribe()
+
+      } catch (error) {
+
+        if (!cancelled) {
+
+          setNotificationsError(
+
+            error instanceof Error
+
+              ? error.message
+
+              : "Notifikasi gagal dimuat. Silakan coba kembali.",
+
+          )
+
+        }
+
+      } finally {
+
+        if (!cancelled) setNotificationsLoading(false)
+
+      }
+
+    }
+
+    void loadNotifications()
+
+    return () => {
+
+      cancelled = true
+
+      if (channel) void supabase.removeChannel(channel)
+
+    }
+
+  }, [])
+
+  const unreadNotificationCount = notifications.filter((item) => !item.read_at).length
+
+  async function markNotificationRead(notification: NumeaNotification) {
+
+    // Klik berarti notifikasi sudah ditangani: hapus dari database agar tidak
+
+    // muncul kembali setelah refresh. Jika penghapusan gagal, jangan navigasi.
+
+    const { error } = await supabase
+
+      .from("numea_notifications")
+
+      .delete()
+
+      .eq("id", notification.id)
+
+    if (error) {
+
+      setNotificationsError("Notifikasi gagal dihapus. Periksa izin tabel notifikasi.")
+
+      return
+
+    }
+
+    setNotifications((current) =>
+
+      current.filter((item) => item.id !== notification.id),
+
+    )
+
+    setNotificationsError("")
+
+    setNotificationsOpen(false)
+
+    if (notification.link) {
+
+      const link = notification.link
+
+      if (link.startsWith("/numea#")) {
+
+        const hash = link.split("#")[1]?.toLowerCase()
+
+        const target = navItems.find(
+
+          (item) => item.label.toLowerCase().replace(" ", "-") === hash,
+
+        )
+
+        if (target) {
+
+          setActiveTab(target.label)
+
+          window.history.replaceState({}, "", link)
+
+          window.scrollTo({ top: 0, behavior: "smooth" })
+
+        } else {
+
+          window.location.href = link
+
+        }
+
+      } else {
+
+        window.location.href = link
+
+      }
+
+    }
+
+  }
+
+  async function markAllNotificationsRead() {
+
+    // Sesuai perilaku yang diminta: tindakan "Baca semua" membersihkan inbox.
+
+    const notificationIds = notifications.map((item) => item.id)
+
+    if (notificationIds.length === 0) return
+
+    const { error } = await supabase
+
+      .from("numea_notifications")
+
+      .delete()
+
+      .in("id", notificationIds)
+
+    if (error) {
+
+      setNotificationsError("Notifikasi gagal dihapus. Periksa izin tabel notifikasi.")
+
+      return
+
+    }
+
+    setNotifications([])
+
+    setNotificationsError("")
+
+  }
+
   if (showAdmin) {
 
-    return <NumeaAdmin onBack={() => setShowAdmin(false)} darkMode={darkMode} />
+    return (
+
+      <NumeaAdmin
+
+        onBack={() => setShowAdmin(false)}
+
+        darkMode={darkMode}
+
+      />
+
+    )
 
   }
 
   if (activeTab === "Learn") {
 
-    return <NumeaLearn onBack={() => { setActiveTab("Beranda"); window.history.replaceState({}, "", "/numea#beranda") }} darkMode={darkMode} onToggleTheme={props.onToggleTheme} />
+    return (
+
+      <NumeaLearn
+
+        onBack={() => {
+
+          setActiveTab("Beranda")
+
+          window.history.replaceState({}, "", "/numea#beranda")
+
+        }}
+
+        darkMode={darkMode}
+
+        onToggleTheme={props.onToggleTheme}
+
+      />
+
+    )
 
   }
 
   if (activeTab === "Studio") {
 
-  return (
+    return (
 
-    <NumeaStudio
+      <NumeaStudio
 
-      onBack={() => {
+        onBack={() => {
 
-        setActiveTab("Beranda")
+          setActiveTab("Beranda")
 
-        window.history.replaceState({}, "", "/numea#beranda")
+          window.history.replaceState({}, "", "/numea#beranda")
 
-      }}
+        }}
 
-      onOpenLearn={() => {
+        onOpenLearn={() => {
 
-        setActiveTab("Learn")
+          setActiveTab("Learn")
 
-        window.history.replaceState({}, "", "/numea#learn")
+          window.history.replaceState({}, "", "/numea#learn")
 
-      }}
+        }}
 
-      onOpenEvents={() => {
+        onOpenEvents={() => {
 
-        setActiveTab("Events")
+          setActiveTab("Events")
 
-        window.history.replaceState({}, "", "/numea#events")
+          window.history.replaceState({}, "", "/numea#events")
 
-      }}
+        }}
 
-      onOpenCommunity={() => {
+        onOpenCommunity={() => {
 
-        setActiveTab("Community")
+          setActiveTab("Community")
 
-        window.history.replaceState({}, "", "/numea#community")
+          window.history.replaceState({}, "", "/numea#community")
 
-      }}
+        }}
 
-      onOpenConsultation={() => {
+        onOpenConsultation={() => {
 
-        setActiveTab("Konsultasi")
+          setActiveTab("Konsultasi")
 
-        window.history.replaceState({}, "", "/numea#konsultasi")
+          window.history.replaceState({}, "", "/numea#konsultasi")
 
-      }}
+        }}
 
-      onOpenDinoAI={props.onOpenDinoAI}
+        onOpenDinoAI={props.onOpenDinoAI}
 
-      onOpenAICV={props.onOpenAICV}
+        onOpenAICV={props.onOpenAICV}
 
-      onOpenAISurat={props.onOpenAISurat}
+        onOpenAISurat={props.onOpenAISurat}
 
-      onOpenAISoal={props.onOpenAISoal}
+        onOpenAISoal={props.onOpenAISoal}
 
-      onOpenAIModulAjar={props.onOpenAIModulAjar}
+        onOpenAIModulAjar={props.onOpenAIModulAjar}
 
-    />
+      />
 
-  )
+    )
 
-}
+  }
 
   if (activeTab === "Community") {
 
-    return <NumeaCommunity onBack={() => { setActiveTab("Beranda"); window.history.replaceState({}, "", "/numea#beranda") }} darkMode={darkMode} onToggleTheme={props.onToggleTheme} />
+    return (
+
+      <NumeaCommunity
+
+        onBack={() => {
+
+          setActiveTab("Beranda")
+
+          window.history.replaceState({}, "", "/numea#beranda")
+
+        }}
+
+        darkMode={darkMode}
+
+        onToggleTheme={props.onToggleTheme}
+
+      />
+
+    )
 
   }
 
   if (activeTab === "Events") {
 
-  return (
+    return (
 
-    <NumeaEvents
+      <NumeaEvents
 
-      onBack={() => {
+        onBack={() => {
 
-        setActiveTab("Beranda")
+          setActiveTab("Beranda")
 
-        window.history.replaceState({}, "", "/numea#beranda")
+          window.history.replaceState({}, "", "/numea#beranda")
 
-      }}
+        }}
 
-      darkMode={darkMode}
+        darkMode={darkMode}
 
-      onToggleTheme={props.onToggleTheme}
+        onToggleTheme={props.onToggleTheme}
 
-    />
+      />
 
-  )
+    )
 
-}
+  }
 
   if (activeTab === "Konsultasi") {
 
-    return <NumeaConsultation onBack={() => { setActiveTab("Beranda"); window.history.replaceState({}, "", "/numea#beranda") }} darkMode={darkMode} onToggleTheme={props.onToggleTheme} />
+    return (
+
+      <NumeaConsultation
+
+        onBack={() => {
+
+          setActiveTab("Beranda")
+
+          window.history.replaceState({}, "", "/numea#beranda")
+
+        }}
+
+        darkMode={darkMode}
+
+        onToggleTheme={props.onToggleTheme}
+
+      />
+
+    )
 
   }
 
   if (activeTab === "Sertifikat") {
 
-    return <NumeaCertificates onBack={() => { setActiveTab("Beranda"); window.history.replaceState({}, "", "/numea#beranda") }} darkMode={darkMode} onToggleTheme={props.onToggleTheme} />
+    return (
+
+      <NumeaCertificates
+
+        onBack={() => {
+
+          setActiveTab("Beranda")
+
+          window.history.replaceState({}, "", "/numea#beranda")
+
+        }}
+
+        darkMode={darkMode}
+
+        onToggleTheme={props.onToggleTheme}
+
+      />
+
+    )
 
   }
 
@@ -318,7 +774,11 @@ export default function NumeaPage(props: NumeaPageProps) {
 
     window.history.replaceState({}, "", `/numea#${targetId}`)
 
-    document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" })
+    document
+
+      .getElementById(targetId)
+
+      ?.scrollIntoView({ behavior: "smooth", block: "start" })
 
   }
 
@@ -340,19 +800,43 @@ export default function NumeaPage(props: NumeaPageProps) {
 
         <div className="flex h-full flex-col">
 
-          <button type="button" onClick={onBack} className="flex items-center gap-3 text-left">
+          <button
+
+            type="button"
+
+            onClick={onBack}
+
+            className="flex items-center gap-3 text-left"
+
+          >
 
             <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden">
 
-              <img src="/numeaedu.PNG" alt="Logo NUMEA EDU" className="h-full w-full object-contain" />
+              <img
+
+                src="/numeaedu.PNG"
+
+                alt="Logo NUMEA EDU"
+
+                className="h-full w-full object-contain"
+
+              />
 
             </div>
 
             <div>
 
-              <div className="text-[18px] font-bold tracking-tight">NUMEA EDU</div>
+              <div className="text-[18px] font-bold tracking-tight">
 
-              <div className="text-[11px] text-muted-foreground">A Space to Learn, Create & Explore</div>
+                NUMEA EDU
+
+              </div>
+
+              <div className="text-[11px] text-muted-foreground">
+
+                A Space to Learn, Create & Explore
+
+              </div>
 
             </div>
 
@@ -360,7 +844,15 @@ export default function NumeaPage(props: NumeaPageProps) {
 
           {isAdmin && (
 
-            <button type="button" onClick={() => setShowAdmin(true)} className="dino-button mt-7 flex w-full items-center gap-3 rounded-2xl border border-[#E95C9E]/25 bg-gradient-to-r from-[#F6C64F]/10 via-[#FF7411]/5 to-[#E95C9E]/10 px-3.5 py-3 text-left transition-all hover:border-[#E95C9E]/40">
+            <button
+
+              type="button"
+
+              onClick={() => setShowAdmin(true)}
+
+              className="dino-button mt-7 flex w-full items-center gap-3 rounded-2xl border border-[#E95C9E]/25 bg-gradient-to-r from-[#F6C64F]/10 via-[#FF7411]/5 to-[#E95C9E]/10 px-3.5 py-3 text-left transition-all hover:border-[#E95C9E]/40"
+
+            >
 
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#E95C9E]/10">
 
@@ -370,7 +862,11 @@ export default function NumeaPage(props: NumeaPageProps) {
 
               <div className="min-w-0">
 
-                <div className="text-[12px] font-semibold">Membership Management</div>
+                <div className="text-[12px] font-semibold">
+
+                  Membership Management
+
+                </div>
 
               </div>
 
@@ -406,7 +902,19 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                 >
 
-                  <Icon className={`h-4 w-4 ${activeTab === item.label ? "text-[#E95C9E]" : "text-muted-foreground group-hover:text-[#E95C9E]"}`} />
+                  <Icon
+
+                    className={`h-4 w-4 ${
+
+                      activeTab === item.label
+
+                        ? "text-[#E95C9E]"
+
+                        : "text-muted-foreground group-hover:text-[#E95C9E]"
+
+                    }`}
+
+                  />
 
                   {item.label}
 
@@ -430,9 +938,17 @@ export default function NumeaPage(props: NumeaPageProps) {
 
               <div>
 
-                <div className="text-[12px] font-semibold">Ruang berkembang</div>
+                <div className="text-[12px] font-semibold">
 
-                <div className="text-[10px] text-muted-foreground">Belajar • Berkarya • Berbagi</div>
+                  Ruang berkembang
+
+                </div>
+
+                <div className="text-[10px] text-muted-foreground">
+
+                  Belajar • Berkarya • Berbagi
+
+                </div>
 
               </div>
 
@@ -479,26 +995,50 @@ export default function NumeaPage(props: NumeaPageProps) {
             <div className="ml-auto flex items-center gap-2">
 
               <form
-                  className="hidden h-10 w-[260px] items-center gap-2 rounded-full border border-border/60 bg-white/40 px-4 backdrop-blur-xl dark:bg-white/5 md:flex"
-                  onSubmit={(event) => {
-                    event.preventDefault()
-                    const query = menuSearch.trim().toLowerCase()
-                    const match = navItems.find((item) => item.label.toLowerCase().includes(query))
-                    if (match && query) {
-                      handleNavClick(match.label)
-                      setMenuSearch("")
-                    }
-                  }}
-                >
-                  <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <input
-                    aria-label="Cari menu NUMEA EDU"
-                    value={menuSearch}
-                    onChange={(event) => setMenuSearch(event.target.value)}
-                    placeholder="Cari menu NUMEA..."
-                    className="min-w-0 flex-1 bg-transparent text-[12px] outline-none placeholder:text-muted-foreground"
-                  />
-                </form>
+
+                className="hidden h-10 w-[260px] items-center gap-2 rounded-full border border-border/60 bg-white/40 px-4 backdrop-blur-xl dark:bg-white/5 md:flex"
+
+                onSubmit={(event) => {
+
+                  event.preventDefault()
+
+                  const query = menuSearch.trim().toLowerCase()
+
+                  const match = navItems.find((item) =>
+
+                    item.label.toLowerCase().includes(query),
+
+                  )
+
+                  if (match && query) {
+
+                    handleNavClick(match.label)
+
+                    setMenuSearch("")
+
+                  }
+
+                }}
+
+              >
+
+                <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+
+                <input
+
+                  aria-label="Cari menu NUMEA EDU"
+
+                  value={menuSearch}
+
+                  onChange={(event) => setMenuSearch(event.target.value)}
+
+                  placeholder="Cari menu NUMEA..."
+
+                  className="min-w-0 flex-1 bg-transparent text-[12px] outline-none placeholder:text-muted-foreground"
+
+                />
+
+              </form>
 
               {onToggleTheme && (
 
@@ -510,21 +1050,269 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                   className="dino-button flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl dark:bg-white/5"
 
-                  aria-label={darkMode ? "Aktifkan mode terang" : "Aktifkan mode gelap"}
+                  aria-label={
+
+                    darkMode
+
+                      ? "Aktifkan mode terang"
+
+                      : "Aktifkan mode gelap"
+
+                  }
 
                   title={darkMode ? "Mode terang" : "Mode gelap"}
 
                 >
 
-                  {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                  {darkMode ? (
+
+                    <Sun className="h-4 w-4" />
+
+                  ) : (
+
+                    <Moon className="h-4 w-4" />
+
+                  )}
 
                 </button>
 
               )}
 
-              
+              <div className="relative">
 
-              
+                <button
+
+                  type="button"
+
+                  onClick={() => {
+
+                    setNotificationsOpen((open) => !open)
+
+                    setNotificationsError("")
+
+                  }}
+
+                  className="dino-button relative flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl transition hover:border-[#E95C9E]/50 hover:text-[#E95C9E] dark:bg-white/5"
+
+                  aria-label={`Notifikasi${unreadNotificationCount ? `, ${unreadNotificationCount} belum dibaca` : ""}`}
+
+                  aria-expanded={notificationsOpen}
+
+                  title="Notifikasi"
+
+                >
+
+                  <Bell className="h-4 w-4" />
+
+                  {unreadNotificationCount > 0 && (
+
+                    <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#E95C9E] px-1 text-[10px] font-bold leading-none text-white ring-2 ring-background">
+
+                      {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+
+                    </span>
+
+                  )}
+
+                </button>
+
+                {notificationsOpen && (
+
+                  <>
+
+                    <button
+
+                      type="button"
+
+                      aria-label="Tutup panel notifikasi"
+
+                      className="fixed inset-0 z-[80] cursor-default"
+
+                      onClick={() => setNotificationsOpen(false)}
+
+                    />
+
+                    <section
+
+                      role="dialog"
+
+                      aria-label="Notifikasi NUMEA EDU"
+
+                      className="absolute right-0 top-[calc(100%+12px)] z-[90] w-[min(92vw,390px)] overflow-hidden rounded-2xl border border-border/70 bg-background shadow-2xl"
+
+                    >
+
+                      <div className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-3">
+
+                        <div>
+
+                          <h2 className="text-sm font-bold">Notifikasi</h2>
+
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">
+
+                            {unreadNotificationCount
+
+                              ? `${unreadNotificationCount} belum dibaca`
+
+                              : "Semua sudah dibaca"}
+
+                          </p>
+
+                        </div>
+
+                        {unreadNotificationCount > 0 && (
+
+                          <button
+
+                            type="button"
+
+                            onClick={() => void markAllNotificationsRead()}
+
+                            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-semibold text-[#E95C9E] transition hover:bg-[#E95C9E]/10"
+
+                          >
+
+                            <CheckCheck className="h-3.5 w-3.5" />
+
+                            Baca semua
+
+                          </button>
+
+                        )}
+
+                      </div>
+
+                      {notificationsError && (
+
+                        <p role="alert" className="border-b border-red-500/20 bg-red-500/5 px-4 py-2.5 text-xs text-red-600 dark:text-red-400">
+
+                          {notificationsError}
+
+                        </p>
+
+                      )}
+
+                      <div className="max-h-[min(65vh,440px)] overflow-y-auto">
+
+                        {notificationsLoading ? (
+
+                          <div className="px-4 py-10 text-center text-xs text-muted-foreground">
+
+                            Memuat notifikasi...
+
+                          </div>
+
+                        ) : notifications.length === 0 ? (
+
+                          <div className="px-5 py-10 text-center">
+
+                            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-muted">
+
+                              <Bell className="h-5 w-5 text-muted-foreground" />
+
+                            </div>
+
+                            <p className="mt-3 text-sm font-semibold">Belum ada notifikasi</p>
+
+                            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+
+                              Informasi penting dari NUMEA EDU akan muncul di sini.
+
+                            </p>
+
+                          </div>
+
+                        ) : (
+
+                          <div className="divide-y divide-border/50">
+
+                            {notifications.map((notification) => (
+
+                              <button
+
+                                key={notification.id}
+
+                                type="button"
+
+                                onClick={() => void markNotificationRead(notification)}
+
+                                className={`flex w-full gap-3 px-4 py-3.5 text-left transition hover:bg-muted/60 ${notification.read_at ? "" : "bg-[#E95C9E]/[0.06]"}`}
+
+                              >
+
+                                <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${notification.read_at ? "bg-transparent" : "bg-[#E95C9E]"}`} />
+
+                                <span className="min-w-0 flex-1">
+
+                                  <span className="block text-xs font-semibold leading-5">{notification.title}</span>
+
+                                  <span className="mt-1 block whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground">{notification.message}</span>
+
+                                  <span className="mt-2 block text-[10px] text-muted-foreground">
+
+                                    {new Intl.DateTimeFormat("id-ID", {
+
+                                      dateStyle: "medium",
+
+                                      timeStyle: "short",
+
+                                    }).format(new Date(notification.created_at))}
+
+                                  </span>
+
+                                </span>
+
+                              </button>
+
+                            ))}
+
+                          </div>
+
+                        )}
+
+                      </div>
+
+                    </section>
+
+                  </>
+
+                )}
+
+              </div>
+
+              <button
+
+                type="button"
+
+                onClick={() => setShowProfile(true)}
+
+                className="dino-button flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl transition hover:border-[#E95C9E]/50 hover:text-[#E95C9E] dark:bg-white/5"
+
+                aria-label="Buka profil"
+
+                title="Profil saya"
+
+              >
+
+                {profileAvatarUrl ? (
+
+                  <img
+
+                    src={profileAvatarUrl}
+
+                    alt="Foto profil"
+
+                    className="h-full w-full rounded-full object-cover"
+
+                  />
+
+                ) : (
+
+                  <UserRound className="h-4 w-4" />
+
+                )}
+
+              </button>
 
             </div>
 
@@ -532,7 +1320,77 @@ export default function NumeaPage(props: NumeaPageProps) {
 
         </header>
 
-        <nav aria-label="Navigasi NUMEA EDU" className="sticky top-[72px] z-30 flex gap-2 overflow-x-auto border-b border-border/50 bg-background/85 px-4 py-3 backdrop-blur-xl lg:hidden">
+        {showProfile && (
+
+          <div
+
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 p-3 backdrop-blur-sm sm:p-6"
+
+            onMouseDown={(event) => {
+
+              if (event.target === event.currentTarget) {
+
+                setShowProfile(false)
+
+              }
+
+            }}
+
+          >
+
+            <section
+
+              role="dialog"
+
+              aria-modal="true"
+
+              aria-label="Profil NUMEA EDU"
+
+              className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-border/60 bg-background shadow-2xl"
+
+            >
+
+              <button
+
+                type="button"
+
+                onClick={() => setShowProfile(false)}
+
+                aria-label="Tutup profil"
+
+                title="Tutup profil"
+
+                className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-background/90 text-muted-foreground shadow-sm transition hover:bg-muted hover:text-foreground"
+
+              >
+
+                <X className="h-4 w-4" />
+
+              </button>
+
+              <NumeaProfile
+
+                compact
+
+                onAvatarChange={setProfileAvatarUrl}
+
+                onBack={() => setShowProfile(false)}
+
+              />
+
+            </section>
+
+          </div>
+
+        )}
+
+        <nav
+
+          aria-label="Navigasi NUMEA EDU"
+
+          className="sticky top-[72px] z-30 flex gap-2 overflow-x-auto border-b border-border/50 bg-background/85 px-4 py-3 backdrop-blur-xl lg:hidden"
+
+        >
 
           {navItems.map((item) => {
 
@@ -548,7 +1406,11 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                 onClick={() => handleNavClick(item.label)}
 
-                aria-current={activeTab === item.label ? "page" : undefined}
+                aria-current={
+
+                  activeTab === item.label ? "page" : undefined
+
+                }
 
                 className={`inline-flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-[12px] font-medium transition-colors ${
 
@@ -576,7 +1438,13 @@ export default function NumeaPage(props: NumeaPageProps) {
 
         <main className="mx-auto max-w-[1500px] px-4 pb-20 pt-7 sm:px-6 lg:px-8">
 
-          <section id="beranda" className="relative scroll-mt-24 overflow-hidden rounded-[32px] border border-border/60 bg-white/45 p-7 shadow-[0_20px_70px_rgba(87,78,82,0.08)] backdrop-blur-2xl dark:bg-white/5 sm:p-10 lg:p-14">
+          <section
+
+            id="beranda"
+
+            className="relative scroll-mt-24 overflow-hidden rounded-[32px] border border-border/60 bg-white/45 p-7 shadow-[0_20px_70px_rgba(87,78,82,0.08)] backdrop-blur-2xl dark:bg-white/5 sm:p-10 lg:p-14"
+
+          >
 
             <div className="absolute -right-20 -top-28 h-72 w-72 rounded-full bg-[#E95C9E]/15 blur-3xl" />
 
@@ -608,7 +1476,11 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                 <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-muted-foreground sm:text-[19px]">
 
-                  Ruang pendidikan digital untuk belajar, membuat karya, menemukan inspirasi, membangun komunitas, dan terus berkembang
+                  Ruang pendidikan digital untuk belajar, membuat karya,
+
+                  menemukan inspirasi, membangun komunitas, dan terus
+
+                  berkembang
 
                 </p>
 
@@ -630,7 +1502,15 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                   </button>
 
-                  <button type="button" onClick={() => handleNavClick("Studio")} className="dino-button inline-flex items-center gap-2 rounded-full border border-border/70 bg-white/45 px-6 py-3.5 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5">
+                  <button
+
+                    type="button"
+
+                    onClick={() => handleNavClick("Studio")}
+
+                    className="dino-button inline-flex items-center gap-2 rounded-full border border-border/70 bg-white/45 px-6 py-3.5 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5"
+
+                  >
 
                     Jelajahi NUMEA
 
@@ -652,9 +1532,17 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                       <div>
 
-                        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Your space</div>
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
 
-                        <div className="mt-1 text-xl font-bold">Explore & Grow</div>
+                          Your space
+
+                        </div>
+
+                        <div className="mt-1 text-xl font-bold">
+
+                          Explore & Grow
+
+                        </div>
 
                       </div>
 
@@ -672,7 +1560,11 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                         <GraduationCap className="h-5 w-5 text-[#E95C9E]" />
 
-                        <div className="mt-3 text-[12px] font-semibold">Learn</div>
+                        <div className="mt-3 text-[12px] font-semibold">
+
+                          Learn
+
+                        </div>
 
                       </div>
 
@@ -680,7 +1572,11 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                         <PenLine className="h-5 w-5 text-[#FF7411]" />
 
-                        <div className="mt-3 text-[12px] font-semibold">Studio</div>
+                        <div className="mt-3 text-[12px] font-semibold">
+
+                          Studio
+
+                        </div>
 
                       </div>
 
@@ -688,7 +1584,11 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                         <Users className="h-5 w-5 text-[#F6A91A]" />
 
-                        <div className="mt-3 text-[12px] font-semibold">Community</div>
+                        <div className="mt-3 text-[12px] font-semibold">
+
+                          Community
+
+                        </div>
 
                       </div>
 
@@ -696,7 +1596,11 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                         <Sparkles className="h-5 w-5 text-[#E95C9E]" />
 
-                        <div className="mt-3 text-[12px] font-semibold">Events</div>
+                        <div className="mt-3 text-[12px] font-semibold">
+
+                          Events
+
+                        </div>
 
                       </div>
 
@@ -718,9 +1622,17 @@ export default function NumeaPage(props: NumeaPageProps) {
 
               <div>
 
-                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#E95C9E]">Core Space</p>
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#E95C9E]">
 
-                <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Belajar, berkarya, dan menemukan</h2>
+                  Core Space
+
+                </p>
+
+                <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+
+                  Belajar, berkarya, dan menemukan
+
+                </h2>
 
               </div>
 
@@ -730,13 +1642,49 @@ export default function NumeaPage(props: NumeaPageProps) {
 
               {[
 
-                ["Learn", "Materi, wawasan, dan pengalaman belajar yang membantu kamu berkembang", GraduationCap, "from-[#F6C64F]/25 to-[#FF7411]/10"],
+                [
 
-                ["Studio", "Temukan inspirasi dan wujudkan karya pendidikan dalam satu ruang", Sparkles, "from-[#E95C9E]/20 to-[#F6C64F]/10"],
+                  "Learn",
+
+                  "Materi, wawasan, dan pengalaman belajar yang membantu kamu berkembang",
+
+                  GraduationCap,
+
+                  "from-[#F6C64F]/25 to-[#FF7411]/10",
+
+                ],
+
+                [
+
+                  "Studio",
+
+                  "Temukan inspirasi dan wujudkan karya pendidikan dalam satu ruang",
+
+                  Sparkles,
+
+                  "from-[#E95C9E]/20 to-[#F6C64F]/10",
+
+                ],
 
               ].map(([title, description, Icon, gradient]) => (
 
-                <div key={title as string} id={(title as string) === "Learn" ? "core-learn" : (title as string).toLowerCase()} className={`group scroll-mt-24 rounded-[28px] border border-border/60 bg-gradient-to-br ${gradient as string} p-6 transition-transform duration-300 hover:-translate-y-1`}>
+                <div
+
+                  key={title as string}
+
+                  id={
+
+                    (title as string) === "Learn"
+
+                      ? "core-learn"
+
+                      : (title as string).toLowerCase()
+
+                  }
+
+                  className={`group scroll-mt-24 rounded-[28px] border border-border/60 bg-gradient-to-br ${gradient as string} p-6 transition-transform duration-300 hover:-translate-y-1`}
+
+                >
 
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/70 dark:bg-white/10">
 
@@ -744,11 +1692,27 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                   </div>
 
-                  <h3 className="mt-6 text-2xl font-bold">{title as string}</h3>
+                  <h3 className="mt-6 text-2xl font-bold">
 
-                  <p className="mt-3 text-[14px] leading-7 text-muted-foreground">{description as string}</p>
+                    {title as string}
 
-                  <button type="button" onClick={() => handleNavClick(title as string)} className="mt-5 inline-flex items-center gap-2 text-[12px] font-semibold text-[#E95C9E]">
+                  </h3>
+
+                  <p className="mt-3 text-[14px] leading-7 text-muted-foreground">
+
+                    {description as string}
+
+                  </p>
+
+                  <button
+
+                    type="button"
+
+                    onClick={() => handleNavClick(title as string)}
+
+                    className="mt-5 inline-flex items-center gap-2 text-[12px] font-semibold text-[#E95C9E]"
+
+                  >
 
                     Jelajahi
 
@@ -768,17 +1732,57 @@ export default function NumeaPage(props: NumeaPageProps) {
 
             {[
 
-              ["Community", "Belajar dan berbagi bersama komunitas yang tumbuh", Users],
+              [
 
-              ["Events", "Webinar, pelatihan, dan agenda pengembangan diri", CalendarDays],
+                "Community",
 
-              ["Konsultasi", "Ruang untuk bertanya dan mendapatkan pendampingan", MessageCircle],
+                "Belajar dan berbagi bersama komunitas yang tumbuh",
 
-              ["Sertifikat", "Dokumentasikan pengalaman belajar dan kegiatanmu", ShieldCheck],
+                Users,
+
+              ],
+
+              [
+
+                "Events",
+
+                "Webinar, pelatihan, dan agenda pengembangan diri",
+
+                CalendarDays,
+
+              ],
+
+              [
+
+                "Konsultasi",
+
+                "Ruang untuk bertanya dan mendapatkan pendampingan",
+
+                MessageCircle,
+
+              ],
+
+              [
+
+                "Sertifikat",
+
+                "Dokumentasikan pengalaman belajar dan kegiatanmu",
+
+                ShieldCheck,
+
+              ],
 
             ].map(([title, description, Icon]) => (
 
-              <div id={(title as string).toLowerCase()} key={title as string} className="dino-glass scroll-mt-24 rounded-[24px] p-6 transition-transform duration-300 hover:-translate-y-1">
+              <div
+
+                id={(title as string).toLowerCase()}
+
+                key={title as string}
+
+                className="dino-glass scroll-mt-24 rounded-[24px] p-6 transition-transform duration-300 hover:-translate-y-1"
+
+              >
 
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E95C9E]/10">
 
@@ -786,9 +1790,17 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                 </div>
 
-                <h3 className="mt-5 text-lg font-bold">{title as string}</h3>
+                <h3 className="mt-5 text-lg font-bold">
 
-                <p className="mt-2 text-[13px] leading-6 text-muted-foreground">{description as string}</p>
+                  {title as string}
+
+                </h3>
+
+                <p className="mt-2 text-[13px] leading-6 text-muted-foreground">
+
+                  {description as string}
+
+                </p>
 
               </div>
 
@@ -804,11 +1816,25 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                 <div>
 
-                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#FF7411]">AI & Education Tools</p>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#FF7411]">
 
-                  <h2 className="mt-2 text-3xl font-bold tracking-tight">Buat lebih banyak dengan AI</h2>
+                    AI & Education Tools
 
-                  <p className="mt-3 max-w-2xl text-[14px] leading-6 text-muted-foreground">Tools DinoEdu Space yang terhubung dengan pengalaman belajar dan kebutuhan digital NUMEA</p>
+                  </p>
+
+                  <h2 className="mt-2 text-3xl font-bold tracking-tight">
+
+                    Buat lebih banyak dengan AI
+
+                  </h2>
+
+                  <p className="mt-3 max-w-2xl text-[14px] leading-6 text-muted-foreground">
+
+                    Tools DinoEdu Space yang terhubung dengan pengalaman
+
+                    belajar dan kebutuhan digital NUMEA
+
+                  </p>
 
                 </div>
 
@@ -826,7 +1852,13 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                   return (
 
-                    <div key={tool.title} className="group rounded-2xl border border-border/60 bg-white/45 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-[#E95C9E]/30 dark:bg-white/5">
+                    <div
+
+                      key={tool.title}
+
+                      className="group rounded-2xl border border-border/60 bg-white/45 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-[#E95C9E]/30 dark:bg-white/5"
+
+                    >
 
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#F6C64F]/20 to-[#E95C9E]/15">
 
@@ -834,13 +1866,29 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                       </div>
 
-                      <h3 className="mt-4 text-[14px] font-bold">{tool.title}</h3>
+                      <h3 className="mt-4 text-[14px] font-bold">
 
-                      <p className="mt-2 text-[11px] leading-5 text-muted-foreground">{tool.description}</p>
+                        {tool.title}
+
+                      </h3>
+
+                      <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+
+                        {tool.description}
+
+                      </p>
 
                       {action ? (
 
-                        <button type="button" onClick={action} className="mt-4 inline-flex items-center gap-1 text-[11px] font-semibold text-[#E95C9E]">
+                        <button
+
+                          type="button"
+
+                          onClick={action}
+
+                          className="mt-4 inline-flex items-center gap-1 text-[11px] font-semibold text-[#E95C9E]"
+
+                        >
 
                           Pakai sekarang
 
@@ -850,7 +1898,11 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                       ) : (
 
-                        <span className="mt-4 inline-flex text-[11px] font-semibold text-muted-foreground/60">Segera hadir</span>
+                        <span className="mt-4 inline-flex text-[11px] font-semibold text-muted-foreground/60">
+
+                          Segera hadir
+
+                        </span>
 
                       )}
 
@@ -880,9 +1932,17 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                 <div>
 
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#FF7411]">Materi & Inspirasi</p>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#FF7411]">
 
-                  <h2 className="mt-1 text-2xl font-bold">Ruang untuk terus belajar</h2>
+                    Materi & Inspirasi
+
+                  </p>
+
+                  <h2 className="mt-1 text-2xl font-bold">
+
+                    Ruang untuk terus belajar
+
+                  </h2>
 
                 </div>
 
@@ -890,9 +1950,29 @@ export default function NumeaPage(props: NumeaPageProps) {
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
 
-                {["Strategi belajar yang lebih efektif", "Ide aktivitas pembelajaran kreatif", "Inspirasi karya dan proyek digital", "Wawasan pendidikan dan teknologi"].map((item) => (
+                {[
 
-                  <button key={item} type="button" onClick={() => handleNavClick("Learn")} className="flex items-center justify-between rounded-2xl border border-border/60 bg-white/40 px-4 py-4 text-left text-[12px] font-medium transition-colors hover:border-[#E95C9E]/30 hover:bg-white/60 dark:bg-white/5 dark:hover:bg-white/10">
+                  "Strategi belajar yang lebih efektif",
+
+                  "Ide aktivitas pembelajaran kreatif",
+
+                  "Inspirasi karya dan proyek digital",
+
+                  "Wawasan pendidikan dan teknologi",
+
+                ].map((item) => (
+
+                  <button
+
+                    key={item}
+
+                    type="button"
+
+                    onClick={() => handleNavClick("Learn")}
+
+                    className="flex items-center justify-between rounded-2xl border border-border/60 bg-white/40 px-4 py-4 text-left text-[12px] font-medium transition-colors hover:border-[#E95C9E]/30 hover:bg-white/60 dark:bg-white/5 dark:hover:bg-white/10"
+
+                  >
 
                     <span>{item}</span>
 
@@ -914,11 +1994,29 @@ export default function NumeaPage(props: NumeaPageProps) {
 
                 <Sparkles className="h-6 w-6" />
 
-                <h2 className="mt-6 text-2xl font-bold">Tumbuh bersama NUMEA</h2>
+                <h2 className="mt-6 text-2xl font-bold">
 
-                <p className="mt-3 text-[13px] leading-6 text-white/85">Satu ruang untuk belajar, mencipta, mengeksplorasi, dan membangun koneksi yang bermakna</p>
+                  Tumbuh bersama NUMEA
 
-                <button type="button" onClick={() => handleNavClick("Community")} className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-[12px] font-bold text-[#E95C9E]">
+                </h2>
+
+                <p className="mt-3 text-[13px] leading-6 text-white/85">
+
+                  Satu ruang untuk belajar, mencipta, mengeksplorasi, dan
+
+                  membangun koneksi yang bermakna
+
+                </p>
+
+                <button
+
+                  type="button"
+
+                  onClick={() => handleNavClick("Community")}
+
+                  className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-[12px] font-bold text-[#E95C9E]"
+
+                >
 
                   Jelajahi ruang
 
@@ -936,7 +2034,11 @@ export default function NumeaPage(props: NumeaPageProps) {
 
             <div className="flex flex-col gap-2 text-[11px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
 
-              <div>© 2026 NUMEA EDU · A Space to Learn, Create & Explore</div>
+              <div>
+
+                © 2026 NUMEA EDU · A Space to Learn, Create & Explore
+
+              </div>
 
               <div>Bagian dari DinoEdu Space</div>
 
