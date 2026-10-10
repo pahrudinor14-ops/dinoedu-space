@@ -3,9 +3,6 @@ import {
   ArrowRight,
 
   BookOpen,
-
-  Brain,
-
   ClipboardList,
 
   FileText,
@@ -47,6 +44,8 @@ interface DashboardProps {
   onOpenAISoal: () => void;
 
   onOpenAIModulAjar: () => void;
+
+  onOpenDinoMath: () => void;
 
 }
 
@@ -131,6 +130,8 @@ export default function Dashboard({
   onOpenAISoal,
 
   onOpenAIModulAjar,
+
+  onOpenDinoMath,
 
 }: DashboardProps) {
 
@@ -452,62 +453,199 @@ export default function Dashboard({
 
         </section>
 
-        {/* NUMEA EDU */}
+        {/* DINOMATH COMIC PROMO */}
 
         <section className="mt-10">
 
-          <div className="dino-glass relative overflow-hidden rounded-[32px] p-7 sm:p-10">
+          <div className="group relative isolate overflow-hidden rounded-[32px] border border-orange-300/30 bg-gradient-to-br from-orange-500 via-orange-600 to-amber-500 p-6 text-white shadow-xl shadow-orange-900/10 sm:p-9 lg:p-10">
 
-            <div className="absolute -bottom-24 -left-24 h-60 w-60 rounded-full bg-[#EECDA3]/20 blur-3xl" />
+            {/* Siluet karakter dinosaurus */}
 
-            <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <img
 
-              <div className="max-w-2xl">
+              src="/dino.PNG"
 
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EF629F]/10">
+              alt=""
 
-                  <Brain className="h-6 w-6 text-[#EF629F]" />
+              aria-hidden="true"
+
+              className="pointer-events-none absolute right-[18%] top-1/2 z-0 h-44 w-44 -translate-y-1/2 object-contain opacity-[0.10] transition-transform duration-700 group-hover:scale-[1.03] sm:right-[22%] sm:h-60 sm:w-60 lg:right-[25%] lg:h-72 lg:w-72"
+
+            />
+
+            <div className="pointer-events-none absolute -right-20 -bottom-28 z-0 h-72 w-72 rounded-full bg-amber-200/20 blur-3xl" />
+
+            <div className="relative z-10 flex min-w-0 flex-col gap-7 sm:gap-8 lg:flex-row lg:items-center lg:justify-between">
+
+              <div className="min-w-0 max-w-2xl">
+
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-orange-50 backdrop-blur-sm">
+
+                  <span className="h-2 w-2 rounded-full bg-amber-200" />
+
+                  Komik Edukasi
 
                 </div>
 
-                <p className="mt-6 text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
+                <h2 className="mt-4 max-w-2xl text-2xl font-bold tracking-normal sm:text-5xl">
 
-                  Komunitas
-
-                </p>
-
-                <h2 className="mt-2 text-3xl font-bold tracking-normal">
-
-                  NUMEA EDU
+                  Petualangan Seru di Dunia DinoMath
 
                 </h2>
 
-                <p className="mt-3 text-[18px] leading-relaxed text-muted-foreground">
+                <p className="mt-4 max-w-xl text-base leading-7 text-orange-50/95 sm:text-lg">
 
-                  Komunitas numerasi untuk belajar, berbagi, dan bertumbuh
+                  Belajar matematika jadi lebih menyenangkan lewat komik interaktif.
 
-                  bersama
+                  Buka halaman demi halaman dan temukan serunya belajar bersama Dino!
 
                 </p>
 
+                <button
+
+                  type="button"
+
+                  onClick={onOpenDinoMath}
+
+                  className="mt-7 inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-orange-700 shadow-lg shadow-orange-950/15 transition-all duration-200 hover:-translate-y-0.5 hover:bg-orange-50 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-orange-600"
+
+                >
+
+                  <BookOpen className="h-5 w-5" />
+
+                  Baca Komik Sekarang
+
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+
+                </button>
+
               </div>
 
-              <button
+              <div className="relative mx-auto flex w-full max-w-[180px] shrink-0 items-center justify-center rounded-[28px] border border-white/30 bg-white/15 p-3 shadow-2xl shadow-orange-950/15 backdrop-blur-md sm:max-w-[210px] sm:p-4 lg:mr-2 lg:max-w-[230px]">
 
-                type="button"
-                onClick={() => {
-                  window.location.href = "/numea"
-                }}
+                <div className="absolute -right-3 -top-3 rounded-full bg-amber-200 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-orange-900 shadow-md">
 
-                className="dino-gradient dino-button inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-pink-500/10"
+                  Yuk, baca!
 
-              >
+                </div>
 
-                Jelajahi NUMEA EDU
+                <img
 
-                <ArrowRight className="h-4 w-4" />
+                  src="/dinomath.PNG"
 
-              </button>
+                  alt="Logo DinoMath"
+
+                  className="aspect-[4/3] max-h-[190px] w-full object-contain drop-shadow-xl sm:max-h-[220px]"
+
+                />
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* NUMEA EDU COMMUNITY PROMO */}
+
+        <section className="mt-10">
+
+          <div className="group relative isolate overflow-hidden rounded-[32px] border border-pink-300/30 bg-gradient-to-br from-[#EF629F] via-pink-500 to-purple-500 p-6 text-white shadow-xl shadow-pink-900/10 sm:p-9 lg:p-10">
+
+            {/* Siluet logo NUMEA EDU */}
+
+            <img
+
+              src="/numeaedu.PNG"
+
+              alt=""
+
+              aria-hidden="true"
+
+              className="pointer-events-none absolute right-[18%] top-1/2 z-0 h-44 w-44 -translate-y-1/2 object-contain opacity-[0.10] transition-transform duration-700 group-hover:scale-[1.03] sm:right-[22%] sm:h-60 sm:w-60 lg:right-[25%] lg:h-72 lg:w-72"
+
+            />
+
+            {/* Dekorasi latar */}
+
+            <div className="pointer-events-none absolute -bottom-28 -right-20 z-0 h-72 w-72 rounded-full bg-purple-200/20 blur-3xl" />
+
+            <div className="pointer-events-none absolute -left-20 -top-24 z-0 h-64 w-64 rounded-full bg-pink-200/15 blur-3xl" />
+
+            <div className="relative z-10 flex min-w-0 flex-col gap-7 sm:gap-8 lg:flex-row lg:items-center lg:justify-between">
+
+              {/* Informasi NUMEA EDU */}
+
+              <div className="min-w-0 max-w-2xl">
+
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-pink-50 backdrop-blur-sm">
+
+                  <span className="h-2 w-2 rounded-full bg-pink-100" />
+
+                  Komunitas Pendidikan
+
+                </div>
+
+                <h2 className="mt-4 max-w-2xl text-2xl font-bold tracking-normal sm:text-5xl">
+
+                  Bertumbuh Bersama NUMEA EDU
+
+                </h2>
+
+                <p className="mt-4 max-w-xl text-base leading-7 text-pink-50/95 sm:text-lg">
+
+                  Ruang bagi pendidik dan pegiat pendidikan untuk saling terhubung,
+
+                  berbagi inspirasi, bertukar pengalaman, dan tumbuh bersama melalui
+
+                  kolaborasi yang bermakna.
+
+                </p>
+
+                <button
+
+                  type="button"
+
+                  onClick={() => {
+
+                    window.location.href = "/numea";
+
+                  }}
+
+                  className="mt-7 inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-pink-700 shadow-lg shadow-pink-950/15 transition-all duration-200 hover:-translate-y-0.5 hover:bg-pink-50 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-pink-500"
+
+                >
+
+                  Jelajahi NUMEA EDU
+
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+
+                </button>
+
+              </div>
+
+              {/* Logo utama NUMEA EDU */}
+
+              <div className="relative mx-auto flex w-full max-w-[180px] shrink-0 items-center justify-center rounded-[28px] border border-white/30 bg-white/15 p-3 shadow-2xl shadow-pink-950/15 backdrop-blur-md sm:max-w-[210px] sm:p-4 lg:mr-2 lg:max-w-[230px]">
+
+                <div className="absolute -right-3 -top-3 rounded-full bg-pink-100 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-pink-800 shadow-md">
+
+                  Mari bergabung!
+
+                </div>
+
+                <img
+
+                  src="/numeaedu.PNG"
+
+                  alt="Logo NUMEA EDU"
+
+                  className="aspect-[4/3] max-h-[190px] w-full object-contain drop-shadow-xl sm:max-h-[220px]"
+
+                />
+
+              </div>
 
             </div>
 
@@ -518,19 +656,33 @@ export default function Dashboard({
       </main>
 
           <footer className="border-t border-border/50 pb-6">
+
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-7 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+
           <div className="flex items-center gap-3">
+
             <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden">
+
               <img src="/logodino.PNG" alt="Logo DinoEdu" className="h-full w-full scale-110 object-contain" />
+
             </div>
+
             <div>
+
               <div className="text-[14px] font-semibold">DinoEdu Space</div>
+
               <div className="text-[13px] text-muted-foreground">Education • Creative • Digital</div>
+
             </div>
+
           </div>
+
           <div className="text-[13px] text-muted-foreground">© 2026 DinoEdu Space</div>
+
         </div>
+
       </footer>
+
 </div>
 
   );

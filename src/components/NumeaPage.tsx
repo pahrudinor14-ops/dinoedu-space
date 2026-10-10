@@ -1,59 +1,31 @@
 import { useEffect, useState } from "react"
-
 import {
-
   ArrowLeft,
-
   ArrowRight,
-
   BookOpen,
-
   CalendarDays,
-
   Compass,
-
   FileText,
-
   GraduationCap,
-
   Lightbulb,
-
   MessageCircle,
-
   Moon,
-
   PenLine,
-
   Search,
-
   Settings2,
-
   ShieldCheck,
-
   Sparkles,
-
   Sun,
-
   Users,
-
   WandSparkles,
-
 } from "lucide-react"
-
 import { supabase } from "../lib/supabase"
-
 import NumeaAdmin from "./NumeaAdmin"
-
 import NumeaLearn from "./numea/pages/NumeaLearn"
-
 import NumeaCommunity from "./numea/pages/NumeaCommunity"
-
 import NumeaCertificates from "./numea/pages/NumeaCertificates"
-
 import NumeaConsultation from "./numea/pages/NumeaConsultation"
-
 import NumeaEvents from "./numea/pages/NumeaEvents"
-
 import NumeaStudio from "./numea/pages/NumeaStudio"
 
 interface NumeaPageProps {
