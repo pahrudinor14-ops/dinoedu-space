@@ -936,7 +936,7 @@ export default function Dashboard({
 
               <div>
 
-                <h3 className="font-bold">Bagian dari NUMEA EDU?</h3>
+                <h3 className="font-bold">Belum jadi bagian NUMEA EDU?</h3>
 
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">Anggota NUMEA EDU mendapatkan 15 token per hari. Kuota direset setiap hari dan tidak diakumulasikan.</p>
 
@@ -944,7 +944,7 @@ export default function Dashboard({
 
             </div>
 
-            <a href="/numea" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-[#EF629F]/40 px-5 py-3 text-sm font-bold text-[#DB2777] transition hover:bg-[#EF629F]/10">Jelajahi NUMEA EDU <ArrowRight className="h-4 w-4" /></a>
+            <a href="/numea" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-[#EF629F]/40 px-5 py-3 text-sm font-bold text-[#DB2777] transition hover:bg-[#EF629F]/10">Ayo Bergabung<ArrowRight className="h-4 w-4" /></a>
 
           </div>
 
