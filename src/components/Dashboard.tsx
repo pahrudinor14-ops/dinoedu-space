@@ -904,13 +904,13 @@ export default function Dashboard({
 
                 <p className="text-sm font-semibold">Dukungan untuk pendidikan digital</p>
 
-                <p className="mt-1 text-xs text-muted-foreground">25 token setiap hari, termasuk kuota harian langganan</p>
+                <p className="mt-1 text-xs text-muted-foreground">30 token setiap hari, termasuk kuota harian langganan</p>
 
               </div>
 
               <ul className="mt-5 space-y-3 text-sm text-muted-foreground">
 
-                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#DB2777]" />Dapatkan 25 token setiap hari selama langganan aktif</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#DB2777]" />Dapatkan 30 token setiap hari selama langganan aktif</li>
 
                 <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#DB2777]" />Token direset setiap hari dan tidak diakumulasikan</li>
 
