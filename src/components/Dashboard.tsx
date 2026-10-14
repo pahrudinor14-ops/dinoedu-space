@@ -64,6 +64,14 @@ interface DashboardProps {
 
    onOpenFeedbackAdmin?: () => void;
 
+  // Callback paket DinoAI; akan dihubungkan dari App.tsx.
+
+  onStartFree?: () => void;
+
+  onBuyTokens?: () => void;
+
+  onSupportDinoAI?: () => void;
+
 }
 
 const tools = [
@@ -153,7 +161,9 @@ export default function Dashboard({
    isAdmin = false,
 
    onOpenFeedbackAdmin,
-
+   onStartFree,
+   onBuyTokens,
+   onSupportDinoAI,
 }: DashboardProps) {
 
    return (
@@ -816,7 +826,31 @@ export default function Dashboard({
 
               <div className="mt-auto pt-6">
 
-                <span className="inline-flex w-full items-center justify-center rounded-full border border-border px-4 py-3 text-sm font-bold">Mulai gratis</span>
+                <button
+
+                    type="button"
+
+                    onClick={() => {
+
+                      if (onStartFree) {
+
+                        onStartFree();
+
+                      } else {
+
+                        window.alert("Paket Gratis sudah tersedia. Integrasi aksi ini akan disambungkan melalui App.tsx.");
+
+                      }
+
+                    }}
+
+                    className="inline-flex w-full cursor-pointer items-center justify-center rounded-full border border-border px-4 py-3 text-sm font-bold transition hover:bg-muted focus:outline-none focus:ring-2 focus:ring-violet-500"
+
+                  >
+
+                    Mulai gratis
+
+                  </button>
 
               </div>
 
@@ -868,7 +902,31 @@ export default function Dashboard({
 
               <div className="mt-auto pt-6">
 
-                <span className="inline-flex w-full items-center justify-center rounded-full bg-[#F97316] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#EA580C]">Pilihan token fleksibel</span>
+                <button
+
+                    type="button"
+
+                    onClick={() => {
+
+                      if (onBuyTokens) {
+
+                        onBuyTokens();
+
+                      } else {
+
+                        window.alert("Pembelian token belum dihubungkan. Aksi ini akan disambungkan melalui App.tsx.");
+
+                      }
+
+                    }}
+
+                    className="inline-flex w-full cursor-pointer items-center justify-center rounded-full bg-[#F97316] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#EA580C] focus:outline-none focus:ring-2 focus:ring-orange-500"
+
+                  >
+
+                    Pilihan token fleksibel
+
+                  </button>
 
               </div>
 
@@ -920,7 +978,33 @@ export default function Dashboard({
 
               <div className="mt-auto pt-6">
 
-                <span className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#EF629F] to-purple-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-pink-500/15"><HeartHandshake className="h-4 w-4" />Dukung DinoAI</span>
+                <button
+
+                    type="button"
+
+                    onClick={() => {
+
+                      if (onSupportDinoAI) {
+
+                        onSupportDinoAI();
+
+                      } else {
+
+                        window.alert("Pembayaran Supporter belum dihubungkan. Aksi ini akan disambungkan melalui App.tsx.");
+
+                      }
+
+                    }}
+
+                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#EF629F] to-purple-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-pink-500/15 transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-pink-500"
+
+                  >
+
+                    <HeartHandshake className="h-4 w-4" />
+
+                    Dukung DinoAI
+
+                  </button>
 
               </div>
 
@@ -948,7 +1032,7 @@ export default function Dashboard({
 
           </div>
 
-          <p className="mt-4 text-center text-xs leading-5 text-muted-foreground">Paket token dan dukungan ditampilkan sebagai informasi. Pembelian otomatis belum dihubungkan pada dashboard ini.</p>
+          <p className="mt-4 text-center text-xs leading-5 text-muted-foreground">Pilih tombol paket untuk melanjutkan. Pembayaran otomatis akan dihubungkan melalui aplikasi.</p>
 
         </div>
 
