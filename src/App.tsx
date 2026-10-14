@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 
 import DinoMathFlipbook from "./components/DinoMathFlipbook";
 
@@ -1191,7 +1191,7 @@ const closeDinoMath = () => {
 
                 <div className="text-[14px] text-muted-foreground">
 
-                  Education â€¢ Creative â€¢ Digital
+                  Education • Creative • Digital
 
                 </div>
 
@@ -1974,31 +1974,26 @@ const closeDinoMath = () => {
                     </p>
 
                     <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
-
                       <li className="flex items-start gap-2">
-
-                        <span className="mt-0.5 text-orange-500">âœ¦</span>
-
-                        Belajar matematika melalui cerita bergambar
-
+                        <span className="mt-0.5 shrink-0 text-orange-500">
+                          ✦
+                        </span>
+                        <span>Belajar matematika melalui cerita bergambar</span>
                       </li>
 
                       <li className="flex items-start gap-2">
-
-                        <span className="mt-0.5 text-orange-500">âœ¦</span>
-
-                        Pengalaman membaca komik secara interaktif
-
+                        <span className="mt-0.5 shrink-0 text-orange-500">
+                          ✦
+                        </span>
+                        <span>Pengalaman membaca komik secara interaktif</span>
                       </li>
 
                       <li className="flex items-start gap-2">
-
-                        <span className="mt-0.5 text-orange-500">âœ¦</span>
-
-                        Menjelajahi matematika dengan cara yang berbeda
-
+                        <span className="mt-0.5 shrink-0 text-orange-500">
+                          ✦
+                        </span>
+                        <span>Menjelajahi matematika dengan cara yang berbeda</span>
                       </li>
-
                     </ul>
 
                     <div className="mt-auto pt-8">
@@ -2089,33 +2084,22 @@ const closeDinoMath = () => {
 
                     </p>
 
-                    <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
+                      <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
+                        <li className="flex items-start gap-2">
+                          <span className="mt-0.5 shrink-0 text-[#EF629F]">✦</span>
+                          <span>Terhubung dengan komunitas pendidikan</span>
+                        </li>
 
-                      <li className="flex items-start gap-2">
+                        <li className="flex items-start gap-2">
+                          <span className="mt-0.5 shrink-0 text-[#EF629F]">✦</span>
+                          <span>Berbagi inspirasi dan pengalaman mengajar</span>
+                        </li>
 
-                        <span className="mt-0.5 text-[#EF629F]">âœ¦</span>
-
-                        Terhubung dengan komunitas pendidikan
-
-                      </li>
-
-                      <li className="flex items-start gap-2">
-
-                        <span className="mt-0.5 text-[#EF629F]">âœ¦</span>
-
-                        Berbagi inspirasi dan pengalaman mengajar
-
-                      </li>
-
-                      <li className="flex items-start gap-2">
-
-                        <span className="mt-0.5 text-[#EF629F]">âœ¦</span>
-
-                        Bertumbuh melalui kolaborasi dan kreativitas
-
-                      </li>
-
-                    </ul>
+                        <li className="flex items-start gap-2">
+                          <span className="mt-0.5 shrink-0 text-[#EF629F]">✦</span>
+                          <span>Bertumbuh melalui kolaborasi dan kreativitas</span>
+                        </li>
+                      </ul>
 
                     <div className="mt-auto pt-8">
 
@@ -2243,13 +2227,13 @@ const closeDinoMath = () => {
 
               <div className="text-[14px] font-semibold">DinoEdu Space</div>
 
-              <div className="text-[13px] text-muted-foreground">Education â€¢ Creative â€¢ Digital</div>
+              <div className="text-[13px] text-muted-foreground">Education • Creative • Digital</div>
 
             </div>
 
           </div>
 
-          <div className="text-[13px] text-muted-foreground">Â© 2026 DinoEdu Space</div>
+          <div className="text-[13px] text-muted-foreground">© 2026 DinoEdu Space</div>
 
         </div>
 
