@@ -1,9 +1,8 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 import {
   ArrowLeft, ArrowRight, BookOpen, Compass, FileText, GraduationCap,
   Lightbulb, MessageCircle, PenLine, Sparkles, Users, CalendarDays,
 } from "lucide-react"
-
 interface NumeaStudioProps {
   onBack: () => void
   onOpenLearn: () => void
@@ -18,9 +17,7 @@ interface NumeaStudioProps {
   darkMode?: boolean
   onToggleTheme?: () => void
 }
-
 type StudioMode = "Temukan" | "Berkarya"
-
 export default function NumeaStudio({
   onBack,
   onOpenLearn,
@@ -34,7 +31,6 @@ export default function NumeaStudio({
   onOpenAIModulAjar,
 }: NumeaStudioProps) {
   const [mode, setMode] = useState<StudioMode>("Temukan")
-
   const discoverItems = [
     {
       title: "Sumber belajar",
@@ -65,7 +61,6 @@ export default function NumeaStudio({
       label: "Cari pendampingan",
     },
   ]
-
   const createItems = [
     {
       title: "DinoAI Chat",
@@ -98,16 +93,13 @@ export default function NumeaStudio({
       action: onOpenAIModulAjar,
     },
   ]
-
   const cards = mode === "Temukan" ? discoverItems : createItems
-
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-dvh bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute -left-40 top-20 h-96 w-96 rounded-full bg-[#F6C64F]/20 blur-3xl" />
         <div className="absolute right-[-120px] top-32 h-[420px] w-[420px] rounded-full bg-[#E95C9E]/15 blur-3xl" />
       </div>
-
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <button
@@ -122,7 +114,6 @@ export default function NumeaStudio({
           </span>
         </div>
       </header>
-
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
         <section className="relative overflow-hidden rounded-[30px] border border-border/60 bg-white/45 p-7 shadow-[0_20px_70px_rgba(87,78,82,0.08)] backdrop-blur-2xl dark:bg-white/5 sm:p-10 lg:p-12">
           <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#E95C9E]/15 blur-3xl" />
@@ -131,14 +122,13 @@ export default function NumeaStudio({
               <Lightbulb className="h-3.5 w-3.5 text-[#FF7411]" />
               SATU RUANG UNTUK BERTUMBUH
             </div>
-            <h1 className="mt-5 text-4xl font-bold tracking-tight sm:text-5xl">
+            <h1 className="dino-hero-title mt-5 text-4xl font-bold sm:text-5xl">
               NUMEA <span className="bg-gradient-to-r from-[#F6C64F] via-[#FF7411] to-[#E95C9E] bg-clip-text text-transparent">Studio</span>
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
               Temukan pengetahuan dan inspirasi, lalu ubah ide menjadi karya.
               Semua dalam satu ruang yang terhubung dengan ekosistem NUMEA EDU.
             </p>
-
             <div className="mt-7 inline-flex rounded-2xl border border-border/60 bg-background/70 p-1.5">
               {(["Temukan", "Berkarya"] as const).map((item) => (
                 <button
@@ -159,7 +149,6 @@ export default function NumeaStudio({
             </div>
           </div>
         </section>
-
         <section className="mt-9">
           <div className="mb-5">
             <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#E95C9E]">
@@ -174,7 +163,6 @@ export default function NumeaStudio({
                 : "Gunakan alat yang sudah terhubung dengan DinoEdu Space. Fitur yang belum tersedia tidak ditampilkan sebagai tombol aktif."}
             </p>
           </div>
-
           <div className={`grid gap-4 ${mode === "Temukan" ? "sm:grid-cols-2 xl:grid-cols-4" : "sm:grid-cols-2 xl:grid-cols-3"}`}>
             {cards.map((item) => {
               const Icon = item.icon
@@ -201,10 +189,9 @@ export default function NumeaStudio({
             })}
           </div>
         </section>
-
         <footer className="mt-14 border-t border-border/50 py-8 text-[11px] text-muted-foreground">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <span>© 2026 NUMEA EDU · A Space to Learn, Create & Explore</span>
+            <span>© {new Date().getFullYear()} NUMEA EDU · A Space to Learn, Create & Explore</span>
             <span>Bagian dari DinoEdu Space</span>
           </div>
         </footer>

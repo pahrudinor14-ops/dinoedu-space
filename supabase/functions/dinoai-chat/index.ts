@@ -1,31 +1,26 @@
-const corsHeaders = {
+﻿const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 }
-
 interface HistoryItem {
   role: "user" | "model"
   text: string
 }
-
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   })
 }
-
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
   }
-
   if (request.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405)
   }
-
   const apiKey = Deno.env.get("GEMINI_API_KEY_DINO_AI")
   if (!apiKey) {
     return jsonResponse(
@@ -36,28 +31,23 @@ Deno.serve(async (request) => {
       503,
     )
   }
-
   let body: unknown
   try {
     body = await request.json()
   } catch {
     return jsonResponse({ error: "Request harus berupa JSON yang valid." }, 400)
   }
-
   if (typeof body !== "object" || body === null) {
     return jsonResponse({ error: "Format request tidak valid." }, 400)
   }
-
   const input = body as Record<string, unknown>
   const message = typeof input.message === "string" ? input.message.trim() : ""
-
   if (!message || message.length > 8000) {
     return jsonResponse(
       { error: "Pesan harus diisi dan maksimal 8000 karakter." },
       400,
     )
   }
-
   const history: HistoryItem[] = Array.isArray(input.history)
     ? input.history
         .slice(-20)
@@ -70,7 +60,6 @@ Deno.serve(async (request) => {
           ) {
             return []
           }
-
           const text = entry.text.trim().slice(0, 8000)
           return text ? [{ role: entry.role, text }] : []
         })
@@ -80,9 +69,7 @@ Deno.serve(async (request) => {
   )
   const conversationHistory =
     firstUserMessageIndex === -1 ? [] : history.slice(firstUserMessageIndex)
-
   const model = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash"
-
   try {
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
@@ -114,9 +101,7 @@ Deno.serve(async (request) => {
         }),
       },
     )
-
     const result: unknown = await response.json().catch(() => null)
-
     if (!response.ok) {
       console.error("Gemini request failed:", response.status, result)
       return jsonResponse(
@@ -124,7 +109,6 @@ Deno.serve(async (request) => {
         502,
       )
     }
-
     const candidate =
       typeof result === "object" && result !== null && "candidates" in result
         ? (result as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> })
@@ -134,14 +118,12 @@ Deno.serve(async (request) => {
       ?.map((part) => part.text ?? "")
       .join("")
       .trim()
-
     if (!reply) {
       return jsonResponse(
         { error: "DinoAI tidak menghasilkan jawaban. Coba ubah pertanyaanmu." },
         502,
       )
     }
-
     return jsonResponse({ reply })
   } catch (error) {
     console.error("DinoAI request error:", error)

@@ -1,16 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+﻿import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   ArrowLeft, ArrowRight, BookOpen, Bookmark, BookOpenCheck, Clock3, LoaderCircle,
   Plus, Search, ShieldCheck, Sun, Moon, X, Archive, Trash2, Save, ImagePlus, Send, Check, XCircle,
 } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
-
 interface NumeaLearnProps {
   onBack: () => void
   darkMode?: boolean
   onToggleTheme?: () => void
 }
-
 type LearnSection = { heading: string; body: string }
 type LearnResource = {
   id: string
@@ -27,7 +25,6 @@ type LearnResource = {
   review_note?: string | null
 }
 type LearnCategory = { id: string; name: string; slug: string }
-
 const localBookmarkKey = "numea-learn-bookmarks"
 const emptyForm = { title: "", categoryId: "", summary: "", body: "", readingMinutes: "5", level: "Praktis", publish: true }
 const imageBucket = "numea-learn-images"
@@ -37,7 +34,6 @@ const renderArticleBody = (body: string) => body.split("\n").map((line, index) =
   if (!line.trim()) return <div key={index} className="h-2" />
   return <p key={index} className="text-sm leading-7 text-muted-foreground">{line}</p>
 })
-
 export default function NumeaLearn({ onBack, darkMode = false, onToggleTheme }: NumeaLearnProps) {
   const [resources, setResources] = useState<LearnResource[]>([])
   const [categories, setCategories] = useState<LearnCategory[]>([])
@@ -57,7 +53,6 @@ export default function NumeaLearn({ onBack, darkMode = false, onToggleTheme }: 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
   const [notice, setNotice] = useState("")
-
   const loadData = useCallback(async () => {
     setLoading(true)
     setError("")
@@ -111,9 +106,7 @@ export default function NumeaLearn({ onBack, darkMode = false, onToggleTheme }: 
       setLoading(false)
     }
   }, [])
-
   useEffect(() => { void loadData() }, [loadData])
-
   const visibleResources = useMemo(() => resources.filter((resource) => {
     if (!isAdmin && resource.status !== "published" && !(userId && resource.created_by === userId)) return false
     if (showSavedOnly && !bookmarkedIds.includes(resource.id)) return false
@@ -121,7 +114,6 @@ export default function NumeaLearn({ onBack, darkMode = false, onToggleTheme }: 
     const normalizedQuery = query.trim().toLowerCase()
     return !normalizedQuery || `${resource.title} ${resource.summary} ${resource.category}`.toLowerCase().includes(normalizedQuery)
   }), [resources, isAdmin, userId, showSavedOnly, bookmarkedIds, categoryFilter, query])
-
   const toggleBookmark = async (resourceId: string) => {
     const alreadySaved = bookmarkedIds.includes(resourceId)
     if (userId) {
@@ -139,7 +131,6 @@ export default function NumeaLearn({ onBack, darkMode = false, onToggleTheme }: 
     }
     setBookmarkedIds((current) => alreadySaved ? current.filter((id) => id !== resourceId) : [...current, resourceId])
   }
-
   const createResource = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!userId || (!isAdmin && !isApprovedMember)) {
@@ -195,7 +186,6 @@ export default function NumeaLearn({ onBack, darkMode = false, onToggleTheme }: 
     setShowForm(false)
     await loadData()
   }
-
   const uploadInlineImage = async (file?: File) => {
     if (!file || !userId) return
     if (!isAdmin && !isApprovedMember) {
@@ -226,7 +216,6 @@ export default function NumeaLearn({ onBack, darkMode = false, onToggleTheme }: 
     setForm((current) => ({ ...current, body: `${current.body}${current.body.trim() ? "\n\n" : ""}![${alt}](${data.publicUrl})\n` }))
     setNotice("Gambar berhasil diunggah dan ditambahkan ke isi materi")
   }
-
   const editOwnResource = (resource: LearnResource) => {
     if (!userId || resource.created_by !== userId || !["draft", "rejected"].includes(resource.status)) return
     const firstSection = resource.content.sections?.[0]
@@ -244,7 +233,6 @@ export default function NumeaLearn({ onBack, darkMode = false, onToggleTheme }: 
     setShowForm(true)
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
-
   const changeStatus = async (resource: LearnResource, status: LearnResource["status"]) => {
     if (!isAdmin) return
     let reviewNote: string | null = null
@@ -263,7 +251,6 @@ export default function NumeaLearn({ onBack, darkMode = false, onToggleTheme }: 
     setNotice(status === "published" ? "Materi disetujui dan dipublikasikan" : status === "rejected" ? "Materi ditolak dan catatan dikirim ke penulis" : status === "draft" ? "Materi dipindahkan ke draf" : "Materi diarsipkan")
     await loadData()
   }
-
   const deleteResource = async (resource: LearnResource) => {
     if (!isAdmin || !window.confirm(`Hapus materi “${resource.title}”? Tindakan ini tidak dapat dibatalkan.`)) return
     const { error: deleteError } = await supabase.from("numea_learning_resources").delete().eq("id", resource.id)
@@ -272,9 +259,8 @@ export default function NumeaLearn({ onBack, darkMode = false, onToggleTheme }: 
     if (selectedResource?.id === resource.id) setSelectedResource(null)
     await loadData()
   }
-
   return (
-    <div className={`${darkMode ? "dark " : ""}min-h-screen bg-background text-foreground`}>
+    <div className={`${darkMode ? "dark " : ""}min-h-dvh bg-background text-foreground`}>
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute -left-40 top-20 h-96 w-96 rounded-full bg-[#F6C64F]/20 blur-3xl" />
         <div className="absolute right-[-120px] top-32 h-[420px] w-[420px] rounded-full bg-[#E95C9E]/15 blur-3xl" />
@@ -293,16 +279,14 @@ export default function NumeaLearn({ onBack, darkMode = false, onToggleTheme }: 
           <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#E95C9E]">NUMEA Learn</p>
-              <h1 className="mt-2 max-w-3xl text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">Belajar dari hal yang bisa langsung dicoba</h1>
+              <h1 className="dino-hero-title mt-2 max-w-3xl text-3xl font-bold sm:text-4xl lg:text-5xl">Belajar dari hal yang bisa langsung dicoba</h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">Panduan ringkas untuk praktik mengajar, asesmen, teknologi pendidikan, dan pengembangan diri</p>
               <p className="mt-3 text-xs text-muted-foreground">Materi berstatus terbit dapat dibaca semua pengunjung</p>
             </div>
             {(isAdmin || isApprovedMember) && <button type="button" onClick={() => setShowForm((value) => !value)} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#FF7411] to-[#E95C9E] px-5 py-3 text-xs font-bold text-white"><Plus className="h-4 w-4" /> {isAdmin ? "Tambah materi" : "Tulis materi"}</button>}
           </div>
-
           {notice && <div role="status" className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm">{notice}<button type="button" onClick={() => setNotice("")} aria-label="Tutup notifikasi"><X className="h-4 w-4" /></button></div>}
           {error && <div role="alert" className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm"><p className="font-semibold">Learn belum dapat memuat atau menyimpan data</p><p className="mt-1 break-words text-xs">{error}</p><button type="button" onClick={() => void loadData()} className="mt-2 underline">Coba lagi</button></div>}
-
           {showForm && (isAdmin || isApprovedMember) && <form onSubmit={createResource} className="mb-6 grid gap-4 rounded-3xl border border-[#E95C9E]/25 bg-[#E95C9E]/5 p-5 sm:p-6">
             <div><h2 className="text-lg font-bold">{editingResourceId ? "Edit materi" : isAdmin ? "Tambah materi Learn" : "Kontribusi materi Learn"}</h2><p className="mt-1 text-xs text-muted-foreground">{isAdmin ? "Admin dapat menyimpan draf atau langsung menerbitkan materi" : "Materi yang dikirim akan ditinjau admin sebelum dapat dibaca publik"}</p></div>
             <div className="grid gap-4 md:grid-cols-2">
@@ -316,7 +300,6 @@ export default function NumeaLearn({ onBack, darkMode = false, onToggleTheme }: 
             {isAdmin && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.publish} onChange={(event) => setForm({ ...form, publish: event.target.checked })} /> Langsung publikasikan setelah disimpan</label>}
             <div className="flex flex-wrap gap-2"><button disabled={saving} type="submit" onClick={() => setSubmitMode("draft")} className="inline-flex items-center gap-2 rounded-full border border-border/60 px-5 py-3 text-xs font-bold disabled:opacity-60">{saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Simpan draf</button>{!isAdmin && <button disabled={saving} type="submit" onClick={() => setSubmitMode("submit")} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#FF7411] to-[#E95C9E] px-5 py-3 text-xs font-bold text-white disabled:opacity-60"><Send className="h-4 w-4" />Kirim untuk ditinjau</button>}<button type="button" onClick={() => setShowForm(false)} className="rounded-full border border-border/60 px-5 py-3 text-xs font-semibold">Batal</button></div>
           </form>}
-
           <div className="dino-glass rounded-[28px] p-4 sm:p-6">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
               <label className="flex min-h-12 flex-1 items-center gap-3 rounded-2xl border border-border/60 bg-background/60 px-4"><Search className="h-4 w-4 shrink-0 text-muted-foreground" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari topik atau materi..." aria-label="Cari materi Learn" className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground" />{query && <button type="button" onClick={() => setQuery("")} aria-label="Hapus pencarian"><X className="h-4 w-4" /></button>}</label>
@@ -336,11 +319,10 @@ export default function NumeaLearn({ onBack, darkMode = false, onToggleTheme }: 
             </div> : <div className="mt-5 rounded-2xl border border-dashed border-border/70 px-5 py-12 text-center"><Search className="mx-auto h-7 w-7 text-muted-foreground" /><h2 className="mt-3 font-semibold">{showSavedOnly ? "Belum ada materi tersimpan" : "Materi belum ditemukan"}</h2><p className="mt-1 text-sm text-muted-foreground">Coba kata kunci lain atau pilih kategori Semua</p><button type="button" onClick={() => { setQuery(""); setCategoryFilter("Semua"); setShowSavedOnly(false) }} className="mt-4 rounded-full bg-[#E95C9E]/10 px-4 py-2 text-xs font-semibold text-[#E95C9E]">Atur ulang pencarian</button></div>}
           </div>
         </section>
-        <footer className="mt-14 border-t border-border/50 py-8 text-[11px] text-muted-foreground"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><span>© 2026 NUMEA EDU · A Space to Learn, Create & Explore</span><span>Bagian dari DinoEdu Space</span></div></footer>
+        <footer className="mt-14 border-t border-border/50 py-8 text-[11px] text-muted-foreground"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><span>© {new Date().getFullYear()} NUMEA EDU · A Space to Learn, Create & Explore</span><span>Bagian dari DinoEdu Space</span></div></footer>
       </main>
-
       {selectedResource && <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/55 p-0 backdrop-blur-sm sm:items-center sm:p-5" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedResource(null) }}>
-        <section role="dialog" aria-modal="true" aria-labelledby="learn-detail-title" className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-[28px] border border-border/60 bg-background p-6 shadow-2xl sm:rounded-[28px] sm:p-8">
+        <section role="dialog" aria-modal="true" aria-labelledby="learn-detail-title" className="max-h-[calc(100dvh-0.5rem)] w-full max-w-3xl overflow-y-auto rounded-t-[28px] border border-border/60 bg-background p-5 shadow-2xl sm:max-h-[calc(100dvh-2.5rem)] sm:rounded-[28px] sm:p-8">
           <div className="flex items-start justify-between gap-4"><div><span className="rounded-full bg-[#E95C9E]/10 px-3 py-1.5 text-[10px] font-bold text-[#E95C9E]">{selectedResource.category}</span><h2 id="learn-detail-title" className="mt-4 text-2xl font-bold leading-tight sm:text-3xl">{selectedResource.title}</h2><div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground"><span className="inline-flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" />{selectedResource.reading_minutes} menit</span><span>{selectedResource.level}</span></div></div><button type="button" onClick={() => setSelectedResource(null)} aria-label="Tutup materi" className="rounded-full border border-border/60 p-2 text-muted-foreground"><X className="h-5 w-5" /></button></div>
           <p className="mt-5 text-sm leading-7 text-muted-foreground">{selectedResource.summary}</p>{selectedResource.status === "rejected" && selectedResource.review_note && <p className="mt-4 rounded-xl bg-red-500/5 p-3 text-sm text-red-600">Catatan admin: {selectedResource.review_note}</p>}<div className="mt-6 space-y-6">{(selectedResource.content.sections ?? []).map((section, index) => <div key={`${section.heading}-${index}`}><h3 className="font-bold">{section.heading}</h3><div className="mt-2 space-y-1">{renderArticleBody(section.body)}</div></div>)}</div>
           <div className="mt-8 flex flex-col-reverse gap-3 border-t border-border/50 pt-5 sm:flex-row sm:justify-between"><button type="button" onClick={() => void toggleBookmark(selectedResource.id)} className="inline-flex items-center justify-center gap-2 rounded-full border border-border/60 px-5 py-3 text-xs font-semibold"><Bookmark className="h-4 w-4" fill={bookmarkedIds.includes(selectedResource.id) ? "currentColor" : "none"} />{bookmarkedIds.includes(selectedResource.id) ? "Tersimpan" : "Simpan materi"}</button><button type="button" onClick={() => setSelectedResource(null)} className="rounded-full bg-gradient-to-r from-[#FF7411] to-[#E95C9E] px-6 py-3 text-xs font-bold text-white">Selesai membaca</button></div>

@@ -718,7 +718,7 @@ export default function DinoAIChat({
   const renderQuotaEmpty = () => (
     <div className="dino-glass rounded-[28px] p-5 shadow-xl shadow-black/5 sm:p-6">
       <div className="mx-auto max-w-xl text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-pink-500/10">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center">
           <img
             src="/logodino.PNG"
             alt=""
@@ -775,7 +775,7 @@ export default function DinoAIChat({
     <div className="flex h-full flex-col p-4">
       <div className="mb-5 flex items-center justify-between px-1">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm">
+          <div className="flex h-10 w-10 items-center justify-center">
             <img
               src="/logodino.PNG"
               alt=""
@@ -951,7 +951,7 @@ export default function DinoAIChat({
               >
                 <PanelLeft className="h-5 w-5" />
               </button>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-pink-500/10">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center">
                 <img
                   src="/logodino.PNG"
                   alt=""
@@ -983,7 +983,7 @@ export default function DinoAIChat({
                   }`}
                 >
                   {message.role === "assistant" && (
-                    <div className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                    <div className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center">
                       <img
                         src="/logodino.PNG"
                         alt=""
@@ -1165,7 +1165,7 @@ export default function DinoAIChat({
               )}
               {loading && (
                 <div className="flex items-end gap-3">
-                  <div className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                  <div className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center">
                     <img
                       src="/logodino.PNG"
                       alt=""

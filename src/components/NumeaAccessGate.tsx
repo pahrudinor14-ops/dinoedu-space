@@ -1,8 +1,7 @@
-import { useEffect, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from "react"
+﻿import { useEffect, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from "react"
 import { CheckCircle2, Clock3, Loader2, Send, ShieldAlert, UserRound, XCircle } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import NumeaPage from "./NumeaPage"
-
 interface NumeaAccessGateProps {
   onBack: () => void
   darkMode?: boolean
@@ -13,17 +12,13 @@ interface NumeaAccessGateProps {
   onOpenAISoal?: () => void
   onOpenAIModulAjar?: () => void
 }
-
 type MembershipStatus = "pending" | "approved" | "rejected" | "suspended" | null
-
 const roles = ["Guru", "Siswa/Mahasiswa", "Tenaga kependidikan", "Orang tua", "Penggiat pendidikan", "Umum"]
 const interestOptions = ["Pembelajaran", "Teknologi pendidikan", "AI & pendidikan", "Matematika", "Literasi", "Pengembangan guru", "Kreativitas", "Lainnya"]
 const activityOptions = ["Belajar", "Membuat dan berbagi karya", "Berdiskusi", "Mengikuti kegiatan", "Mengembangkan kompetensi", "Berkolaborasi"]
-
 function GlassCard({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <div className={`dino-glass rounded-[32px] ${className}`}>{children}</div>
 }
-
 export default function NumeaAccessGate({
   onBack,
   darkMode,
@@ -45,7 +40,6 @@ export default function NumeaAccessGate({
   const [joinReason, setJoinReason] = useState("")
   const [activities, setActivities] = useState<string[]>([])
   const [agreement, setAgreement] = useState(false)
-
   async function loadAccess() {
     setLoading(true)
     setError("")
@@ -58,15 +52,12 @@ export default function NumeaAccessGate({
     setStatus((data as MembershipStatus) ?? null)
     setLoading(false)
   }
-
   useEffect(() => {
     void loadAccess()
   }, [])
-
   function toggleValue(value: string, current: string[], setter: Dispatch<SetStateAction<string[]>>) {
     setter(current.includes(value) ? current.filter((item) => item !== value) : [...current, value])
   }
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setSubmitting(true)
@@ -93,11 +84,9 @@ export default function NumeaAccessGate({
     setStatus("pending")
     setSubmitting(false)
   }
-
   if (loading) {
     return <div className="min-h-dvh bg-background text-foreground"><div className="flex min-h-dvh items-center justify-center px-5"><div className="flex items-center gap-3 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin text-[#EF629F]" />Memeriksa akses NUMEA EDU</div></div></div>
   }
-
   if (status === "approved") return <NumeaPage
       onBack={onBack}
       darkMode={darkMode}
@@ -108,7 +97,6 @@ export default function NumeaAccessGate({
       onOpenAISoal={onOpenAISoal}
       onOpenAIModulAjar={onOpenAIModulAjar}
     />
-
   return (
     <div className="min-h-dvh overflow-x-hidden bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
@@ -118,10 +106,10 @@ export default function NumeaAccessGate({
       <main className="mx-auto flex min-h-dvh max-w-3xl items-center px-5 py-12 sm:px-6 lg:px-8">
         {status === null || status === "rejected" ? (
           <GlassCard className="w-full p-7 sm:p-10">
-            <div className="flex items-start justify-between gap-4">
-              <div>
+            <div className="flex flex-col-reverse items-start gap-4 sm:flex-row sm:justify-between">
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 text-[14px] font-semibold text-[#EF629F]"><UserRound className="h-4 w-4" />NUMEA EDU</div>
-                <h1 className="mt-3 text-3xl font-bold tracking-normal sm:text-4xl">{status === "rejected" ? "Ajukan kembali bergabung" : "Bergabung dengan NUMEA EDU"}</h1>
+                <h1 className="dino-hero-title mt-3 text-3xl font-bold sm:text-4xl">{status === "rejected" ? "Ajukan kembali bergabung" : "Bergabung dengan NUMEA EDU"}</h1>
                 <p className="mt-3 text-[17px] leading-relaxed text-muted-foreground">NUMEA adalah ruang belajar dan berbagi yang terkurasi. Isi beberapa informasi singkat agar pengajuanmu dapat ditinjau dengan baik</p>
               </div>
               <button type="button" onClick={onBack} className="dino-button shrink-0 rounded-full border border-border/60 bg-white/40 px-4 py-2 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5">Kembali</button>
@@ -140,9 +128,9 @@ export default function NumeaAccessGate({
             </form>
           </GlassCard>
         ) : status === "pending" ? (
-          <GlassCard className="w-full p-8 text-center sm:p-12"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EECDA3]/20"><Clock3 className="h-7 w-7 text-[#EF629F]" /></div><h1 className="mt-6 text-3xl font-bold">Pengajuan sedang ditinjau</h1><p className="mx-auto mt-4 max-w-xl text-[17px] leading-relaxed text-muted-foreground">Terima kasih sudah mengajukan bergabung dengan NUMEA EDU. Admin akan meninjau pengajuanmu sebelum akses diberikan</p><div className="mt-7 inline-flex items-center gap-2 rounded-full border border-[#EF629F]/20 bg-[#EF629F]/5 px-4 py-2 text-[13px] font-semibold text-[#EF629F]"><Clock3 className="h-4 w-4" />Menunggu Persetujuan</div><button type="button" onClick={onBack} className="dino-button mt-8 inline-flex items-center justify-center rounded-full border border-border/60 bg-white/40 px-6 py-3 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5">Kembali ke DinoEdu Space</button></GlassCard>
+          <GlassCard className="w-full p-8 text-center sm:p-12"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EECDA3]/20"><Clock3 className="h-7 w-7 text-[#EF629F]" /></div><h1 className="dino-hero-title mt-6 text-3xl font-bold">Pengajuan sedang ditinjau</h1><p className="mx-auto mt-4 max-w-xl text-[17px] leading-relaxed text-muted-foreground">Terima kasih sudah mengajukan bergabung dengan NUMEA EDU. Admin akan meninjau pengajuanmu sebelum akses diberikan</p><div className="mt-7 inline-flex items-center gap-2 rounded-full border border-[#EF629F]/20 bg-[#EF629F]/5 px-4 py-2 text-[13px] font-semibold text-[#EF629F]"><Clock3 className="h-4 w-4" />Menunggu Persetujuan</div><button type="button" onClick={onBack} className="dino-button mt-8 inline-flex items-center justify-center rounded-full border border-border/60 bg-white/40 px-6 py-3 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5">Kembali ke DinoEdu Space</button></GlassCard>
         ) : (
-          <GlassCard className="w-full p-8 text-center sm:p-12"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10"><ShieldAlert className="h-7 w-7 text-destructive" /></div><h1 className="mt-6 text-3xl font-bold">Akses NUMEA ditangguhkan</h1><p className="mx-auto mt-4 max-w-xl text-[17px] leading-relaxed text-muted-foreground">Akses ke NUMEA EDU untuk akun ini sedang ditangguhkan. Silakan hubungi Admin NUMEA jika membutuhkan informasi lebih lanjut</p><button type="button" onClick={onBack} className="dino-button mt-8 inline-flex items-center justify-center rounded-full border border-border/60 bg-white/40 px-6 py-3 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5">Kembali ke DinoEdu Space</button></GlassCard>
+          <GlassCard className="w-full p-8 text-center sm:p-12"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10"><ShieldAlert className="h-7 w-7 text-destructive" /></div><h1 className="dino-hero-title mt-6 text-3xl font-bold">Akses NUMEA ditangguhkan</h1><p className="mx-auto mt-4 max-w-xl text-[17px] leading-relaxed text-muted-foreground">Akses ke NUMEA EDU untuk akun ini sedang ditangguhkan. Silakan hubungi Admin NUMEA jika membutuhkan informasi lebih lanjut</p><button type="button" onClick={onBack} className="dino-button mt-8 inline-flex items-center justify-center rounded-full border border-border/60 bg-white/40 px-6 py-3 text-[14px] font-semibold backdrop-blur-xl dark:bg-white/5">Kembali ke DinoEdu Space</button></GlassCard>
         )}
       </main>
       <style>{`.numea-select option { background: #fff; color: #2B2729; }.dark .numea-select option { background: #1D191F; color: #F8F4F5; }.dark .numea-select { color-scheme: dark; }`}</style>

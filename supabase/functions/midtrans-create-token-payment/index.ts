@@ -1,35 +1,27 @@
-
-import { createClient } from "npm:@supabase/supabase-js@2";
-
+﻿import { createClient } from "npm:@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-
 const AMOUNT_IDR = 5000;
 const CREDITS = 10;
 const MIDTRANS_URL = "https://api.sandbox.midtrans.com/v2/charge";
-
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
-
 function getEnv(name: string): string | null {
   return Deno.env.get(name)?.trim() || null;
 }
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-
 function safeQrUrl(value: unknown): string | null {
   if (typeof value !== "string") return null;
-
   try {
     const url = new URL(value);
     if (
@@ -43,35 +35,28 @@ function safeQrUrl(value: unknown): string | null {
   } catch {
     // URL tidak valid.
   }
-
   return null;
 }
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
-
   if (req.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
-
   try {
     const bearer = req.headers
       .get("Authorization")
       ?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
-
     if (!bearer) {
       return jsonResponse({ error: "Silakan masuk terlebih dahulu." }, 401);
     }
-
     const supabaseUrl = getEnv("SUPABASE_URL");
     const anonKey =
       getEnv("SUPABASE_ANON_KEY") ??
       getEnv("SUPABASE_PUBLISHABLE_KEY");
     const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
     const serverKey = getEnv("MIDTRANS_SERVER_KEY");
-
     if (!supabaseUrl || !anonKey || !serviceRoleKey || !serverKey) {
       console.error("Token payment: environment belum lengkap.");
       return jsonResponse(
@@ -79,34 +64,26 @@ Deno.serve(async (req) => {
         503,
       );
     }
-
     const authClient = createClient(supabaseUrl, anonKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-
     const {
       data: { user },
       error: authError,
     } = await authClient.auth.getUser(bearer);
-
     if (authError || !user) {
       return jsonResponse({ error: "Sesi pengguna tidak valid." }, 401);
     }
-
     let body: unknown;
-
     try {
       body = await req.json();
     } catch {
       return jsonResponse({ error: "Request JSON tidak valid." }, 400);
     }
-
     if (!isRecord(body)) {
       return jsonResponse({ error: "Format request tidak valid." }, 400);
     }
-
     const rawKey = body.idempotencyKey;
-
     if (
       typeof rawKey !== "string" ||
       rawKey.trim().length < 8 ||
@@ -117,13 +94,10 @@ Deno.serve(async (req) => {
         400,
       );
     }
-
     const idempotencyKey = rawKey.trim();
-
     const admin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-
     // Gunakan ulang pesanan untuk kunci yang sama.
     const { data: existing, error: readError } = await admin
       .from("dino_ai_token_payment_orders")
@@ -133,12 +107,10 @@ Deno.serve(async (req) => {
       .eq("user_id", user.id)
       .eq("idempotency_key", idempotencyKey)
       .maybeSingle();
-
     if (readError) {
       console.error("Token payment: gagal membaca order.", readError.message);
       return jsonResponse({ error: "Pesanan tidak dapat diperiksa." }, 500);
     }
-
     if (existing) {
       if (existing.status === "pending" && existing.qr_url) {
         return jsonResponse({
@@ -151,7 +123,6 @@ Deno.serve(async (req) => {
           reused: true,
         });
       }
-
       if (existing.status === "paid") {
         return jsonResponse({
           orderId: existing.order_id,
@@ -162,7 +133,6 @@ Deno.serve(async (req) => {
           reused: true,
         });
       }
-
       return jsonResponse(
         {
           error: "Kunci sudah digunakan. Buat kunci baru untuk order baru.",
@@ -171,9 +141,7 @@ Deno.serve(async (req) => {
         409,
       );
     }
-
     const orderId = `DINO-TOK-${crypto.randomUUID()}`;
-
     const { error: insertError } = await admin
       .from("dino_ai_token_payment_orders")
       .insert({
@@ -186,10 +154,8 @@ Deno.serve(async (req) => {
         currency: "IDR",
         status: "pending",
       });
-
     if (insertError) {
       console.error("Token payment: gagal membuat order.", insertError.message);
-
       return jsonResponse(
         {
           error:
@@ -200,9 +166,7 @@ Deno.serve(async (req) => {
         insertError.code === "23505" ? 409 : 500,
       );
     }
-
     let response: Response;
-
     try {
       response = await fetch(MIDTRANS_URL, {
         method: "POST",
@@ -236,26 +200,21 @@ Deno.serve(async (req) => {
         .update({ status: "failed", updated_at: new Date().toISOString() })
         .eq("order_id", orderId)
         .neq("status", "paid");
-
       console.error("Token payment: koneksi Midtrans gagal.", {
         message: error instanceof Error ? error.message : "unknown",
       });
-
       return jsonResponse(
         { error: "Tidak dapat terhubung ke Midtrans Sandbox." },
         502,
       );
     }
-
     const gateway: unknown = await response.json().catch(() => null);
-
     if (!response.ok || !isRecord(gateway)) {
       await admin
         .from("dino_ai_token_payment_orders")
         .update({ status: "failed", updated_at: new Date().toISOString() })
         .eq("order_id", orderId)
         .neq("status", "paid");
-
       console.error("Token payment: Midtrans menolak charge.", {
         httpStatus: response.status,
         statusCode:
@@ -263,30 +222,24 @@ Deno.serve(async (req) => {
             ? gateway.status_code
             : null,
       });
-
       return jsonResponse(
         { error: "Midtrans menolak pembuatan QRIS." },
         502,
       );
     }
-
     const actions = Array.isArray(gateway.actions)
       ? gateway.actions.filter(isRecord)
       : [];
-
     const candidates = [
       ...actions.filter((a) => a.name === "generate-qr-code-v2"),
       ...actions.filter((a) => a.name === "generate-qr-code"),
     ];
-
     const selected = candidates.find((a) => safeQrUrl(a.url) !== null);
     const qrUrl = selected ? safeQrUrl(selected.url) : null;
-
     const transactionId =
       typeof gateway.transaction_id === "string"
         ? gateway.transaction_id
         : null;
-
     if (gateway.order_id !== orderId || !qrUrl) {
       await admin
         .from("dino_ai_token_payment_orders")
@@ -297,20 +250,17 @@ Deno.serve(async (req) => {
         })
         .eq("order_id", orderId)
         .neq("status", "paid");
-
       console.error("Token payment: respons QRIS tidak valid.", {
         orderIdMatches: gateway.order_id === orderId,
         actionNames: actions.map((a) =>
           typeof a.name === "string" ? a.name : null
         ),
       });
-
       return jsonResponse(
         { error: "Respons QRIS tidak valid. Periksa log Edge Function." },
         502,
       );
     }
-
     const { error: updateError } = await admin
       .from("dino_ai_token_payment_orders")
       .update({
@@ -321,7 +271,6 @@ Deno.serve(async (req) => {
       })
       .eq("order_id", orderId)
       .eq("status", "pending");
-
     if (updateError) {
       console.error("Token payment: gagal menyimpan QRIS.", updateError.message);
       return jsonResponse(
@@ -332,7 +281,6 @@ Deno.serve(async (req) => {
         500,
       );
     }
-
     return jsonResponse({
       orderId,
       amountIdr: AMOUNT_IDR,
@@ -346,7 +294,6 @@ Deno.serve(async (req) => {
     console.error("Token payment: unexpected error.", {
       message: error instanceof Error ? error.message : "unknown",
     });
-
     return jsonResponse(
       { error: "Tidak dapat membuat pesanan QRIS saat ini." },
       500,

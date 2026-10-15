@@ -1,14 +1,11 @@
-import { useEffect, useState } from "react"
+﻿import { useEffect, useState } from "react"
 import { Loader2, ShieldOff, X } from "lucide-react"
 import { supabase } from "../lib/supabase"
-
 interface MFADisableProps {
   onDisabled: () => void
   onClose: () => void
 }
-
 type Step = "loading" | "confirm" | "success"
-
 export default function MFADisable({
   onDisabled,
   onClose,
@@ -18,91 +15,72 @@ export default function MFADisable({
   const [factorId, setFactorId] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-
   useEffect(() => {
     const loadFactor = async () => {
       setError("")
-
       const { data, error: factorError } =
         await supabase.auth.mfa.listFactors()
-
       if (factorError) {
         setError("Gagal memeriksa status 2FA")
         setStep("confirm")
         return
       }
-
       const verifiedFactor = data.totp?.find(
         (factor) => factor.status === "verified"
       )
-
       if (!verifiedFactor) {
         setError("Tidak ditemukan 2FA yang aktif")
         setStep("confirm")
         return
       }
-
       setFactorId(verifiedFactor.id)
       setStep("confirm")
     }
-
     loadFactor()
   }, [])
-
   const handleDisable = async () => {
     if (!factorId) {
       setError("2FA aktif tidak ditemukan")
       return
     }
-
     if (!/^\d{6}$/.test(code)) {
       setError("Masukkan kode 6 digit dari aplikasi authenticator")
       return
     }
-
     setLoading(true)
     setError("")
-
     try {
       // Buat challenge untuk faktor 2FA
       const { data: challengeData, error: challengeError } =
         await supabase.auth.mfa.challenge({
           factorId,
         })
-
       if (challengeError || !challengeData) {
         throw new Error(
           challengeError?.message || "Gagal membuat verifikasi 2FA"
         )
       }
-
       // Verifikasi kode 2FA
       const { error: verifyError } = await supabase.auth.mfa.verify({
         factorId,
         challengeId: challengeData.id,
         code,
       })
-
       if (verifyError) {
         throw new Error("Kode 2FA salah atau sudah kedaluwarsa")
       }
-
       // Hapus faktor 2FA
       const { error: unenrollError } = await supabase.auth.mfa.unenroll({
         factorId,
       })
-
       if (unenrollError) {
         throw new Error(unenrollError.message)
       }
-
       // Segarkan session agar assurance level langsung turun ke AAL1
       const { error: refreshError } = await supabase.auth.refreshSession()
-
       if (refreshError) {
         throw new Error(refreshError.message)
       }
-
       setStep("success")
     } catch (err) {
       setError(
@@ -114,11 +92,9 @@ export default function MFADisable({
       setLoading(false)
     }
   }
-
   const handleSuccess = () => {
     onDisabled()
   }
-
   return (
     <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-black/10 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-[#171717] sm:p-8">
       {/* DINOEDU SPACE MFA DISABLE HEADER */}
@@ -131,31 +107,26 @@ export default function MFADisable({
       >
         <X className="h-5 w-5" />
       </button>
-
       {step === "loading" && (
         <div className="flex min-h-[260px] items-center justify-center">
           <Loader2 className="h-7 w-7 animate-spin text-pink-500" />
         </div>
       )}
-
       {step === "confirm" && (
         <div className="pt-4">
           {/* DINOEDU SPACE MFA DISABLE ICON */}
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-pink-500/10">
             <ShieldOff className="h-8 w-8 text-pink-500" />
           </div>
-
           <div className="text-center">
             <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
               Matikan 2FA
             </h2>
-
             <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-gray-600 dark:text-gray-400">
               Masukkan kode 6 digit dari aplikasi authenticator untuk
               menonaktifkan verifikasi dua langkah
             </p>
           </div>
-
           {/* DINOEDU SPACE MFA CODE */}
           <div className="mt-7">
             <label
@@ -164,7 +135,6 @@ export default function MFADisable({
             >
               Kode authenticator
             </label>
-
             <input
               id="disable-mfa-code"
               type="text"
@@ -180,13 +150,11 @@ export default function MFADisable({
               className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 text-center text-2xl font-semibold tracking-[0.45em] text-gray-900 outline-none transition duration-200 focus:border-pink-400 focus:ring-4 focus:ring-pink-500/10 dark:border-white/10 dark:bg-white/5 dark:text-white"
             />
           </div>
-
           {error && (
             <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
               {error}
             </div>
           )}
-
           <div className="mt-7 grid gap-3 sm:grid-cols-2">
             <button
               type="button"
@@ -196,7 +164,6 @@ export default function MFADisable({
             >
               Batal
             </button>
-
             <button
               type="button"
               onClick={handleDisable}
@@ -215,22 +182,18 @@ export default function MFADisable({
           </div>
         </div>
       )}
-
       {step === "success" && (
         <div className="py-8 text-center">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-500/10">
             <ShieldOff className="h-8 w-8 text-green-500" />
           </div>
-
           <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
             2FA Berhasil Dimatikan
           </h2>
-
           <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-gray-600 dark:text-gray-400">
             Verifikasi dua langkah sudah dinonaktifkan pada akun
             DinoEdu Space
           </p>
-
           <button
             type="button"
             onClick={handleSuccess}

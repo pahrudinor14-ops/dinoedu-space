@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -11,10 +11,8 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
-
 type FeedbackStatus = "Baru" | "Diproses" | "Selesai";
 type FeedbackType = "Saran" | "Komentar" | "Laporan masalah" | "Ide cerita";
-
 interface FeedbackItem {
   id: number;
   name: string;
@@ -23,27 +21,22 @@ interface FeedbackItem {
   created_at: string;
   status: FeedbackStatus;
 }
-
 interface FeedbackAdminProps {
   onBack: () => void;
 }
-
 const statuses: FeedbackStatus[] = ["Baru", "Diproses", "Selesai"];
 const categories = ["Semua kategori", "Saran", "Komentar", "Laporan masalah", "Ide cerita"];
-
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("id-ID", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
 }
-
 function statusClasses(status: FeedbackStatus) {
   if (status === "Selesai") return "bg-emerald-500/10 text-emerald-600";
   if (status === "Diproses") return "bg-amber-500/10 text-amber-600";
   return "bg-pink-500/10 text-pink-600";
 }
-
 export default function FeedbackAdmin({ onBack }: FeedbackAdminProps) {
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,17 +46,14 @@ export default function FeedbackAdmin({ onBack }: FeedbackAdminProps) {
   const [category, setCategory] = useState("Semua kategori");
   const [statusFilter, setStatusFilter] = useState("Semua status");
   const [errorMessage, setErrorMessage] = useState("");
-
   const loadFeedback = useCallback(async (isRefresh = false) => {
     setErrorMessage("");
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
-
     const { data, error } = await supabase
       .from("dinomath_feedback")
       .select("id, name, feedback_type, message, created_at, status")
       .order("created_at", { ascending: false });
-
     if (error) {
       console.error("Gagal memuat saran dan kritik:", error);
       setErrorMessage(
@@ -72,15 +62,12 @@ export default function FeedbackAdmin({ onBack }: FeedbackAdminProps) {
     } else {
       setItems((data ?? []) as FeedbackItem[]);
     }
-
     setLoading(false);
     setRefreshing(false);
   }, []);
-
   useEffect(() => {
     void loadFeedback();
   }, [loadFeedback]);
-
   const filteredItems = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("id-ID");
     return items.filter((item) => {
@@ -95,7 +82,6 @@ export default function FeedbackAdmin({ onBack }: FeedbackAdminProps) {
       return matchesQuery && matchesCategory && matchesStatus;
     });
   }, [items, search, category, statusFilter]);
-
   const counts = useMemo(
     () => ({
       total: items.length,
@@ -105,17 +91,14 @@ export default function FeedbackAdmin({ onBack }: FeedbackAdminProps) {
     }),
     [items]
   );
-
   const updateStatus = async (item: FeedbackItem, status: FeedbackStatus) => {
     if (item.status === status) return;
     setUpdatingId(item.id);
     setErrorMessage("");
-
     const { error } = await supabase
       .from("dinomath_feedback")
       .update({ status })
       .eq("id", item.id);
-
     if (error) {
       console.error("Gagal memperbarui status masukan:", error);
       setErrorMessage(
@@ -130,9 +113,8 @@ export default function FeedbackAdmin({ onBack }: FeedbackAdminProps) {
     }
     setUpdatingId(null);
   };
-
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="min-h-dvh bg-background text-foreground">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <button
           type="button"
@@ -142,7 +124,6 @@ export default function FeedbackAdmin({ onBack }: FeedbackAdminProps) {
           <ArrowLeft className="h-4 w-4" />
           Kembali ke dashboard
         </button>
-
         <section className="dino-glass overflow-hidden rounded-[30px] p-6 sm:p-9">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -150,7 +131,7 @@ export default function FeedbackAdmin({ onBack }: FeedbackAdminProps) {
                 <ShieldAlert className="h-4 w-4" />
                 Panel admin
               </div>
-              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              <h1 className="dino-hero-title text-3xl font-bold sm:text-4xl">
                 Saran &amp; Kritik
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
@@ -173,7 +154,6 @@ export default function FeedbackAdmin({ onBack }: FeedbackAdminProps) {
             </button>
           </div>
         </section>
-
         <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { label: "Total masukan", value: counts.total, icon: Inbox },
@@ -190,7 +170,6 @@ export default function FeedbackAdmin({ onBack }: FeedbackAdminProps) {
             </div>
           ))}
         </section>
-
         <section className="dino-glass mt-6 rounded-[26px] p-4 sm:p-6">
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_190px]">
             <label className="relative block">
@@ -224,17 +203,14 @@ export default function FeedbackAdmin({ onBack }: FeedbackAdminProps) {
               ))}
             </select>
           </div>
-
           {errorMessage && (
             <div role="alert" className="mt-5 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-sm leading-6 text-red-600">
               {errorMessage}
             </div>
           )}
-
           <div className="mt-5 flex items-center justify-between gap-3 text-sm text-muted-foreground">
             <span>{filteredItems.length} masukan ditampilkan</span>
           </div>
-
           {loading ? (
             <div className="flex min-h-56 items-center justify-center gap-3 text-sm text-muted-foreground">
               <LoaderCircle className="h-5 w-5 animate-spin" />

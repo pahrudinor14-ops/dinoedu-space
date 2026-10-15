@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+﻿import { useEffect, useState } from "react"
 import { ArrowLeft, Check, Clock3, Eye, Loader2, Search, ShieldAlert, UserCheck, UserX, X, type LucideIcon } from "lucide-react"
 import { supabase } from "../lib/supabase"
 interface NumeaAdminProps {
@@ -13,6 +13,7 @@ interface Member {
   full_name: string
   role: string
   institution?: string
+  avatarUrl?: string | null
 }
 interface NumeaAdminAccount {
   user_id: string
@@ -47,6 +48,7 @@ export default function NumeaAdmin({ onBack }: NumeaAdminProps) {
   const [members, setMembers] = useState<Member[]>([])
   const [adminAccounts] = useState<NumeaAdminAccount[]>([])
   const [memberLoading, setMemberLoading] = useState(true)
+  const [memberPhotoMessage, setMemberPhotoMessage] = useState("")
   const loadMembers = async () => {
     setMemberLoading(true)
     const { data, error } = await supabase.rpc("get_numea_member_management")
@@ -56,10 +58,52 @@ export default function NumeaAdmin({ onBack }: NumeaAdminProps) {
       setMemberLoading(false)
       return
     }
-    setMembers((data ?? []) as Member[])
+    const loadedMembers = (data ?? []) as Member[]
+    if (loadedMembers.length === 0) {
+      setMembers([])
+      setMemberPhotoMessage("")
+      setMemberLoading(false)
+      return
+    }
+    const userIds = loadedMembers.map((member) => member.user_id)
+    const { data: profiles, error: profileError } = await supabase
+      .from("numea_profiles")
+      .select("user_id,avatar_path")
+      .in("user_id", userIds)
+    if (profileError) {
+      setMembers(loadedMembers)
+      setMemberPhotoMessage("Foto profil belum dapat diakses. Data anggota tetap ditampilkan.")
+      setMemberLoading(false)
+      return
+    }
+    const profileByUser = new Map((profiles ?? []).map((profile) => [profile.user_id, profile.avatar_path]))
+    const avatarPaths = [...new Set((profiles ?? []).flatMap((profile) => profile.avatar_path ? [profile.avatar_path] : []))]
+    const avatarUrlByPath = new Map<string, string>()
+    if (avatarPaths.length > 0) {
+      const { data: signedAvatars, error: avatarError } = await supabase.storage
+        .from("numea-profile-photos")
+        .createSignedUrls(avatarPaths, 60 * 60)
+      if (avatarError) {
+        setMemberPhotoMessage("Foto profil gagal dimuat. Data anggota tetap ditampilkan.")
+      } else {
+        for (const avatar of signedAvatars ?? []) {
+          if (avatar.path && avatar.signedUrl) avatarUrlByPath.set(avatar.path, avatar.signedUrl)
+        }
+        if (signedAvatars?.some((avatar) => avatar.error || !avatar.signedUrl)) {
+          setMemberPhotoMessage("Beberapa foto profil belum dapat dimuat.")
+        } else {
+          setMemberPhotoMessage("")
+        }
+      }
+    } else {
+      setMemberPhotoMessage("")
+    }
+    setMembers(loadedMembers.map((member) => {
+      const avatarPath = profileByUser.get(member.user_id)
+      return { ...member, avatarUrl: avatarPath ? avatarUrlByPath.get(avatarPath) ?? null : null }
+    }))
     setMemberLoading(false)
   }
-
   const loadRequests = async () => {
     setLoading(true)
     setMessage("")
@@ -156,7 +200,7 @@ export default function NumeaAdmin({ onBack }: NumeaAdminProps) {
     ["Suspended", suspendedCount, ShieldAlert, "text-[#FF7411]"],
   ]
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-dvh bg-background text-foreground">
       <style>{`
         .numea-admin-select option { background: #fff; color: #2B2729; }
         .dark .numea-admin-select option { background: #1D191F; color: #F8F4F5; }
@@ -273,6 +317,7 @@ export default function NumeaAdmin({ onBack }: NumeaAdminProps) {
             <h2 className="mt-1 text-2xl font-bold">Member Aktif</h2>
             <p className="mt-1 text-[13px] text-muted-foreground">Kelola status akses member NUMEA</p>
           </div>
+          {memberPhotoMessage && <p role="status" className="mt-4 rounded-xl border border-[#FF7411]/20 bg-[#FF7411]/5 px-4 py-3 text-[12px] text-muted-foreground">{memberPhotoMessage}</p>}
           <div className="mt-5 overflow-hidden rounded-2xl border border-border/60">
             {memberLoading ? (
               <div className="flex items-center justify-center gap-2 px-5 py-12 text-[13px] text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Memuat member...</div>
@@ -282,12 +327,21 @@ export default function NumeaAdmin({ onBack }: NumeaAdminProps) {
               <div className="divide-y divide-border/60">
                 {members.map((member) => (
                   <div key={member.user_id} className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                    <div className="min-w-0">
-                      <div className="font-semibold">{member.full_name}</div>
-                      <div className="mt-1 text-[12px] text-muted-foreground">{member.role} · {member.institution || "Institusi belum diisi"}</div>
-                      <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em]">
-                        {member.status === "approved" ? <UserCheck className="h-3 w-3 text-emerald-500" /> : <ShieldAlert className="h-3 w-3 text-[#FF7411]" />}
-                        {member.status === "approved" ? "Aktif" : "Suspended"}
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/60 bg-gradient-to-br from-[#F6C64F]/30 via-[#FF7411]/15 to-[#E95C9E]/25 text-sm font-bold text-[#C43B80]">
+                        {member.avatarUrl ? (
+                          <img src={member.avatarUrl} alt={`Foto profil ${member.full_name}`} loading="lazy" className="h-full w-full object-cover" />
+                        ) : (
+                          <span aria-hidden="true">{member.full_name.trim().charAt(0).toUpperCase() || "?"}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate font-semibold">{member.full_name}</div>
+                        <div className="mt-1 text-[12px] text-muted-foreground">{member.role} · {member.institution || "Institusi belum diisi"}</div>
+                        <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em]">
+                          {member.status === "approved" ? <UserCheck className="h-3 w-3 text-emerald-500" /> : <ShieldAlert className="h-3 w-3 text-[#FF7411]" />}
+                          {member.status === "approved" ? "Aktif" : "Suspended"}
+                        </div>
                       </div>
                     </div>
                     {member.status === "approved" ? (
@@ -310,7 +364,7 @@ export default function NumeaAdmin({ onBack }: NumeaAdminProps) {
       </main>
       {selectedRequest && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[28px] border border-border/60 bg-background p-6 shadow-2xl sm:p-7">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-[28px] border border-border/60 bg-background p-5 shadow-2xl sm:p-7">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#E95C9E]">Detail Pengajuan</div>

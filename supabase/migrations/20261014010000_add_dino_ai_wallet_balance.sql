@@ -1,5 +1,4 @@
-
-CREATE OR REPLACE FUNCTION public.get_dino_ai_wallet_balance()
+﻿CREATE OR REPLACE FUNCTION public.get_dino_ai_wallet_balance()
 RETURNS integer
 LANGUAGE sql
 STABLE
@@ -13,6 +12,5 @@ AS $function$
     AND l.remaining_credits > 0
     AND (l.expires_at IS NULL OR l.expires_at > now());
 $function$;
-
 REVOKE ALL ON FUNCTION public.get_dino_ai_wallet_balance() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_dino_ai_wallet_balance() TO authenticated;

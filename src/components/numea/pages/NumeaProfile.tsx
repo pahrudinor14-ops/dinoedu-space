@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react"
+﻿import { useEffect, useState, type ChangeEvent, type FormEvent } from "react"
 import {
   Camera,
   Check,
@@ -11,16 +11,13 @@ import {
   UserRound,
 } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
-
 type NumeaProfileProps = {
   onBack: () => void
   compact?: boolean
   onAvatarChange?: (url: string | null) => void
 }
-
 const AVATAR_BUCKET = "numea-profile-photos"
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024
-
 export default function NumeaProfile({
   compact = false,
   onAvatarChange,
@@ -45,10 +42,8 @@ export default function NumeaProfile({
   const [success, setSuccess] = useState("")
   const [securityError, setSecurityError] = useState("")
   const [securitySuccess, setSecuritySuccess] = useState("")
-
   useEffect(() => {
     let cancelled = false
-
     async function loadProfile() {
       setLoading(true)
       setError("")
@@ -57,28 +52,23 @@ export default function NumeaProfile({
         if (authError) throw authError
         if (!user) throw new Error("Sesi login tidak ditemukan. Silakan login kembali.")
         if (!cancelled) setEmail(user.email ?? "")
-
         const { data, error: profileError } = await supabase
           .from("numea_profiles")
           .select("full_name, institution, avatar_path, interests")
           .eq("user_id", user.id)
           .maybeSingle()
-
         if (profileError) throw profileError
         if (cancelled) return
-
         const loaded = data ?? {
           full_name: user.user_metadata?.full_name ?? "",
           institution: "",
           avatar_path: null,
           interests: [],
         }
-
         setFullName(loaded.full_name ?? "")
         setInstitution(loaded.institution ?? "")
         setHobbies(Array.isArray(loaded.interests) ? loaded.interests.join(", ") : "")
         setAvatarPath(loaded.avatar_path ?? null)
-
         if (loaded.avatar_path) {
           const { data: signed, error: signedError } = await supabase.storage
             .from(AVATAR_BUCKET)
@@ -97,11 +87,9 @@ export default function NumeaProfile({
         if (!cancelled) setLoading(false)
       }
     }
-
     void loadProfile()
     return () => { cancelled = true }
   }, [onAvatarChange])
-
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError("")
@@ -111,20 +99,17 @@ export default function NumeaProfile({
       setError("Nama wajib diisi.")
       return
     }
-
     setSaving(true)
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       if (authError) throw authError
       if (!user) throw new Error("Sesi login tidak ditemukan.")
-
       const payload = {
         full_name: trimmedName,
         institution: institution.trim() || null,
         interests: hobbies.split(",").map((item) => item.trim()).filter(Boolean),
         updated_at: new Date().toISOString(),
       }
-
       // Update the existing profile row first so required fields such as role
       // are not accidentally omitted by an upsert.
       const { data: updatedRows, error: updateError } = await supabase
@@ -133,7 +118,6 @@ export default function NumeaProfile({
         .eq("user_id", user.id)
         .select("user_id")
       if (updateError) throw updateError
-
       // Create a row only when this account does not have one yet.
       if (!updatedRows?.length) {
         const { error: insertError } = await supabase
@@ -145,7 +129,6 @@ export default function NumeaProfile({
           })
         if (insertError) throw insertError
       }
-
       setSuccess("Informasi pribadi berhasil disimpan.")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Informasi pribadi gagal disimpan.")
@@ -153,14 +136,12 @@ export default function NumeaProfile({
       setSaving(false)
     }
   }
-
   async function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     event.target.value = ""
     if (!file) return
     setError("")
     setSuccess("")
-
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       setError("Foto harus berformat JPG, PNG, atau WEBP.")
       return
@@ -169,20 +150,17 @@ export default function NumeaProfile({
       setError("Ukuran foto maksimal 5 MB.")
       return
     }
-
     setUploadingAvatar(true)
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       if (authError) throw authError
       if (!user) throw new Error("Sesi login tidak ditemukan.")
-
       const extension = file.name.split(".").pop()?.toLowerCase() || "jpg"
       const path = `${user.id}/${Date.now()}.${extension}`
       const { error: uploadError } = await supabase.storage
         .from(AVATAR_BUCKET)
         .upload(path, file, { upsert: false, contentType: file.type })
       if (uploadError) throw uploadError
-
       const { error: updateError } = await supabase
         .from("numea_profiles")
         .upsert({
@@ -197,12 +175,10 @@ export default function NumeaProfile({
         await supabase.storage.from(AVATAR_BUCKET).remove([path])
         throw updateError
       }
-
       const { data: signed, error: signedError } = await supabase.storage
         .from(AVATAR_BUCKET)
         .createSignedUrl(path, 60 * 60)
       if (signedError) throw signedError
-
       const previousPath = avatarPath
       setAvatarPath(path)
       setAvatarUrl(signed.signedUrl)
@@ -217,7 +193,6 @@ export default function NumeaProfile({
       setUploadingAvatar(false)
     }
   }
-
   async function handleDeleteAvatar() {
     if (!avatarPath) return
     if (!window.confirm("Hapus foto profil?")) return
@@ -228,13 +203,11 @@ export default function NumeaProfile({
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       if (authError) throw authError
       if (!user) throw new Error("Sesi login tidak ditemukan.")
-
       const { error: updateError } = await supabase
         .from("numea_profiles")
         .update({ avatar_path: null, updated_at: new Date().toISOString() })
         .eq("user_id", user.id)
       if (updateError) throw updateError
-
       const { error: removeError } = await supabase.storage.from(AVATAR_BUCKET).remove([avatarPath])
       if (removeError) throw removeError
       setAvatarPath(null)
@@ -247,7 +220,6 @@ export default function NumeaProfile({
       setUploadingAvatar(false)
     }
   }
-
   async function handleVerifyCurrentPassword() {
     setSecurityError("")
     setSecuritySuccess("")
@@ -255,7 +227,6 @@ export default function NumeaProfile({
       setSecurityError("Masukkan kata sandi saat ini terlebih dahulu.")
       return
     }
-
     setVerifyingCurrentPassword(true)
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -272,7 +243,6 @@ export default function NumeaProfile({
       setVerifyingCurrentPassword(false)
     }
   }
-
   async function handlePasswordChange(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setSecurityError("")
@@ -289,7 +259,6 @@ export default function NumeaProfile({
       setSecurityError("Konfirmasi kata sandi belum cocok.")
       return
     }
-
     setChangingPassword(true)
     try {
       const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
@@ -303,13 +272,11 @@ export default function NumeaProfile({
       setChangingPassword(false)
     }
   }
-
   async function handleSignOut(scope: "local" | "global") {
     const message = scope === "global"
       ? "Keluar dari semua sesi di perangkat lain juga?"
       : "Keluar dari akun pada perangkat ini?"
     if (!window.confirm(message)) return
-
     setSecurityError("")
     setSecuritySuccess("")
     setSigningOut(scope)
@@ -326,11 +293,9 @@ export default function NumeaProfile({
       setSigningOut(null)
     }
   }
-
   const sectionClass = "rounded-2xl border border-border/70 bg-card p-4 sm:p-5"
   const labelClass = "mb-1.5 block text-sm font-semibold text-foreground"
   const inputClass = "w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground outline-none transition focus:border-[#EF629F] focus:ring-2 focus:ring-[#EF629F]/15"
-
   return (
     <div className={compact ? "space-y-5 p-4 sm:p-6" : "mx-auto max-w-3xl space-y-5 p-4 sm:p-6"}>
       <header className="flex items-start gap-3">
@@ -342,7 +307,6 @@ export default function NumeaProfile({
           <p className="mt-1 text-sm text-muted-foreground">Kelola informasi pribadi, kata sandi, dan sesi akun.</p>
         </div>
       </header>
-
       {loading ? (
         <div className="flex items-center justify-center gap-2 rounded-2xl border border-border/70 p-10 text-sm text-muted-foreground">
           <LoaderCircle className="h-5 w-5 animate-spin" /> Memuat profil...
@@ -354,7 +318,6 @@ export default function NumeaProfile({
               <UserRound className="h-5 w-5 text-[#EF629F]" />
               <h3 className="font-bold text-foreground">Informasi pribadi</h3>
             </div>
-
             <div className="mb-5 flex flex-wrap items-center gap-4">
               <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted">
                 {avatarUrl
@@ -376,7 +339,6 @@ export default function NumeaProfile({
               </div>
               <p className="w-full text-xs text-muted-foreground">JPG, PNG, atau WEBP · Maksimal 5 MB.</p>
             </div>
-
             <form onSubmit={handleSave} className="space-y-4">
               <div>
                 <label htmlFor="numea-profile-name" className={labelClass}>Nama</label>
@@ -399,13 +361,11 @@ export default function NumeaProfile({
               </button>
             </form>
           </section>
-
           <section className={sectionClass}>
             <div className="mb-4 flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-[#EF629F]" />
               <h3 className="font-bold text-foreground">Keamanan</h3>
             </div>
-
             <div className="mb-5 rounded-xl bg-muted/60 p-3.5">
               <div className="flex items-start gap-3">
                 <KeyRound className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
@@ -416,7 +376,6 @@ export default function NumeaProfile({
                 </div>
               </div>
             </div>
-
             <div className="space-y-3.5">
               <h4 className="text-sm font-bold text-foreground">Ubah kata sandi</h4>
               {!currentPasswordVerified ? (
@@ -452,7 +411,6 @@ export default function NumeaProfile({
               {securityError && <p role="alert" className="rounded-xl bg-red-50 px-3 py-2.5 text-sm text-red-700">{securityError}</p>}
               {securitySuccess && <p role="status" className="rounded-xl bg-emerald-50 px-3 py-2.5 text-sm text-emerald-700">{securitySuccess}</p>}
             </div>
-
             <div className="my-5 border-t border-border/70" />
             <div className="mb-3">
               <h4 className="text-sm font-bold text-foreground">Sesi</h4>

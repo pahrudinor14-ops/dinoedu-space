@@ -1,4 +1,4 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 import {
   Eye,
   EyeOff,
@@ -8,14 +8,11 @@ import {
   X,
 } from "lucide-react"
 import { supabase } from "../lib/supabase"
-
 type AuthMode = "login" | "register"
-
 type AuthProps = {
   onSuccess?: () => void
   onClose?: () => void
 }
-
 export default function Auth({ onSuccess, onClose }: AuthProps) {
   const [mode, setMode] = useState<AuthMode>("login")
   const [email, setEmail] = useState("")
@@ -27,17 +24,14 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
-
   const resetFeedback = () => {
     setMessage("")
     setError("")
   }
-
   const handleModeChange = (nextMode: AuthMode) => {
     resetFeedback()
     setMode(nextMode)
   }
-
   const handleExistingAccount = () => {
     setMode("login")
     setPassword("")
@@ -46,11 +40,9 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
       "Email ini sudah terdaftar. Silakan masuk dengan metode yang sebelumnya digunakan."
     )
   }
-
   const handleGoogleLogin = async () => {
     resetFeedback()
     setGoogleLoading(true)
-
     try {
       const { error: googleError } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -58,7 +50,6 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
           redirectTo: window.location.origin,
         },
       })
-
       if (googleError) {
         throw googleError
       }
@@ -67,34 +58,26 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
         authError instanceof Error
           ? authError.message
           : "Terjadi kesalahan saat masuk dengan Google"
-
       setError(errorMessage)
       setGoogleLoading(false)
     }
   }
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-
     resetFeedback()
-
     if (!email.trim()) {
       setError("Masukkan email terlebih dahulu")
       return
     }
-
     if (!password) {
       setError("Masukkan password terlebih dahulu")
       return
     }
-
     if (mode === "register" && password !== confirmPassword) {
       setError("Konfirmasi password belum sesuai")
       return
     }
-
     setLoading(true)
-
     try {
       if (mode === "register") {
         const { data: signUpData, error: signUpError } =
@@ -105,11 +88,9 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
             emailRedirectTo: window.location.origin,
           },
         })
-
         const duplicateEmailError = signUpError?.message
           .toLowerCase()
           .includes("already registered")
-
         if (
           duplicateEmailError ||
           signUpData.user?.identities?.length === 0
@@ -117,15 +98,12 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
           handleExistingAccount()
           return
         }
-
         if (signUpError) {
           throw signUpError
         }
-
         setMessage(
           "Akun berhasil dibuat, silakan cek email untuk melakukan verifikasi"
         )
-
         setPassword("")
         setConfirmPassword("")
       } else {
@@ -134,11 +112,9 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
             email: email.trim(),
             password,
           })
-
         if (signInError) {
           throw signInError
         }
-
         setMessage("Login berhasil")
         onSuccess?.()
       }
@@ -147,13 +123,11 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
         authError instanceof Error
           ? authError.message
           : "Terjadi kesalahan saat autentikasi"
-
       setError(errorMessage)
     } finally {
       setLoading(false)
     }
   }
-
   return (
     <section className="mx-auto flex w-full items-center justify-center px-1 py-1 sm:px-2 sm:py-2">
       <div className="w-full max-w-lg">
@@ -168,29 +142,25 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
               <X className="h-5 w-5" />
             </button>
           )}
-
           <div className="mb-5 pr-10 text-center sm:mb-6">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center">
               <img
                 src="/logodino.PNG"
                 alt="Logo DinoEdu"
                 className="h-full w-full scale-110 object-contain"
               />
             </div>
-
             <h2 className="text-xl font-bold sm:text-2xl">
               {mode === "login"
                 ? "Selamat datang kembali"
                 : "Buat akun DinoEdu"}
             </h2>
-
             <p className="mt-2 text-[13px] leading-5 text-black/60 dark:text-white/60 sm:text-sm">
               {mode === "login"
                 ? "Masuk untuk melanjutkan perjalanan digitalmu"
                 : "Buat akun untuk mengakses berbagai fitur DinoEdu Space"}
             </p>
           </div>
-
           <div className="mb-5 grid grid-cols-2 rounded-full bg-black/5 p-1 dark:bg-white/5">
             <button
               type="button"
@@ -204,7 +174,6 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
             >
               Masuk
             </button>
-
             <button
               type="button"
               onClick={() => handleModeChange("register")}
@@ -218,7 +187,6 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
               Daftar
             </button>
           </div>
-
           <button
             type="button"
             onClick={handleGoogleLogin}
@@ -253,22 +221,17 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
                 </svg>
               </span>
             )}
-
             {googleLoading
               ? "Menghubungkan ke Google"
               : "Masuk dengan Google"}
           </button>
-
           <div className="my-4 flex items-center gap-3 sm:my-5">
             <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
-
             <span className="text-[13px] text-black/40 dark:text-white/40">
               atau lanjut dengan email
             </span>
-
             <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
           </div>
-
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             <div>
               <label
@@ -277,10 +240,8 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
               >
                 Email
               </label>
-
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-black/40 dark:text-white/40" />
-
                 <input
                   id="auth-email"
                   type="email"
@@ -292,7 +253,6 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
                 />
               </div>
             </div>
-
             <div>
               <label
                 htmlFor="auth-password"
@@ -300,10 +260,8 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
               >
                 Password
               </label>
-
               <div className="relative">
                 <LockKeyhole className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-black/40 dark:text-white/40" />
-
                 <input
                   id="auth-password"
                   type={showPassword ? "text" : "password"}
@@ -315,7 +273,6 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
                   }
                   className="h-12 w-full rounded-2xl border border-black/10 bg-white/70 pl-12 pr-12 text-sm outline-none transition focus:border-[#EF629F] focus:ring-2 focus:ring-[#EF629F]/20 dark:border-white/10 dark:bg-white/5 sm:h-14 sm:text-base"
                 />
-
                 <button
                   type="button"
                   onClick={() => setShowPassword((value) => !value)}
@@ -334,7 +291,6 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
                 </button>
               </div>
             </div>
-
             {mode === "register" && (
               <div>
                 <label
@@ -343,10 +299,8 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
                 >
                   Konfirmasi Password
                 </label>
-
                 <div className="relative">
                   <LockKeyhole className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-black/40 dark:text-white/40" />
-
                   <input
                     id="auth-confirm-password"
                     type={showConfirmPassword ? "text" : "password"}
@@ -358,7 +312,6 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
                     autoComplete="new-password"
                     className="h-12 w-full rounded-2xl border border-black/10 bg-white/70 pl-12 pr-12 text-sm outline-none transition focus:border-[#EF629F] focus:ring-2 focus:ring-[#EF629F]/20 dark:border-white/10 dark:bg-white/5 sm:h-14 sm:text-base"
                   />
-
                   <button
                     type="button"
                     onClick={() =>
@@ -380,19 +333,16 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
                 </div>
               </div>
             )}
-
             {error && (
               <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-300">
                 {error}
               </div>
             )}
-
             {message && (
               <div className="rounded-2xl border border-[#EF629F]/20 bg-[#EF629F]/10 px-4 py-3 text-sm text-[#D94C87] dark:text-[#F49BC0]">
                 {message}
               </div>
             )}
-
             <button
               type="submit"
               disabled={loading || googleLoading}

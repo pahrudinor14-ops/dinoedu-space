@@ -1,82 +1,70 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource/poppins/400.css";
 @import "@fontsource/poppins/500.css";
 @import "@fontsource/poppins/600.css";
 @import "@fontsource/poppins/700.css";
-
-.modal-scrollbar-hidden {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.modal-scrollbar-hidden::-webkit-scrollbar {
-  display: none;
-}
-
-.chat-scrollbar {
-  scrollbar-color: rgba(160, 155, 163, 0.62) transparent;
+* {
+  scrollbar-color: var(--scrollbar-thumb) transparent;
   scrollbar-width: thin;
 }
-
-.chat-scrollbar::-webkit-scrollbar {
-  width: 10px;
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
-
-.chat-scrollbar::-webkit-scrollbar-track {
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
   background: transparent;
 }
-
-.chat-scrollbar::-webkit-scrollbar-thumb {
+*::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   border-radius: 999px;
-  background-clip: content-box;
-  background-color: rgba(160, 155, 163, 0.62);
+  background-clip: padding-box;
+  background-color: var(--scrollbar-thumb);
 }
-
-.chat-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(160, 155, 163, 0.88);
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
 }
-
+.dino-hero-title {
+  line-height: 1.16;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+img[src="/logodino.PNG"],
+img[src="/numeaedu.PNG"] {
+  border: 0 !important;
+  outline: 0 !important;
+}
 .chat-answer {
   overflow-wrap: anywhere;
   line-height: 1.75;
 }
-
 .chat-answer > :first-child {
   margin-top: 0;
 }
-
 .chat-answer > :last-child {
   margin-bottom: 0;
 }
-
 .chat-answer li + li {
   margin-top: 0.3rem;
 }
-
 .chat-answer li::marker {
   color: #ef629f;
 }
-
 .chat-answer .katex {
   font-size: 1.08em;
 }
-
 .chat-answer .katex-display {
   overflow-x: auto;
   overflow-y: hidden;
   margin-block: 1rem;
   padding-block: 0.25rem 0.5rem;
 }
-
 @custom-variant dark (&:is(.dark *));
-
 @theme inline {
   --font-heading: var(--font-heading-family);
   --font-sans: var(--font-sans-family);
-
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -85,39 +73,29 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
-
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
-
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
-
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
-
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
-
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
-
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
-
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
-
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-
   --color-foreground: var(--foreground);
   --color-background: var(--background);
-
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -126,57 +104,43 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 }
-
 /* DINOEDU SPACE BRAND */
-
 :root {
   --brand-cream: #EECDA3;
   --brand-pink: #EF629F;
-
   --brand-gradient: linear-gradient(
     135deg,
     #EECDA3 0%,
     #EF629F 100%
   );
-
   --font-sans-family: "Poppins", sans-serif;
   --font-heading-family: "Poppins", sans-serif;
-
   --background: #FFFBF8;
   --foreground: #2B2729;
-
+  --scrollbar-thumb: rgba(111, 106, 109, 0.25);
+  --scrollbar-thumb-hover: rgba(111, 106, 109, 0.42);
   --card: #FFFFFF;
   --card-foreground: #2B2729;
-
   --popover: #FFFFFF;
   --popover-foreground: #2B2729;
-
   --primary: #EF629F;
   --primary-foreground: #FFFFFF;
-
   --secondary: #F2F0F0;
   --secondary-foreground: #3F3A3D;
-
   --muted: #F3F1F1;
   --muted-foreground: #6F6A6D;
-
   --accent: #EECDA3;
   --accent-foreground: #3F342A;
-
   --destructive: #DC5C6B;
-
   --border: rgba(87, 78, 82, 0.14);
   --input: rgba(87, 78, 82, 0.16);
   --ring: #EF629F;
-
   --chart-1: #EF629F;
   --chart-2: #EECDA3;
   --chart-3: #9B9397;
   --chart-4: #6F686C;
   --chart-5: #464145;
-
   --radius: 1rem;
-
   --sidebar: rgba(255, 255, 255, 0.72);
   --sidebar-foreground: #2B2729;
   --sidebar-primary: #EF629F;
@@ -186,43 +150,33 @@
   --sidebar-border: rgba(87, 78, 82, 0.12);
   --sidebar-ring: #EF629F;
 }
-
 /* DINOEDU SPACE DARK MODE */
-
 .dark {
   --background: #151216;
   --foreground: #F8F4F5;
-
+  --scrollbar-thumb: rgba(248, 244, 245, 0.24);
+  --scrollbar-thumb-hover: rgba(248, 244, 245, 0.42);
   --card: #1D191F;
   --card-foreground: #F8F4F5;
-
   --popover: #1D191F;
   --popover-foreground: #F8F4F5;
-
   --primary: #EF629F;
   --primary-foreground: #FFFFFF;
-
   --secondary: #29252A;
   --secondary-foreground: #F4EFF1;
-
   --muted: #29252A;
   --muted-foreground: #B9B1B5;
-
   --accent: #EECDA3;
   --accent-foreground: #332A25;
-
   --destructive: #EF7180;
-
   --border: rgba(255, 255, 255, 0.10);
   --input: rgba(255, 255, 255, 0.12);
   --ring: #EF629F;
-
   --chart-1: #EF629F;
   --chart-2: #EECDA3;
   --chart-3: #B9B1B5;
   --chart-4: #81797E;
   --chart-5: #5A5358;
-
   --sidebar: rgba(29, 25, 31, 0.78);
   --sidebar-foreground: #F8F4F5;
   --sidebar-primary: #EF629F;
@@ -232,27 +186,48 @@
   --sidebar-border: rgba(255, 255, 255, 0.09);
   --sidebar-ring: #EF629F;
 }
-
 /* DINOEDU SPACE BASE */
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-
   html {
     font-family: var(--font-sans-family);
     scroll-behavior: smooth;
+    min-width: 320px;
   }
-
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans-family);
-    font-size: 20px;
+    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
     line-height: 1.7;
-    min-height: 100vh;
+    min-height: 100svh;
+    min-width: 320px;
+    width: 100%;
+    overflow-x: clip;
   }
-
+  #root {
+    width: 100%;
+    min-height: 100svh;
+    overflow-x: clip;
+  }
+  :where(main, section, article, aside, form),
+  .grid > * {
+    min-width: 0;
+  }
+  :where(input, select, textarea, button) {
+    max-width: 100%;
+  }
+  :where(input, select, textarea) {
+    min-width: 0;
+  }
+  :where(img, video, iframe, canvas) {
+    max-width: 100%;
+  }
+  .overflow-x-auto {
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
   h1,
   h2,
   h3,
@@ -263,35 +238,28 @@
     line-height: 1.2;
     letter-spacing: -0.02em;
   }
-
   input,
   textarea,
   select {
     font-family: var(--font-sans-family);
     font-size: 17px;
   }
-
   input[type="password"]::-ms-reveal {
     display: none;
   }
-
   button {
     font-family: var(--font-sans-family);
   }
 }
-
 /* DINOEDU SPACE UTILITIES */
-
 @layer components {
   .text-secondary {
     font-size: 14px;
     line-height: 1.6;
   }
-
   .dino-gradient {
     background: var(--brand-gradient);
   }
-
   .dino-glass {
     background: rgba(255, 255, 255, 0.42);
     border: 1px solid rgba(255, 255, 255, 0.45);
@@ -299,96 +267,78 @@
     -webkit-backdrop-filter: blur(18px);
     box-shadow: 0 12px 40px rgba(87, 78, 82, 0.08);
   }
-
   .dark .dino-glass {
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.10);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
   }
-
   .dino-bubble {
     border-radius: 9999px;
   }
 }
-
 /* DINOEDU SPACE ANIMATIONS */
-
 @keyframes dino-fade-up {
   from {
     opacity: 0;
     transform: translateY(18px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
-
 @keyframes dino-float {
   0%,
   100% {
     transform: translate3d(0, 0, 0);
   }
-
   50% {
     transform: translate3d(0, -12px, 0);
   }
 }
-
 @keyframes dino-float-slow {
   0%,
   100% {
     transform: translate3d(0, 0, 0);
   }
-
   50% {
     transform: translate3d(12px, -10px, 0);
   }
 }
-
 @keyframes dino-pulse-soft {
   0%,
   100% {
     opacity: 0.18;
     transform: scale(1);
   }
-
   50% {
     opacity: 0.28;
     transform: scale(1.05);
   }
 }
-
 @keyframes dino-nav-rise {
   from {
     opacity: 0;
     transform: translateY(16px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
-
 @layer components {
   .dino-enter {
     animation: dino-fade-up 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
-
   .dino-float {
     animation: dino-float 7s ease-in-out infinite;
   }
-
   .dino-float-slow {
     animation: dino-float-slow 10s ease-in-out infinite;
   }
-
   .dino-pulse-soft {
     animation: dino-pulse-soft 5s ease-in-out infinite;
   }
-
   .dino-interactive {
     transition:
       transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -397,31 +347,33 @@
       border-color 220ms ease,
       opacity 220ms ease;
   }
-
   .dino-interactive:hover {
     transform: translateY(-4px);
   }
-
   .dino-button {
     transition:
       transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
       box-shadow 180ms ease,
       opacity 180ms ease;
   }
-
   .dino-button:hover {
     transform: translateY(-2px) scale(1.02);
   }
-
   .dino-button:active {
     transform: translateY(0) scale(0.98);
   }
-
   .dino-mobile-nav {
     animation: dino-nav-rise 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 }
-
+.dino-mobile-footer-space {
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  .dino-mobile-footer-space {
+    padding-bottom: 1.5rem;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

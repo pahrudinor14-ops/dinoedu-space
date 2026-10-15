@@ -1,13 +1,11 @@
-import { useCallback, useEffect, useState } from "react"
+﻿import { useCallback, useEffect, useState } from "react"
 import {
   ArrowLeft, CalendarDays, CheckCircle2, Clock3, ExternalLink, MapPin,
   RefreshCw, ShieldCheck, Ticket, Users, XCircle,
 } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
-
 type EventStatus = "draft" | "published" | "cancelled" | "completed"
 type RegistrationStatus = "registered" | "cancelled" | "attended" | "no_show"
-
 interface NumeaEvent {
   id: string
   title: string
@@ -22,7 +20,6 @@ interface NumeaEvent {
   status: EventStatus
   created_by: string
 }
-
 interface Registration {
   id: string
   event_id: string
@@ -30,20 +27,17 @@ interface Registration {
   status: RegistrationStatus
   registered_at: string
 }
-
 interface Props {
   onBack: () => void
   darkMode?: boolean
   onToggleTheme?: () => void
 }
-
 const inputClass = "w-full rounded-xl border border-border/70 bg-background/70 px-3.5 py-3 text-sm outline-none focus:border-[#E95C9E]"
 const buttonClass = "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
 const blankForm = {
   title: "", description: "", category: "Webinar", location: "Online", meeting_url: "",
   starts_at: "", ends_at: "", registration_deadline: "", capacity: "",
 }
-
 function localDateTime(value: string | null) {
   if (!value) return "Belum ditentukan"
   return new Date(value).toLocaleString("id-ID", {
@@ -59,7 +53,6 @@ function toLocalInput(value: string | null) {
 function statusLabel(status: EventStatus) {
   return ({ draft: "Draft", published: "Diterbitkan", cancelled: "Dibatalkan", completed: "Selesai" })[status]
 }
-
 export default function NumeaEvents({ onBack }: Props) {
   const [userId, setUserId] = useState("")
   const [isAdmin, setIsAdmin] = useState(false)
@@ -76,7 +69,6 @@ export default function NumeaEvents({ onBack }: Props) {
   const [participantNames, setParticipantNames] = useState<Record<string, string>>({})
   const [participantLoading, setParticipantLoading] = useState(false)
   const [form, setForm] = useState({ ...blankForm })
-
   const load = useCallback(async () => {
     setLoading(true)
     setError("")
@@ -89,7 +81,6 @@ export default function NumeaEvents({ onBack }: Props) {
       setUserId(uid)
       const admin = Boolean(adminData)
       setIsAdmin(admin)
-
       const eventQuery = supabase.from("numea_events").select("*").order("starts_at", { ascending: true })
       const registrationQuery = supabase.from("numea_event_registrations").select("*").order("registered_at", { ascending: false })
       const [eventResult, ownResult, allResult] = await Promise.all([
@@ -109,11 +100,8 @@ export default function NumeaEvents({ onBack }: Props) {
       setLoading(false)
     }
   }, [])
-
   useEffect(() => { void load() }, [load])
-
   const selectedEvent = events.find((event) => event.id === selectedEventId) ?? null
-
   function startEdit(event: NumeaEvent) {
     setEditingId(event.id)
     setForm({
@@ -131,7 +119,6 @@ export default function NumeaEvents({ onBack }: Props) {
     setEditingId(null)
     setShowAdminForm(false)
   }
-
   async function saveEvent(publish: boolean) {
     if (!form.title.trim() || !form.starts_at) {
       setError("Judul acara dan waktu mulai wajib diisi.")
@@ -167,7 +154,6 @@ export default function NumeaEvents({ onBack }: Props) {
       setError(e instanceof Error ? e.message : "Gagal menyimpan acara.")
     } finally { setSaving(false) }
   }
-
   async function changeStatus(event: NumeaEvent, status: EventStatus) {
     const action = status === "published" ? "menerbitkan kembali" : status === "cancelled" ? "membatalkan" : "menyelesaikan"
     if (!window.confirm(`Yakin ingin ${action} acara "${event.title}"?`)) return
@@ -177,7 +163,6 @@ export default function NumeaEvents({ onBack }: Props) {
     setNotice(`Status acara diperbarui menjadi ${statusLabel(status)}.`)
     await load()
   }
-
   async function toggleParticipants(event: NumeaEvent) {
     if (selectedEventId === event.id) {
       setSelectedEventId(null)
@@ -200,7 +185,6 @@ export default function NumeaEvents({ onBack }: Props) {
       setParticipantLoading(false)
     }
   }
-
   async function deleteEvent(event: NumeaEvent) {
     const confirmed = window.confirm(`Hapus permanen acara "${event.title}" beserta seluruh data pendaftarannya? Tindakan ini tidak dapat dibatalkan.`)
     if (!confirmed) return
@@ -219,7 +203,6 @@ export default function NumeaEvents({ onBack }: Props) {
       setSaving(false)
     }
   }
-
   async function register(event: NumeaEvent) {
     if (!userId) { setError("Sesi pengguna tidak ditemukan. Silakan login kembali."); return }
     setSaving(true); setError(""); setNotice("")
@@ -231,7 +214,6 @@ export default function NumeaEvents({ onBack }: Props) {
     } catch (e) { setError(e instanceof Error ? e.message : "Pendaftaran gagal.") }
     finally { setSaving(false) }
   }
-
   async function cancelRegistration(registration: Registration) {
     if (!window.confirm("Batalkan pendaftaran acara ini?")) return
     const { error: updateError } = await supabase.rpc("numea_cancel_event_registration", { p_event_id: registration.event_id })
@@ -239,12 +221,10 @@ export default function NumeaEvents({ onBack }: Props) {
     setNotice("Pendaftaran dibatalkan.")
     await load()
   }
-
   const visibleEvents = events.filter((event) => isAdmin || event.status === "published")
   const selectedRegistrations = selectedEvent ? registrations.filter((r) => r.event_id === selectedEvent.id) : []
-
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-dvh bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b border-border/60 bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-4 sm:px-6">
           <button type="button" onClick={onBack} className={`${buttonClass} border border-border/70`}><ArrowLeft className="h-4 w-4" /> Kembali</button>
@@ -252,17 +232,14 @@ export default function NumeaEvents({ onBack }: Props) {
           <button type="button" onClick={() => void load()} className={`${buttonClass} border border-border/70`} disabled={loading}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> <span className="hidden sm:inline">Muat ulang</span></button>
         </div>
       </header>
-
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-7 sm:px-6">
         <section className="rounded-3xl border border-border/60 bg-gradient-to-br from-[#F6C64F]/15 via-[#FF7411]/10 to-[#E95C9E]/15 p-6 sm:p-9">
           <div className="flex items-start gap-4"><div className="rounded-2xl bg-[#E95C9E]/10 p-3"><CalendarDays className="h-7 w-7 text-[#E95C9E]" /></div><div><h2 className="text-2xl font-bold">Belajar bersama, bertumbuh bersama</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Temukan webinar, pelatihan, diskusi, dan agenda pengembangan diri dari NUMEA EDU.</p></div></div>
           {isAdmin && <button type="button" onClick={() => { resetForm(); setShowAdminForm(true); setError(""); setNotice("") }} className={`${buttonClass} mt-5 bg-gradient-to-r from-[#FF7411] to-[#E95C9E] text-white`}><CalendarDays className="h-4 w-4" /> Buat acara</button>}
         </section>
-
         {notice && <div role="status" className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm">{notice}</div>}
         {error && <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm">{error}</div>}
         {loading && <p className="py-10 text-center text-sm text-muted-foreground">Memuat acara…</p>}
-
         {showAdminForm && isAdmin && <section className="rounded-2xl border border-border/70 p-5 sm:p-6">
           <div className="mb-5 flex items-center justify-between gap-3"><h2 className="text-lg font-bold">{editingId ? "Edit acara" : "Buat acara baru"}</h2><button type="button" onClick={resetForm} className={`${buttonClass} border border-border/70`}>Tutup</button></div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -278,9 +255,7 @@ export default function NumeaEvents({ onBack }: Props) {
           </div>
           <div className="mt-5 flex flex-wrap gap-2"><button type="button" disabled={saving} onClick={() => void saveEvent(false)} className={`${buttonClass} border border-border/70`}>{saving ? "Menyimpan…" : "Simpan draft"}</button><button type="button" disabled={saving} onClick={() => void saveEvent(true)} className={`${buttonClass} bg-gradient-to-r from-[#FF7411] to-[#E95C9E] text-white`}>{saving ? "Menyimpan…" : "Terbitkan acara"}</button></div>
         </section>}
-
         {visibleEvents.length === 0 && !loading && <section className="rounded-2xl border border-dashed border-border p-10 text-center"><CalendarDays className="mx-auto h-8 w-8 text-muted-foreground" /><h2 className="mt-3 font-semibold">Belum ada acara</h2><p className="mt-1 text-sm text-muted-foreground">{isAdmin ? "Buat acara pertama NUMEA EDU menggunakan tombol di atas." : "Agenda yang diterbitkan admin akan muncul di sini."}</p></section>}
-
         <section className="grid gap-4 md:grid-cols-2">
           {visibleEvents.map((event) => {
             const registration = myRegistrations.find((r) => r.event_id === event.id)
@@ -306,9 +281,7 @@ export default function NumeaEvents({ onBack }: Props) {
             </article>
           })}
         </section>
-
         {myRegistrations.some((r) => r.status === "registered") && <section className="rounded-2xl border border-border/70 p-5"><h2 className="flex items-center gap-2 font-bold"><Ticket className="h-5 w-5 text-[#E95C9E]" /> Pendaftaran saya</h2><div className="mt-3 space-y-2">{myRegistrations.filter((r) => r.status === "registered").map((r) => { const event = events.find((e) => e.id === r.event_id); return <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/40 p-3 text-sm"><span>{event?.title ?? "Acara"} <span className="text-muted-foreground">· {event ? localDateTime(event.starts_at) : ""}</span></span><span className="inline-flex items-center gap-1 text-xs text-emerald-600"><CheckCircle2 className="h-4 w-4" /> Terdaftar</span></div>})}</div></section>}
-
         <p className="flex items-start gap-2 text-xs leading-5 text-muted-foreground"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" /> Pendaftaran dan daftar peserta dilindungi oleh kebijakan akses Supabase. Admin mengelola agenda; peserta hanya dapat melihat dan mengubah pendaftarannya sendiri.</p>
       </main>
     </div>
