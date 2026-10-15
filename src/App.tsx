@@ -1304,6 +1304,16 @@ useEffect(() => {
                     >
                       <MessageCircle aria-hidden="true" className="h-5 w-5" />
                     </a>
+                    <a
+                      href="https://www.instagram.com/dinoedu.space?xtok=OHRnOTlib3Fpa2Jj"
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      aria-label="Kunjungi Instagram @dinoedu.space"
+                      title="Instagram DinoEdu Space"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border/70 text-muted-foreground transition-colors hover:border-[#EF629F]/50 hover:text-[#EF629F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EF629F]"
+                    >
+                      <AtSign aria-hidden="true" className="h-5 w-5" />
+                    </a>
                   </div>
                 </aside>
               </div>
