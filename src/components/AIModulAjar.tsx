@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ArrowLeft, BookOpen, Check, ChevronDown, ChevronUp, FilePlus2, Lightbulb, Save } from "lucide-react"
+import { ArrowLeft, BookOpen, Check, ChevronDown, ChevronUp, FilePlus2, Lightbulb, Save, Trash2 } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { invokeDinoAI } from "../lib/invokeDinoAI"
 interface AIModulAjarProps { onBack: () => void }
@@ -109,7 +109,7 @@ export default function AIModulAjar({onBack}:AIModulAjarProps){
   const [curriculumMode,setCurriculumMode]=useState("tp"); const [cp,setCp]=useState(""); const [tp,setTp]=useState(""); const [readiness,setReadiness]=useState("Beragam"); const [studentNotes,setStudentNotes]=useState("")
   const [autoDimensions,setAutoDimensions]=useState(true); const [dimensions,setDimensions]=useState<string[]>([]); const [autoPedagogy,setAutoPedagogy]=useState(true); const [strategy,setStrategy]=useState(""); const [context,setContext]=useState(""); const [technologyMode,setTechnologyMode]=useState("relevant"); const [technology,setTechnology]=useState("")
   const [support,setSupport]=useState(true); const [enrichment,setEnrichment]=useState(true); const [productVariation,setProductVariation]=useState(false); const [alternativeActivity,setAlternativeActivity]=useState(false); const [outputMode,setOutputMode]=useState("complete"); const [attachments,setAttachments]=useState<string[]>([])
-  const [openSections,setOpenSections]=useState<Record<string,boolean>>({context:true,curriculum:true,students:false,design:false,support:false,output:true}); const [message,setMessage]=useState(""); const [isGenerating,setIsGenerating]=useState(false); const [result,setResult]=useState<ModulAjarResult|null>(null); const [isEditing,setIsEditing]=useState(false); const [draft,setDraft]=useState<ModulAjarResult|null>(null); const [savedDocumentId,setSavedDocumentId]=useState<string|null>(null); const [isLoadingSaved,setIsLoadingSaved]=useState(true); const [isSaving,setIsSaving]=useState(false)
+  const [openSections,setOpenSections]=useState<Record<string,boolean>>({context:true,curriculum:true,students:false,design:false,support:false,output:true}); const [message,setMessage]=useState(""); const [isGenerating,setIsGenerating]=useState(false); const [result,setResult]=useState<ModulAjarResult|null>(null); const [isEditing,setIsEditing]=useState(false); const [draft,setDraft]=useState<ModulAjarResult|null>(null); const [savedDocumentId,setSavedDocumentId]=useState<string|null>(null); const [isLoadingSaved,setIsLoadingSaved]=useState(true); const [isSaving,setIsSaving]=useState(false); const [isDeleting,setIsDeleting]=useState(false)
   const phases=useMemo(()=>educationLevel?phasesByLevel[educationLevel]??[]:[],[educationLevel]); const grades=useMemo(()=>educationLevel?gradesByLevel[educationLevel]??[]:[],[educationLevel]); const subjects=useMemo(()=>educationLevel?subjectsByLevel[educationLevel]??[]:[],[educationLevel])
   const generationInFlight=useRef(false)
   const isComplete=Boolean(educationLevel&&phase&&grade&&subject&&semester&&topic.trim()&&(curriculumMode==="tp"?tp.trim():curriculumMode==="cp"?cp.trim():true))
@@ -187,6 +187,29 @@ export default function AIModulAjar({onBack}:AIModulAjarProps){
       setIsSaving(false)
     }
   }
+  async function deleteModule(){
+    if(!window.confirm("Hapus modul ajar ini dan semua data isiannya? Tindakan ini tidak dapat dibatalkan."))return
+    if(isSaving||isGenerating||isLoadingSaved)return
+    setIsDeleting(true)
+    try{
+      if(savedDocumentId){
+        const {data:{user},error:authError}=await supabase.auth.getUser()
+        if(authError||!user)throw new Error("Sesi login tidak ditemukan. Silakan login kembali.")
+        const {error}=await supabase.from("ai_documents").delete().eq("id",savedDocumentId).eq("user_id",user.id)
+        if(error)throw error
+      }
+      setEducationLevel("");setPhase("");setGrade("");setSubject("");setSemester("");setTopic("")
+      setMeetingCount(2);setDuration(40);setCurriculumMode("tp");setCp("");setTp("");setReadiness("Beragam");setStudentNotes("")
+      setAutoDimensions(true);setDimensions([]);setAutoPedagogy(true);setStrategy("");setContext("");setTechnologyMode("relevant");setTechnology("")
+      setSupport(true);setEnrichment(true);setProductVariation(false);setAlternativeActivity(false);setOutputMode("complete");setAttachments([])
+      setOpenSections({context:true,curriculum:true,students:false,design:false,support:false,output:true})
+      setResult(null);setIsEditing(false);setDraft(null);setSavedDocumentId(null)
+      setMessage("Modul Ajar dihapus. Silakan mulai menyusun modul baru.")
+    }catch(error){
+      console.error("Delete Modul Ajar error:",error)
+      setMessage(error instanceof Error?`Gagal menghapus Modul Ajar: ${error.message}`:"Gagal menghapus Modul Ajar")
+    }finally{setIsDeleting(false)}
+  }
   useEffect(()=>{void loadSavedDocument()},[])
   const printModule=()=>{setIsEditing(false);setDraft(null);window.setTimeout(()=>window.print(),50)}
   async function handleGenerate(){
@@ -243,7 +266,7 @@ export default function AIModulAjar({onBack}:AIModulAjarProps){
       setIsGenerating(false)
     }
   }
-  return <div aria-busy={isLoadingSaved||isGenerating||isSaving} className="min-h-dvh overflow-x-hidden bg-background text-foreground"><div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"><div className="dino-float absolute left-[-140px] top-[120px] h-[320px] w-[320px] rounded-full bg-[#EECDA3]/25 blur-3xl"/><div className="dino-float-slow absolute right-[-120px] top-[180px] h-[360px] w-[360px] rounded-full bg-[#EF629F]/15 blur-3xl"/></div>
+  return <div aria-busy={isLoadingSaved||isGenerating||isSaving||isDeleting} className="min-h-dvh overflow-x-hidden bg-background text-foreground"><div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"><div className="dino-float absolute left-[-140px] top-[120px] h-[320px] w-[320px] rounded-full bg-[#EECDA3]/25 blur-3xl"/><div className="dino-float-slow absolute right-[-120px] top-[180px] h-[360px] w-[360px] rounded-full bg-[#EF629F]/15 blur-3xl"/></div>
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8"><button type="button" onClick={onBack} className="dino-button inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-4 py-3 text-sm font-semibold backdrop-blur-xl dark:bg-white/5"><ArrowLeft className="h-4 w-4"/>Kembali</button><div className="flex items-center gap-2 text-sm font-semibold"><img src="/logodino.PNG" alt="" className="h-5 w-5 object-contain"/>AI Modul Ajar</div></div></header>
     <main className="mx-auto max-w-7xl px-5 pb-20 pt-10 sm:px-6 sm:pt-14 lg:px-8"><section className="dino-enter mb-8"><div className="dino-glass relative overflow-hidden rounded-[32px] p-7 sm:p-10"><div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#EF629F]/10 blur-3xl"/><div className="relative max-w-4xl"><div className="flex items-center gap-2 text-sm font-semibold text-[#EF629F]"><img src="/logodino.PNG" alt="" className="h-4 w-4 scale-125 object-contain"/>DinoEdu AI</div><h1 className="dino-hero-title mt-3 text-3xl font-bold sm:text-5xl">AI Modul Ajar</h1><p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground sm:text-lg">Bantu menyusun perencanaan pembelajaran yang praktis, terstruktur, selaras dengan tujuan, dan dapat disesuaikan dengan kebutuhan kelas</p><div className="mt-6 inline-flex items-center gap-2 rounded-full border border-[#EF629F]/15 bg-[#EF629F]/5 px-4 py-2 text-xs font-medium text-muted-foreground"><Lightbulb className="h-4 w-4 text-[#EF629F]"/>Isi seperlunya — DinoAI membantu melengkapi bagian yang relevan</div></div></div></section>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]"><div className="space-y-5">
@@ -277,7 +300,8 @@ export default function AIModulAjar({onBack}:AIModulAjarProps){
         <div className="mt-4 inline-flex rounded-full bg-[#EF629F]/10 px-3 py-1.5 text-xs font-semibold text-[#EF629F]">{result.metadata.jumlahPertemuan} pertemuan · {result.metadata.durasiPerPertemuan} menit per pertemuan</div>
       </div>
       <div className="no-print flex flex-wrap gap-2">
-        {!isEditing?<><button type="button" onClick={()=>saveDocument(result)} disabled={isSaving} className="dino-button inline-flex items-center gap-2 rounded-full border border-border/70 bg-white/40 px-4 py-2.5 text-sm font-semibold backdrop-blur-xl disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white/5"><Save className="h-4 w-4"/>{isSaving?"Menyimpan...":"Simpan"}</button><button type="button" onClick={startEditing} className="dino-button rounded-full border border-border/70 bg-white/40 px-4 py-2.5 text-sm font-semibold backdrop-blur-xl dark:bg-white/5">Edit Modul</button><button type="button" onClick={printModule} className="dino-gradient dino-button rounded-full px-4 py-2.5 text-sm font-semibold text-white">Cetak / Simpan PDF</button></>:<><button type="button" onClick={()=>{setIsEditing(false);setDraft(null)}} className="dino-button rounded-full border border-border/70 bg-white/40 px-4 py-2.5 text-sm font-semibold backdrop-blur-xl dark:bg-white/5">Batal</button><button type="button" onClick={saveEditing} className="dino-gradient dino-button rounded-full px-4 py-2.5 text-sm font-semibold text-white">Simpan Perubahan</button></>}
+        <button type="button" onClick={()=>void deleteModule()} disabled={isDeleting||isSaving||isGenerating||isLoadingSaved} className="dino-button inline-flex items-center gap-2 rounded-full border border-red-500/25 bg-red-500/5 px-4 py-2.5 text-sm font-semibold text-red-600 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 className="h-4 w-4"/>Hapus</button>
+        {!isEditing?<><button type="button" onClick={()=>saveDocument(result)} disabled={isSaving} className="dino-button inline-flex items-center gap-2 rounded-full border border-border/70 bg-white/40 px-4 py-2.5 text-sm font-semibold backdrop-blur-xl disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white/5"><Save className="h-4 w-4"/>{isSaving?"Menyimpan...":"Simpan"}</button><button type="button" onClick={startEditing} className="dino-button rounded-full border border-border/70 bg-white/40 px-4 py-2.5 text-sm font-semibold backdrop-blur-xl dark:bg-white/5">Edit Modul</button><button type="button" onClick={printModule} className="dino-gradient dino-button rounded-full px-4 py-2.5 text-sm font-semibold text-white">Simpan PDF</button></>:<><button type="button" onClick={()=>{setIsEditing(false);setDraft(null)}} className="dino-button rounded-full border border-border/70 bg-white/40 px-4 py-2.5 text-sm font-semibold backdrop-blur-xl dark:bg-white/5">Batal</button><button type="button" onClick={saveEditing} className="dino-gradient dino-button rounded-full px-4 py-2.5 text-sm font-semibold text-white">Simpan Perubahan</button></>}
       </div>
     </div>
   </div>

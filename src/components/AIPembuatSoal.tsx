@@ -131,6 +131,7 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
   const [savedDocumentId, setSavedDocumentId] = useState<string | null>(null)
   const [isLoadingSaved, setIsLoadingSaved] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const generationInFlight = useRef(false)
   const isFormComplete = useMemo(
     () =>
@@ -200,6 +201,39 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
       return false
     } finally {
       setIsSaving(false)
+    }
+  }
+  async function deleteQuiz() {
+    if (!window.confirm("Hapus soal ini dan semua data isiannya? Tindakan ini tidak dapat dibatalkan.")) return
+    if (isSaving || aiLoading || isLoadingSaved) return
+    setIsDeleting(true)
+    try {
+      if (savedDocumentId) {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+        const userId = sessionData.session?.user?.id
+        if (sessionError || !userId) throw new Error("Session login tidak ditemukan. Silakan login kembali.")
+        const { error } = await supabase.from("ai_documents").delete().eq("id", savedDocumentId).eq("user_id", userId)
+        if (error) throw error
+      }
+      setLevel("SD")
+      setGrade("Kelas IV")
+      setSubject("")
+      setTopic("")
+      setLearningObjective("")
+      setCognitiveLevel("Campuran")
+      setQuestionType("Pilihan Ganda")
+      setQuestionCount("10")
+      setContext("")
+      setQuizResult(null)
+      setIsEditingResult(false)
+      setSavedDocumentId(null)
+      setAiError("")
+      setMessage("Soal dihapus. Silakan mulai menyusun soal baru.")
+    } catch (error) {
+      console.error("Delete quiz error:", error)
+      setAiError(error instanceof Error ? `Gagal menghapus soal: ${error.message}` : "Gagal menghapus soal")
+    } finally {
+      setIsDeleting(false)
     }
   }
   useEffect(() => {
@@ -639,7 +673,7 @@ async function handleGenerateQuestions() {
               </p>
             </div>
             <div className="lg:sticky lg:top-28 lg:self-start">
-              <div className="question-no-print mb-4 flex items-end justify-between gap-4">
+              <div className="question-no-print mb-4 flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
                     Preview
@@ -647,7 +681,16 @@ async function handleGenerateQuestions() {
                   <h2 className="mt-2 text-2xl font-bold">Hasil soal</h2>
                 </div>
                 {quizResult && (
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void deleteQuiz()}
+                      disabled={isDeleting || isSaving || aiLoading || isLoadingSaved}
+                      className="dino-button inline-flex items-center gap-2 rounded-full border border-red-500/25 bg-red-500/5 px-3 py-2 text-[13px] font-semibold text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Hapus
+                    </button>
                     <button
                       type="button"
                       onClick={() => void handleEditToggle()}
@@ -674,7 +717,7 @@ async function handleGenerateQuestions() {
                       className="dino-gradient dino-button inline-flex items-center gap-2 rounded-full px-3 py-2 text-[13px] font-semibold text-white"
                     >
                       <Download className="h-4 w-4" />
-                      PDF
+                      Simpan PDF
                     </button>
                   </div>
                 )}

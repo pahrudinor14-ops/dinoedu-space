@@ -14,6 +14,7 @@ import {
   Phone,
   X,
   Save,
+  Trash2,
 } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { invokeDinoAI } from "../lib/invokeDinoAI"
@@ -58,6 +59,7 @@ export default function AISuratLamaran({
   const [savedDocumentId, setSavedDocumentId] = useState<string | null>(null)
   const [isLoadingSaved, setIsLoadingSaved] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const generationInFlight = useRef(false)
   const isBasicDataComplete =
     name.trim() !== "" &&
@@ -172,6 +174,44 @@ export default function AISuratLamaran({
       return false
     } finally {
       setIsSaving(false)
+    }
+  }
+  async function deleteLetter() {
+    if (!window.confirm("Hapus surat lamaran ini dan semua data isiannya? Tindakan ini tidak dapat dibatalkan.")) return
+    if (isSaving || aiLoading || isLoadingSaved) return
+    setIsDeleting(true)
+    try {
+      if (savedDocumentId) {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+        const userId = sessionData.session?.user?.id
+        if (sessionError || !userId) throw new Error("Session login tidak ditemukan. Silakan login kembali.")
+        const { error } = await supabase.from("ai_documents").delete().eq("id", savedDocumentId).eq("user_id", userId)
+        if (error) throw error
+      }
+      setName("")
+      setEmail("")
+      setPhone("")
+      setLocation("")
+      setCompany("")
+      setPosition("")
+      setJobSource("")
+      setJobDescription("")
+      setInstitution("")
+      setStudyProgram("")
+      setEducationYear("")
+      setExperience("")
+      setSkills("")
+      setMotivation("")
+      setLetterResult(null)
+      setIsEditingResult(false)
+      setSavedDocumentId(null)
+      setAiError("")
+      setMessage("Surat lamaran dihapus. Silakan mulai mengisi surat baru.")
+    } catch (error) {
+      console.error("Delete letter error:", error)
+      setAiError(error instanceof Error ? `Gagal menghapus surat: ${error.message}` : "Gagal menghapus surat lamaran")
+    } finally {
+      setIsDeleting(false)
     }
   }
   useEffect(() => {
@@ -827,6 +867,15 @@ async function handleGenerateAI() {
                     <div className="dino-no-print mt-4 flex flex-wrap gap-3">
                       <button
                         type="button"
+                        onClick={() => void deleteLetter()}
+                        disabled={isDeleting || isSaving || aiLoading || isLoadingSaved}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/25 bg-red-500/5 px-4 py-3 text-[13px] font-semibold text-red-600 transition disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Hapus
+                      </button>
+                      <button
+                        type="button"
                         onClick={handleEditToggle}
                         className="inline-flex items-center justify-center gap-2 rounded-xl border border-border/70 px-4 py-3 text-[13px] font-semibold transition hover:border-[#EF629F]/40 hover:text-[#EF629F]"
                       >
@@ -846,7 +895,7 @@ async function handleGenerateAI() {
                         className="dino-gradient inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-[13px] font-semibold text-white shadow-lg shadow-pink-500/10 transition-all duration-200 dino-button"
                       >
                         <Download className="h-4 w-4" />
-                        Cetak / Simpan PDF
+                        Simpan PDF
                       </button>
                     </div>
                   )}
