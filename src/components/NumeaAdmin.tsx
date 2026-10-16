@@ -14,6 +14,7 @@ interface Member {
   role: string
   institution?: string
   avatarUrl?: string | null
+  interests?: string[]
 }
 interface NumeaAdminAccount {
   user_id: string
@@ -36,6 +37,13 @@ interface JoinRequest {
 }
 const selectClass = "numea-admin-select w-full rounded-2xl border border-border/70 bg-white/45 px-4 py-3 text-[13px] outline-none backdrop-blur-xl transition focus:border-[#E95C9E]/40 dark:bg-white/5"
 const inputClass = "w-full rounded-2xl border border-border/70 bg-white/45 px-4 py-3 text-[13px] outline-none backdrop-blur-xl transition focus:border-[#E95C9E]/40 dark:bg-white/5"
+function normalizeInterests(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return [...new Set(value
+    .filter((interest): interest is string => typeof interest === "string")
+    .map((interest) => interest.trim())
+    .filter(Boolean))]
+}
 export default function NumeaAdmin({ onBack }: NumeaAdminProps) {
   const [requests, setRequests] = useState<JoinRequest[]>([])
   const [selectedRequest, setSelectedRequest] = useState<JoinRequest | null>(null)
@@ -68,15 +76,15 @@ export default function NumeaAdmin({ onBack }: NumeaAdminProps) {
     const userIds = loadedMembers.map((member) => member.user_id)
     const { data: profiles, error: profileError } = await supabase
       .from("numea_profiles")
-      .select("user_id,avatar_path")
+      .select("user_id,avatar_path,interests")
       .in("user_id", userIds)
     if (profileError) {
-      setMembers(loadedMembers)
-      setMemberPhotoMessage("Foto profil belum dapat diakses. Data anggota tetap ditampilkan.")
+      setMembers(loadedMembers.map((member) => ({ ...member, interests: undefined })))
+      setMemberPhotoMessage("Foto profil dan minat anggota belum dapat diakses. Data anggota tetap ditampilkan.")
       setMemberLoading(false)
       return
     }
-    const profileByUser = new Map((profiles ?? []).map((profile) => [profile.user_id, profile.avatar_path]))
+    const profileByUser = new Map((profiles ?? []).map((profile) => [profile.user_id, profile]))
     const avatarPaths = [...new Set((profiles ?? []).flatMap((profile) => profile.avatar_path ? [profile.avatar_path] : []))]
     const avatarUrlByPath = new Map<string, string>()
     if (avatarPaths.length > 0) {
@@ -99,8 +107,13 @@ export default function NumeaAdmin({ onBack }: NumeaAdminProps) {
       setMemberPhotoMessage("")
     }
     setMembers(loadedMembers.map((member) => {
-      const avatarPath = profileByUser.get(member.user_id)
-      return { ...member, avatarUrl: avatarPath ? avatarUrlByPath.get(avatarPath) ?? null : null }
+      const profile = profileByUser.get(member.user_id)
+      const avatarPath = profile?.avatar_path
+      return {
+        ...member,
+        interests: normalizeInterests(profile?.interests),
+        avatarUrl: avatarPath ? avatarUrlByPath.get(avatarPath) ?? null : null,
+      }
     }))
     setMemberLoading(false)
   }
@@ -341,6 +354,18 @@ export default function NumeaAdmin({ onBack }: NumeaAdminProps) {
                         <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em]">
                           {member.status === "approved" ? <UserCheck className="h-3 w-3 text-emerald-500" /> : <ShieldAlert className="h-3 w-3 text-[#FF7411]" />}
                           {member.status === "approved" ? "Aktif" : "Suspended"}
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+                          <span className="mr-0.5 font-semibold text-muted-foreground">Minat:</span>
+                          {member.interests === undefined ? (
+                            <span className="text-muted-foreground">Belum dapat dimuat</span>
+                          ) : member.interests.length > 0 ? (
+                            member.interests.map((interest) => (
+                              <span key={interest} className="rounded-full border border-[#E95C9E]/20 bg-[#E95C9E]/5 px-2 py-1 text-foreground">{interest}</span>
+                            ))
+                          ) : (
+                            <span className="text-muted-foreground">Belum diisi</span>
+                          )}
                         </div>
                       </div>
                     </div>
