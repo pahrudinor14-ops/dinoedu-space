@@ -28,6 +28,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function getEnv(name: string): string | null {
   return Deno.env.get(name)?.trim() || null;
 }
+function geminiModel(): string {
+  const configuredModel = (getEnv("GEMINI_MODEL") || "gemini-3.8-flash")
+    .replace(/^models\//i, "");
+  return configuredModel === "gemini-2.5-flash"
+    ? "gemini-3.8-flash"
+    : configuredModel;
+}
 async function readBoundedBody(
   request: Request,
   maxBytes: number,
@@ -202,36 +209,55 @@ Deno.serve(async (request) => {
       : "Kuota AI tidak mencukupi.";
     return jsonResponse({ error: reason }, quotaFailureStatus(reason));
   }
-  const model = getEnv("GEMINI_MODEL") || "gemini-2.5-flash";
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 35_000);
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
-        },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{
-              text: "Kamu adalah DinoAI, asisten belajar yang ramah, jelas, dan profesional. Jawab dalam Bahasa Indonesia kecuali pengguna meminta bahasa lain. Susun jawaban dengan paragraf singkat dan runtut. Untuk jawaban panjang, gunakan heading Markdown yang ringkas; gunakan daftar bernomor untuk langkah dan bullet untuk beberapa pilihan. Tebalkan istilah penting secukupnya. Tulis rumus sebagai LaTeX inline dengan $...$ atau sebagai blok dengan $$...$$. Untuk setiap soal angka, identifikasi jumlah total, bagian, dan satuannya sebelum menghitung; pastikan pembilang dan penyebut cocok dengan konteks, hitung ulang hasil, serta cek kesetaraan pecahan. Pecahan a/b berarti a bagian dari total b bagian yang sama besar. Jangan menambah jumlah atau asumsi yang tidak disebutkan. Contoh: jika totalnya 3 kotak dan ketiganya dibagikan, tulis 3/3 = 1; jangan menulis 3/4 kecuali totalnya memang 4 bagian. Jangan menjadikan kalimat panjang sebagai pembilang atau penyebut. Jelaskan hubungan dalam kalimat biasa, misalnya bagian yang diambil dibagi total bagian, lalu tampilkan pecahan singkat dengan angka seperti 2/8 = 1/4. Jika angka belum tersedia, gunakan simbol singkat seperti a/b dan jelaskan arti simbol di luar rumus. Jika informasi tidak cukup atau konteks bertentangan, jelaskan kekurangannya atau minta klarifikasi alih-alih menebak. Hindari dinding teks, pengulangan, dan format yang berlebihan. Jelaskan materi langkah demi langkah, jangan mengarang fakta, dan akui jika kamu tidak yakin.",
-            }],
+  const model = geminiModel();
+  const fallbackModel = "gemini-3.6-flash";
+  const requestBody = JSON.stringify({
+    systemInstruction: {
+      parts: [{
+        text: "Kamu adalah DinoAI, asisten belajar yang ramah, jelas, dan profesional. Jawab dalam Bahasa Indonesia kecuali pengguna meminta bahasa lain. Susun jawaban dengan paragraf singkat dan runtut. Untuk jawaban panjang, gunakan heading Markdown yang ringkas; gunakan daftar bernomor untuk langkah dan bullet untuk beberapa pilihan. Tebalkan istilah penting secukupnya. Tulis rumus sebagai LaTeX inline dengan $...$ atau sebagai blok dengan $$...$$. Untuk setiap soal angka, identifikasi jumlah total, bagian, dan satuannya sebelum menghitung; pastikan pembilang dan penyebut cocok dengan konteks, hitung ulang hasil, serta cek kesetaraan pecahan. Pecahan a/b berarti a bagian dari total b bagian yang sama besar. Jangan menambah jumlah atau asumsi yang tidak disebutkan. Contoh: jika totalnya 3 kotak dan ketiganya dibagikan, tulis 3/3 = 1; jangan menulis 3/4 kecuali totalnya memang 4 bagian. Jangan menjadikan kalimat panjang sebagai pembilang atau penyebut. Jelaskan hubungan dalam kalimat biasa, misalnya bagian yang diambil dibagi total bagian, lalu tampilkan pecahan singkat dengan angka seperti 2/8 = 1/4. Jika angka belum tersedia, gunakan simbol singkat seperti a/b dan jelaskan arti simbol di luar rumus. Jika informasi tidak cukup atau konteks bertentangan, jelaskan kekurangannya atau minta klarifikasi alih-alih menebak. Hindari dinding teks, pengulangan, dan format yang berlebihan. Jelaskan materi langkah demi langkah, jangan mengarang fakta, dan akui jika kamu tidak yakin.",
+      }],
+    },
+    contents: [
+      ...conversationHistory.map((item) => ({
+        role: item.role,
+        parts: [{ text: item.text }],
+      })),
+      { role: "user", parts: [{ text: message }] },
+    ],
+    generationConfig: { maxOutputTokens: 1200 },
+  });
+  const callGemini = async (modelName: string) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 35_000);
+    try {
+      return await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
           },
-          contents: [
-            ...conversationHistory.map((item) => ({
-              role: item.role,
-              parts: [{ text: item.text }],
-            })),
-            { role: "user", parts: [{ text: message }] },
-          ],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 1200 },
-        }),
-        signal: controller.signal,
-      },
-    );
+          body: requestBody,
+          signal: controller.signal,
+        },
+      );
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+  try {
+    let response = await callGemini(model);
+    if (
+      model !== fallbackModel &&
+      [429, 500, 502, 503, 504].includes(response.status)
+    ) {
+      await response.body?.cancel();
+      console.warn("DinoAI Chat: model utama sedang sibuk; mencoba model cadangan.", {
+        httpStatus: response.status,
+      });
+      response = await callGemini(fallbackModel);
+    }
     const result: unknown = await response.json().catch(() => null);
     if (!response.ok) {
       console.error("Gemini request failed:", response.status);
@@ -288,7 +314,5 @@ Deno.serve(async (request) => {
       error: "DinoAI tidak dapat terhubung. Periksa koneksi lalu coba lagi.",
       creditsRestored,
     }, 502);
-  } finally {
-    clearTimeout(timeoutId);
   }
 });

@@ -1,10 +1,12 @@
-﻿import { useEffect, useState, type ChangeEvent } from "react"
+import { useEffect, useState, type ChangeEvent } from "react"
+import { flushSync } from "react-dom"
 import {
   ArrowLeft,
   BriefcaseBusiness,
   Check,
   Download,
   GraduationCap,
+  ShieldCheck,
   Mail,
   MapPin,
   Pencil,
@@ -23,6 +25,24 @@ interface Experience {
   position: string
   company: string
   description: string
+}
+interface Education {
+  id: number
+  institution: string
+  studyProgram: string
+  year: string
+}
+interface PortfolioItem {
+  id: number
+  title: string
+  description: string
+  url: string
+}
+interface LanguageScore {
+  id: number
+  language: string
+  test: string
+  score: string
 }
 interface AIExperience {
   position: string
@@ -56,10 +76,13 @@ interface SavedCVContent {
   phone: string
   location: string
   summary: string
-  institution: string
-  studyProgram: string
-  educationYear: string
+  educations: Education[]
+  institution?: string
+  studyProgram?: string
+  educationYear?: string
   experiences: Experience[]
+  portfolioItems: PortfolioItem[]
+  languageScores: LanguageScore[]
   aiResult: AIResult | null
   template: CVTemplate
   photoDataUrl: string
@@ -79,15 +102,23 @@ const cvTemplates: { id: CVTemplate; group: string; name: string; description: s
   { id: "creative-editorial", group: "Kreatif", name: "Editorial", description: "Warna tegas dan tipografi ekspresif" },
   { id: "creative-timeline", group: "Kreatif", name: "Timeline", description: "Pengalaman ditonjolkan sebagai alur" },
 ]
+function getSafePortfolioUrl(value: string) {
+  try {
+    const url = new URL(value.trim())
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : ""
+  } catch {
+    return ""
+  }
+}
 export default function AICVMaker({ onBack }: AICVMakerProps) {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [location, setLocation] = useState("")
   const [summary, setSummary] = useState("")
-  const [institution, setInstitution] = useState("")
-  const [studyProgram, setStudyProgram] = useState("")
-  const [educationYear, setEducationYear] = useState("")
+  const [educations, setEducations] = useState<Education[]>([
+    { id: 1, institution: "", studyProgram: "", year: "" },
+  ])
   const [template, setTemplate] = useState<CVTemplate>("ats-classic")
   const [photoDataUrl, setPhotoDataUrl] = useState("")
   const [experiences, setExperiences] = useState<Experience[]>([
@@ -97,6 +128,12 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
       company: "",
       description: "",
     },
+  ])
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([
+    { id: 1, title: "", description: "", url: "" },
+  ])
+  const [languageScores, setLanguageScores] = useState<LanguageScore[]>([
+    { id: 1, language: "", test: "", score: "" },
   ])
   const [message, setMessage] = useState("")
   const [aiLoading, setAiLoading] = useState(false)
@@ -112,10 +149,10 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
     phone,
     location,
     summary,
-    institution,
-    studyProgram,
-    educationYear,
+    educations,
     experiences,
+    portfolioItems,
+    languageScores,
     aiResult,
     template,
     photoDataUrl,
@@ -126,10 +163,60 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
     if (typeof content.phone === "string") setPhone(content.phone)
     if (typeof content.location === "string") setLocation(content.location)
     if (typeof content.summary === "string") setSummary(content.summary)
-    if (typeof content.institution === "string") setInstitution(content.institution)
-    if (typeof content.studyProgram === "string") setStudyProgram(content.studyProgram)
-    if (typeof content.educationYear === "string") setEducationYear(content.educationYear)
+    if (Array.isArray(content.educations)) {
+      const restoredEducations = content.educations.flatMap((item, index) => {
+        if (!item || typeof item !== "object") return []
+        return [{
+          id: typeof item.id === "number" ? item.id : Date.now() + index,
+          institution: typeof item.institution === "string" ? item.institution : "",
+          studyProgram: typeof item.studyProgram === "string" ? item.studyProgram : "",
+          year: typeof item.year === "string" ? item.year : "",
+        }]
+      })
+      setEducations(restoredEducations.length > 0
+        ? restoredEducations
+        : [{ id: Date.now(), institution: "", studyProgram: "", year: "" }])
+    } else if (
+      typeof content.institution === "string" ||
+      typeof content.studyProgram === "string" ||
+      typeof content.educationYear === "string"
+    ) {
+      setEducations([{
+        id: Date.now(),
+        institution: typeof content.institution === "string" ? content.institution : "",
+        studyProgram: typeof content.studyProgram === "string" ? content.studyProgram : "",
+        year: typeof content.educationYear === "string" ? content.educationYear : "",
+      }])
+    }
     if (Array.isArray(content.experiences)) setExperiences(content.experiences)
+    if (Array.isArray(content.portfolioItems)) {
+      const restoredPortfolioItems = content.portfolioItems.flatMap((item, index) => {
+        if (!item || typeof item !== "object") return []
+        return [{
+          id: typeof item.id === "number" ? item.id : Date.now() + index,
+          title: typeof item.title === "string" ? item.title : "",
+          description: typeof item.description === "string" ? item.description : "",
+          url: typeof item.url === "string" ? item.url : "",
+        }]
+      })
+      setPortfolioItems(restoredPortfolioItems.length > 0
+        ? restoredPortfolioItems
+        : [{ id: Date.now(), title: "", description: "", url: "" }])
+    }
+    if (Array.isArray(content.languageScores)) {
+      const restoredLanguageScores = content.languageScores.flatMap((item, index) => {
+        if (!item || typeof item !== "object") return []
+        return [{
+          id: typeof item.id === "number" ? item.id : Date.now() + index,
+          language: typeof item.language === "string" ? item.language : "",
+          test: typeof item.test === "string" ? item.test : "",
+          score: typeof item.score === "string" ? item.score : "",
+        }]
+      })
+      setLanguageScores(restoredLanguageScores.length > 0
+        ? restoredLanguageScores
+        : [{ id: Date.now(), language: "", test: "", score: "" }])
+    }
     if (content.aiResult && typeof content.aiResult === "object") setAiResult(content.aiResult)
     if (typeof content.template === "string" && cvTemplates.some((item) => item.id === content.template)) setTemplate(content.template)
     if (typeof content.photoDataUrl === "string") setPhotoDataUrl(content.photoDataUrl)
@@ -281,12 +368,97 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
     location.trim() ? "" : "lokasi",
   ].filter(Boolean)
   const areRequiredFieldsComplete = missingRequiredFields.length === 0
+  const filledEducations = educations.filter(
+    (item) =>
+      item.institution.trim() !== "" ||
+      item.studyProgram.trim() !== "" ||
+      item.year.trim() !== "",
+  )
   const filledExperiences = experiences.filter(
     (item) =>
       item.position.trim() !== "" ||
       item.company.trim() !== "" ||
       item.description.trim() !== "",
   )
+  const filledPortfolioItems = portfolioItems.filter(
+    (item) =>
+      item.title.trim() !== "" ||
+      item.description.trim() !== "" ||
+      item.url.trim() !== "",
+  )
+  const filledLanguageScores = languageScores.filter(
+    (item) =>
+      item.language.trim() !== "" ||
+      item.test.trim() !== "" ||
+      item.score.trim() !== "",
+  )
+  function updateEducation(id: number, field: keyof Omit<Education, "id">, value: string) {
+    setEducations((current) =>
+      current.map((item) => item.id === id ? { ...item, [field]: value } : item),
+    )
+  }
+  function addEducation() {
+    setEducations((current) => {
+      if (current.length >= 15) return current
+      return [
+        ...current,
+        {
+          id: Math.max(0, ...current.map((item) => item.id)) + 1,
+          institution: "",
+          studyProgram: "",
+          year: "",
+        },
+      ]
+    })
+  }
+  function removeEducation(id: number) {
+    setEducations((current) => {
+      if (current.length === 1) {
+        return [{ id: current[0].id, institution: "", studyProgram: "", year: "" }]
+      }
+      return current.filter((item) => item.id !== id)
+    })
+  }
+  function updatePortfolioItem(
+    id: number,
+    field: keyof Omit<PortfolioItem, "id">,
+    value: string,
+  ) {
+    setPortfolioItems((current) =>
+      current.map((item) => item.id === id ? { ...item, [field]: value } : item),
+    )
+  }
+  function addPortfolioItem() {
+    setPortfolioItems((current) => [
+      ...current,
+      { id: Math.max(0, ...current.map((item) => item.id)) + 1, title: "", description: "", url: "" },
+    ])
+  }
+  function removePortfolioItem(id: number) {
+    setPortfolioItems((current) => current.length === 1
+      ? [{ id: current[0].id, title: "", description: "", url: "" }]
+      : current.filter((item) => item.id !== id))
+  }
+  function updateLanguageScore(
+    id: number,
+    field: keyof Omit<LanguageScore, "id">,
+    value: string,
+  ) {
+    setLanguageScores((current) =>
+      current.map((item) => item.id === id ? { ...item, [field]: value } : item),
+    )
+  }
+  function addLanguageScore() {
+    setLanguageScores((current) => [
+      ...current,
+      { id: Math.max(0, ...current.map((item) => item.id)) + 1, language: "", test: "", score: "" },
+    ])
+  }
+  function removeLanguageScore(id: number) {
+    setLanguageScores((current) => current.length === 1
+      ? [{ id: current[0].id, language: "", test: "", score: "" }]
+      : current.filter((item) => item.id !== id))
+  }
   function updateExperience(
     id: number,
     field: keyof Experience,
@@ -444,11 +616,11 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
           phone: phone.trim(),
           location: location.trim(),
           summary,
-          education: {
+          educations: filledEducations.map(({ institution, studyProgram, year }) => ({
             institution,
             studyProgram,
-            year: educationYear,
-          },
+            year,
+          })),
           experiences: experiences.map(({ position, company, description }) => ({
             position,
             company,
@@ -523,10 +695,10 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
         phone,
         location,
         summary,
-        institution,
-        studyProgram,
-        educationYear,
+        educations,
         experiences,
+        portfolioItems,
+        languageScores,
         aiResult: generatedResult,
         template,
         photoDataUrl,
@@ -555,18 +727,81 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
       setMessage("Buat CV dengan AI terlebih dahulu sebelum menyimpan PDF")
       return
     }
-    setMessage("")
-    setIsEditingResult(false)
-    window.print()
+    flushSync(() => {
+      setMessage("")
+      setIsEditingResult(false)
+    })
+    const source = document.getElementById("dinoedu-cv-print")
+    if (!source) return
+    const sourceId = source.id
+    const printRoot = document.createElement("div")
+    printRoot.id = "dinoedu-cv-print-root"
+    const printCopy = source.cloneNode(true) as HTMLElement
+    source.removeAttribute("id")
+    printRoot.appendChild(printCopy)
+    document.body.classList.add("dinoedu-cv-printing")
+    document.body.appendChild(printRoot)
+    let cleaned = false
+    const cleanup = () => {
+      if (cleaned) return
+      cleaned = true
+      printRoot.remove()
+      source.id = sourceId
+      document.body.classList.remove("dinoedu-cv-printing")
+      window.removeEventListener("afterprint", cleanup)
+      window.removeEventListener("focus", cleanup)
+    }
+    window.addEventListener("afterprint", cleanup, { once: true })
+    window.addEventListener("focus", cleanup, { once: true })
+    try {
+      window.print()
+    } catch {
+      cleanup()
+      setMessage("Jendela cetak tidak dapat dibuka. Izinkan pop-up lalu coba lagi.")
+    }
   }
   return (
     <>
       <style>{`
         @page {
           size: A4;
-          margin: 12mm;
+          margin: 10mm;
+        }
+        .cv-preview-shell { container-type: inline-size; }
+        #dinoedu-cv-print {
+          box-sizing: border-box;
+          width: 100%;
+          max-width: 210mm;
+          min-width: 0;
+          aspect-ratio: 210 / 297;
+          display: flex;
+          flex-direction: column;
+          margin-inline: auto;
+          overflow-wrap: anywhere;
+        }
+        #dinoedu-cv-print .cv-watermark-footer {
+          flex: 0 0 auto;
+          margin-top: auto;
+          border-top: 1px solid #e4e4e7;
+          padding: 4mm 2mm 0;
+          color: #a1a1aa;
+          font-size: 9px;
+          line-height: 1.3;
+          text-align: center;
+          user-select: none;
+          -webkit-user-select: none;
+          pointer-events: none;
+          break-inside: avoid-page;
+          page-break-inside: avoid;
+        }
+        @supports (min-height: 1cqw) {
+          #dinoedu-cv-print {
+            min-height: 141.428571cqw;
+            aspect-ratio: auto;
+          }
         }
         #dinoedu-cv-print .cv-header {
+
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -587,12 +822,33 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
         #dinoedu-cv-print .cv-sections {
           display: grid;
           grid-template-columns: minmax(0, 1fr);
-          gap: 24px;
-          margin-top: 26px;
+          gap: 18px;
+          flex: 1 0 auto;
+          align-content: space-evenly;
+          margin-top: 20px;
         }
         #dinoedu-cv-print .cv-section { min-width: 0; margin-top: 0 !important; }
-        #dinoedu-cv-print .cv-section h4 { border-color: #d4d4d8; }
-        #dinoedu-cv-print .cv-justified { text-align: justify; text-justify: inter-word; }
+        #dinoedu-cv-print .cv-section h4 {
+          border-color: #d4d4d8;
+          break-after: avoid-page;
+          page-break-after: avoid;
+        }
+        #dinoedu-cv-print .cv-justified {
+          text-align: justify;
+          text-justify: inter-word;
+          overflow-wrap: anywhere;
+          hyphens: auto;
+          orphans: 3;
+          widows: 3;
+        }
+        #dinoedu-cv-print .cv-education-item,
+        #dinoedu-cv-print .cv-experience-item,
+        #dinoedu-cv-print .cv-portfolio-item,
+        #dinoedu-cv-print .cv-language-item {
+          min-width: 0;
+          break-inside: avoid-page;
+          page-break-inside: avoid;
+        }
         #dinoedu-cv-print[data-template="ats-compact"] .cv-header {
           flex-direction: column-reverse;
           justify-content: center;
@@ -615,17 +871,18 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
         #dinoedu-cv-print[data-template="modern-sidebar"] .cv-photo { border: 1px solid rgba(255,255,255,.8); }
         #dinoedu-cv-print[data-template="modern-sidebar"] .cv-sections {
           grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.5fr);
-          grid-template-rows: auto auto;
+          grid-auto-flow: row dense;
           gap: 22px 26px;
           padding: 26px 30px;
           margin-top: 0;
         }
-        #dinoedu-cv-print[data-template="modern-sidebar"] .cv-profile-section { grid-column: 2; grid-row: 1; }
-        #dinoedu-cv-print[data-template="modern-sidebar"] .cv-education-section { grid-column: 1; grid-row: 1; }
-        #dinoedu-cv-print[data-template="modern-sidebar"] .cv-experience-section { grid-column: 2; grid-row: 2; }
+        #dinoedu-cv-print[data-template="modern-sidebar"] .cv-profile-section { grid-column: 2; }
+        #dinoedu-cv-print[data-template="modern-sidebar"] .cv-education-section { grid-column: 1; }
+        #dinoedu-cv-print[data-template="modern-sidebar"] .cv-experience-section { grid-column: 2; }
+        #dinoedu-cv-print[data-template="modern-sidebar"] .cv-portfolio-section { grid-column: 2; }
+        #dinoedu-cv-print[data-template="modern-sidebar"] .cv-language-section { grid-column: 1; }
         #dinoedu-cv-print[data-template="modern-sidebar"] .cv-skills-section {
           grid-column: 1;
-          grid-row: 2;
           padding: 14px;
           background: #eff6ff;
           border-radius: 12px;
@@ -665,34 +922,104 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
         #dinoedu-cv-print[data-template="creative-timeline"] .cv-header h3 { color: #115e59; }
         #dinoedu-cv-print[data-template="creative-timeline"] .cv-sections {
           grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.35fr);
-          grid-template-rows: auto auto;
+          grid-auto-flow: row dense;
           gap: 22px 28px;
         }
-        #dinoedu-cv-print[data-template="creative-timeline"] .cv-profile-section { grid-column: 1; grid-row: 1; }
-        #dinoedu-cv-print[data-template="creative-timeline"] .cv-education-section { grid-column: 2; grid-row: 1; }
-        #dinoedu-cv-print[data-template="creative-timeline"] .cv-skills-section { grid-column: 1; grid-row: 2; }
-        #dinoedu-cv-print[data-template="creative-timeline"] .cv-experience-section { grid-column: 2; grid-row: 2; }
+        #dinoedu-cv-print[data-template="creative-timeline"] .cv-profile-section { grid-column: 1; }
+        #dinoedu-cv-print[data-template="creative-timeline"] .cv-education-section { grid-column: 2; }
+        #dinoedu-cv-print[data-template="creative-timeline"] .cv-skills-section { grid-column: 1; }
+        #dinoedu-cv-print[data-template="creative-timeline"] .cv-experience-section { grid-column: 2; }
+        #dinoedu-cv-print[data-template="creative-timeline"] .cv-portfolio-section { grid-column: 2; }
+        #dinoedu-cv-print[data-template="creative-timeline"] .cv-language-section { grid-column: 1; }
         #dinoedu-cv-print[data-template="creative-timeline"] .cv-section h4 { color: #0f766e; border-color: #99f6e4; }
         #dinoedu-cv-print[data-template="creative-timeline"] .cv-experience-item { border-left: 2px solid #5eead4; padding-left: 14px; }
+        body.dinoedu-cv-printing > *:not(#dinoedu-cv-print-root) {
+          display: none !important;
+        }
+        body.dinoedu-cv-printing > #dinoedu-cv-print-root {
+          display: block !important;
+          width: 190mm;
+          max-width: 100%;
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+          background: #ffffff;
+        }
         @media print {
+          html,
           body {
+            width: auto !important;
+            height: auto !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
             background: #ffffff !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
           body * {
             visibility: hidden !important;
           }
-          #dinoedu-cv-print,
-          #dinoedu-cv-print * {
+          #dinoedu-cv-print-root,
+          #dinoedu-cv-print-root * {
             visibility: visible !important;
           }
-          #dinoedu-cv-print {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
+          #dinoedu-cv-print-root {
+            position: static !important;
+            display: block !important;
+            width: 190mm !important;
+            max-width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
             margin: 0 !important;
+            padding: 0 !important;
+          }
+          #dinoedu-cv-print {
+            position: static !important;
+            display: flex !important;
+            flex-direction: column !important;
+            width: 100% !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            min-height: 277mm !important;
+            height: auto !important;
+            aspect-ratio: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
             box-shadow: none !important;
             border-radius: 0 !important;
+          }
+          #dinoedu-cv-print .cv-sections {
+            flex: initial !important;
+            min-height: 215mm;
+            margin-top: 7mm !important;
+            gap: 5mm !important;
+            align-content: space-evenly;
+          }
+          #dinoedu-cv-print .cv-header,
+          #dinoedu-cv-print .cv-education-item,
+          #dinoedu-cv-print .cv-experience-item,
+          #dinoedu-cv-print .cv-portfolio-item,
+          #dinoedu-cv-print .cv-language-item {
+            break-inside: avoid-page;
+            page-break-inside: avoid;
+          }
+          #dinoedu-cv-print .cv-section h4 {
+            break-after: avoid-page;
+            page-break-after: avoid;
+          }
+          #dinoedu-cv-print * {
+            box-sizing: border-box;
+            max-width: 100%;
+          }
+          #dinoedu-cv-print .cv-header-copy,
+          #dinoedu-cv-print .cv-section,
+          #dinoedu-cv-print .cv-education-item,
+          #dinoedu-cv-print .cv-experience-item {
+            overflow-wrap: anywhere;
+            word-break: normal;
           }
           .dino-no-print {
             display: none !important;
@@ -908,59 +1235,75 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
                     Riwayat pendidikan
                   </h2>
                 </div>
+                <p className="mb-4 text-sm text-muted-foreground">
+                  Tambahkan semua jenjang pendidikan yang relevan. Setiap entri akan tampil di preview dan PDF.
+                </p>
                 <div className="space-y-5">
-                  {/* INSTITUSI */}
-                  <div>
-                    <label className="mb-2 block text-[14px] font-medium">
-                      Institusi
-                    </label>
-                    <div className="relative">
-                      <GraduationCap className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <input
-                        type="text"
-                        value={institution}
-                        onChange={(event) =>
-                          setInstitution(event.target.value)
-                        }
-                        placeholder="Nama universitas / sekolah"
-                        className="w-full rounded-2xl border border-border/70 bg-white/40 py-3.5 pl-11 pr-4 text-[17px] outline-none backdrop-blur-xl transition focus:border-[#EF629F]/50 dark:bg-white/5"
-                      />
+                  {educations.map((education, index) => (
+                    <div key={education.id} className="rounded-2xl border border-border/60 bg-white/20 p-5 dark:bg-white/[0.03]">
+                      <div className="mb-5 flex items-center justify-between gap-3">
+                        <p className="text-[14px] font-semibold text-muted-foreground">Pendidikan {index + 1}</p>
+                        {educations.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeEducation(education.id)}
+                            aria-label={`Hapus pendidikan ${index + 1}`}
+                            className="inline-flex items-center gap-2 text-[13px] font-semibold text-red-500 transition hover:opacity-80"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Hapus
+                          </button>
+                        )}
+                      </div>
+                      <div className="space-y-5">
+                        <div>
+                          <label className="mb-2 block text-[14px] font-medium">Institusi</label>
+                          <div className="relative">
+                            <GraduationCap className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                              type="text"
+                              value={education.institution}
+                              onChange={(event) => updateEducation(education.id, "institution", event.target.value)}
+                              placeholder="Nama universitas / sekolah"
+                              className="w-full rounded-2xl border border-border/70 bg-white/40 py-3.5 pl-11 pr-4 text-[17px] outline-none backdrop-blur-xl transition focus:border-[#EF629F]/50 dark:bg-white/5"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid gap-5 sm:grid-cols-2">
+                          <div>
+                            <label className="mb-2 block text-[14px] font-medium">Program studi / gelar</label>
+                            <input
+                              type="text"
+                              value={education.studyProgram}
+                              onChange={(event) => updateEducation(education.id, "studyProgram", event.target.value)}
+                              placeholder="Program studi atau gelar"
+                              className="w-full rounded-2xl border border-border/70 bg-white/40 px-4 py-3.5 text-[17px] outline-none backdrop-blur-xl transition focus:border-[#EF629F]/50 dark:bg-white/5"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-[14px] font-medium">Tahun</label>
+                            <input
+                              type="text"
+                              value={education.year}
+                              onChange={(event) => updateEducation(education.id, "year", event.target.value)}
+                              placeholder="2022 - 2026"
+                              className="w-full rounded-2xl border border-border/70 bg-white/40 px-4 py-3.5 text-[17px] outline-none backdrop-blur-xl transition focus:border-[#EF629F]/50 dark:bg-white/5"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    {/* PROGRAM STUDI */}
-                    <div>
-                      <label className="mb-2 block text-[14px] font-medium">
-                        Program studi
-                      </label>
-                      <input
-                        type="text"
-                        value={studyProgram}
-                        onChange={(event) =>
-                          setStudyProgram(event.target.value)
-                        }
-                        placeholder="Program studi"
-                        className="w-full rounded-2xl border border-border/70 bg-white/40 px-4 py-3.5 text-[17px] outline-none backdrop-blur-xl transition focus:border-[#EF629F]/50 dark:bg-white/5"
-                      />
-                    </div>
-                    {/* TAHUN */}
-                    <div>
-                      <label className="mb-2 block text-[14px] font-medium">
-                        Tahun
-                      </label>
-                      <input
-                        type="text"
-                        value={educationYear}
-                        onChange={(event) =>
-                          setEducationYear(event.target.value)
-                        }
-                        placeholder="2022 - 2026"
-                        className="w-full rounded-2xl border border-border/70 bg-white/40 px-4 py-3.5 text-[17px] outline-none backdrop-blur-xl transition focus:border-[#EF629F]/50 dark:bg-white/5"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="my-10 border-t border-border/60" />
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addEducation}
+                    disabled={educations.length >= 15}
+                    className="inline-flex items-center gap-2 rounded-xl border border-border/70 bg-white/30 px-4 py-3 text-[14px] font-semibold transition hover:border-[#EF629F]/50 hover:text-[#EF629F] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {educations.length >= 15 ? "Maksimal 15 pendidikan" : "Tambah pendidikan"}
+                  </button>
+                </div>                <div className="my-10 border-t border-border/60" />
                 {/* PENGALAMAN */}
                 <div className="mb-8">
                   <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
@@ -1067,6 +1410,148 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
                     Tambah pengalaman
                   </button>
                 </div>
+                <div className="my-10 border-t border-border/60" />
+                {/* KARYA & PORTOFOLIO */}
+                <div className="mb-8">
+                  <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
+                    Karya
+                  </p>
+                  <h2 className="mt-2 text-2xl font-bold">Karya &amp; portofolio <span className="text-base font-normal text-muted-foreground">(opsional)</span></h2>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    Tambahkan proyek, publikasi, desain, atau karya lain beserta tautannya jika ada.
+                  </p>
+                </div>
+                <div className="space-y-5">
+                  {portfolioItems.map((item, index) => (
+                    <div key={item.id} className="rounded-2xl border border-border/60 bg-white/20 p-5 dark:bg-white/[0.03]">
+                      <div className="mb-5 flex items-center justify-between gap-3">
+                        <p className="text-[14px] font-semibold text-muted-foreground">Karya {index + 1}</p>
+                        {portfolioItems.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removePortfolioItem(item.id)}
+                            aria-label={`Hapus karya ${index + 1}`}
+                            className="inline-flex items-center gap-2 text-[13px] font-semibold text-red-500 transition hover:opacity-80"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Hapus
+                          </button>
+                        )}
+                      </div>
+                      <div className="space-y-5">
+                        <div>
+                          <label className="mb-2 block text-[14px] font-medium">Nama karya / proyek</label>
+                          <input
+                            type="text"
+                            value={item.title}
+                            onChange={(event) => updatePortfolioItem(item.id, "title", event.target.value)}
+                            placeholder="Contoh: Aplikasi belajar interaktif"
+                            className="w-full rounded-2xl border border-border/70 bg-white/40 px-4 py-3.5 text-[17px] outline-none backdrop-blur-xl transition focus:border-[#EF629F]/50 dark:bg-white/5"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-[14px] font-medium">Tautan karya <span className="font-normal text-muted-foreground">(opsional)</span></label>
+                          <input
+                            type="url"
+                            value={item.url}
+                            onChange={(event) => updatePortfolioItem(item.id, "url", event.target.value)}
+                            placeholder="https://..."
+                            className="w-full rounded-2xl border border-border/70 bg-white/40 px-4 py-3.5 text-[17px] outline-none backdrop-blur-xl transition focus:border-[#EF629F]/50 dark:bg-white/5"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-[14px] font-medium">Deskripsi / kontribusi</label>
+                          <textarea
+                            rows={3}
+                            value={item.description}
+                            onChange={(event) => updatePortfolioItem(item.id, "description", event.target.value)}
+                            placeholder="Jelaskan karya atau kontribusi kamu secara singkat"
+                            className="modal-scrollbar-hidden w-full resize-none rounded-2xl border border-border/70 bg-white/40 px-4 py-3.5 text-[17px] leading-7 outline-none backdrop-blur-xl transition focus:border-[#EF629F]/50 dark:bg-white/5"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addPortfolioItem}
+                    className="inline-flex items-center gap-2 rounded-xl border border-border/70 px-4 py-3 text-[14px] font-semibold transition hover:border-[#EF629F]/40 hover:text-[#EF629F]"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Tambah karya
+                  </button>
+                </div>
+                <div className="my-10 border-t border-border/60" />
+                {/* SKOR BAHASA */}
+                <div className="mb-8">
+                  <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
+                    Kemampuan bahasa
+                  </p>
+                  <h2 className="mt-2 text-2xl font-bold">Skor bahasa <span className="text-base font-normal text-muted-foreground">(opsional)</span></h2>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    Isi hasil tes seperti TOEFL atau IELTS jika tersedia.
+                  </p>
+                </div>
+                <div className="space-y-5">
+                  {languageScores.map((item, index) => (
+                    <div key={item.id} className="rounded-2xl border border-border/60 bg-white/20 p-5 dark:bg-white/[0.03]">
+                      <div className="mb-5 flex items-center justify-between gap-3">
+                        <p className="text-[14px] font-semibold text-muted-foreground">Skor bahasa {index + 1}</p>
+                        {languageScores.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeLanguageScore(item.id)}
+                            aria-label={`Hapus skor bahasa ${index + 1}`}
+                            className="inline-flex items-center gap-2 text-[13px] font-semibold text-red-500 transition hover:opacity-80"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Hapus
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid gap-5 sm:grid-cols-3">
+                        <div>
+                          <label className="mb-2 block text-[14px] font-medium">Bahasa</label>
+                          <input
+                            type="text"
+                            value={item.language}
+                            onChange={(event) => updateLanguageScore(item.id, "language", event.target.value)}
+                            placeholder="Bahasa Inggris"
+                            className="w-full rounded-2xl border border-border/70 bg-white/40 px-4 py-3.5 text-[17px] outline-none backdrop-blur-xl transition focus:border-[#EF629F]/50 dark:bg-white/5"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-[14px] font-medium">Tes / sertifikat</label>
+                          <input
+                            type="text"
+                            value={item.test}
+                            onChange={(event) => updateLanguageScore(item.id, "test", event.target.value)}
+                            placeholder="TOEFL / IELTS"
+                            className="w-full rounded-2xl border border-border/70 bg-white/40 px-4 py-3.5 text-[17px] outline-none backdrop-blur-xl transition focus:border-[#EF629F]/50 dark:bg-white/5"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-[14px] font-medium">Skor</label>
+                          <input
+                            type="text"
+                            value={item.score}
+                            onChange={(event) => updateLanguageScore(item.id, "score", event.target.value)}
+                            placeholder="Contoh: 550 atau 7.5"
+                            className="w-full rounded-2xl border border-border/70 bg-white/40 px-4 py-3.5 text-[17px] outline-none backdrop-blur-xl transition focus:border-[#EF629F]/50 dark:bg-white/5"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addLanguageScore}
+                    className="inline-flex items-center gap-2 rounded-xl border border-border/70 px-4 py-3 text-[14px] font-semibold transition hover:border-[#EF629F]/40 hover:text-[#EF629F]"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Tambah skor bahasa
+                  </button>
+                </div>
                 {/* AI BUTTON */}
                 <button
                   type="button"
@@ -1089,9 +1574,19 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
                       ? "Buat Ulang dengan AI · 2 Kredit"
                       : "Buat CV dengan AI · 2 Kredit"}
                 </button>
-                <p className="mt-3 text-center text-[12px] leading-5 text-muted-foreground">
-                  Nama, email, nomor HP, dan lokasi dikirim ke server DinoEdu untuk validasi dan pembuatan CV, tetapi tidak diteruskan ke model AI.
-                </p>
+                <div className="mt-4 flex items-start gap-3 rounded-2xl border border-[#EF629F]/15 bg-[#EF629F]/[0.04] px-4 py-3.5 text-left">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#EF629F]/10 text-[#EF629F]">
+                    <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[12px] font-semibold text-foreground">
+                      Privasi data Anda
+                    </p>
+                    <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
+                      Nama, email, nomor HP, dan lokasi diproses oleh server DinoEdu untuk validasi dan penyusunan CV. Data tersebut tidak diteruskan ke model AI.
+                    </p>
+                  </div>
+                </div>
                 {!areRequiredFieldsComplete && (
                   <p className="mt-3 text-center text-[12px] text-muted-foreground">
                     Masih perlu diisi: {missingRequiredFields.join(", ")}
@@ -1176,11 +1671,11 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
                     </button>
                   </div>
                 )}
-                <div className="dino-glass rounded-[32px] p-5 sm:p-7">
+                <div className="cv-preview-shell dino-glass rounded-[32px] p-5 sm:p-7">
                   <div
                     id="dinoedu-cv-print"
                     data-template={template}
-                    className="min-h-[600px] rounded-2xl bg-white p-7 text-black shadow-xl sm:p-9"
+                    className="w-full min-w-0 rounded-2xl bg-white p-6 text-black shadow-xl sm:p-8"
                   >
                     {/* CV HEADER */}
                     <div className="cv-header border-b-2 border-zinc-900 pb-5">
@@ -1188,9 +1683,6 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
                         <h3 className="text-3xl font-bold tracking-tight">
                           {name || "Nama Lengkap"}
                         </h3>
-                        <p className="mt-2 text-[14px] font-medium text-zinc-600">
-                          {studyProgram || "Program Studi"}
-                        </p>
                         <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-[12px] text-zinc-600">
                           {email && (
                             <span className="inline-flex items-center gap-1.5">
@@ -1216,6 +1708,8 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
                     </div>
                     <div className="cv-sections">
                     {/* PROFILE */}
+                    {(aiResult?.professionalSummary || summary || isEditingResult || !aiResult) && (
+
                     <div className="cv-section cv-profile-section mt-7">
                       <h4 className="border-b border-zinc-200 pb-2 text-[12px] font-bold uppercase tracking-[0.16em]">
                         Profil Profesional
@@ -1245,24 +1739,47 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
                         </p>
                       )}
                     </div>
+                    )}
                     {/* EDUCATION */}
-                    <div className="cv-section cv-education-section mt-7">
-                      <h4 className="border-b border-zinc-200 pb-2 text-[12px] font-bold uppercase tracking-[0.16em]">
-                        Pendidikan
-                      </h4>
-                      <div className="mt-4">
-                        <p className="text-[13px] font-semibold">
-                          {institution || "Nama institusi"}
-                        </p>
-                        <p className="mt-1 text-[12px] text-zinc-600">
-                          {studyProgram || "Program studi"}
-                          {educationYear
-                            ? ` • ${educationYear}`
-                            : ""}
-                        </p>
+                    {(filledEducations.length > 0 || !aiResult) && (
+                      <div className="cv-section cv-education-section mt-7">
+                        <h4 className="border-b border-zinc-200 pb-2 text-[12px] font-bold uppercase tracking-[0.16em]">
+                          Pendidikan
+                        </h4>
+                        {filledEducations.length > 0 ? (
+                          <div className="mt-4 space-y-3">
+                            {filledEducations.map((education) => (
+                              <div key={education.id} className="cv-education-item min-w-0">
+                                <div className="flex min-w-0 items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="break-words text-[13px] font-semibold">
+                                      {education.institution || education.studyProgram}
+                                    </p>
+                                    {education.institution && education.studyProgram && (
+                                      <p className="mt-1 break-words text-[12px] text-zinc-600">
+                                        {education.studyProgram}
+                                      </p>
+                                    )}
+                                  </div>
+                                  {education.year && (
+                                    <p className="max-w-[40%] min-w-0 break-words text-right text-[12px] text-zinc-600">
+                                      {education.year}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-4 text-[12px] text-zinc-400">
+                            Riwayat pendidikan yang diisi akan tampil di sini
+                          </p>
+                        )}
                       </div>
-                    </div>
+                    )}
                     {/* EXPERIENCE */}
+                    {Boolean(aiResult?.experiences?.length || filledExperiences.length || !aiResult) && (
+
                     <div className="cv-section cv-experience-section mt-7">
                       <div className="flex items-center justify-between gap-3">
                         <h4 className="border-b border-zinc-200 pb-2 text-[12px] font-bold uppercase tracking-[0.16em]">
@@ -1398,7 +1915,77 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
                         </p>
                       )}
                     </div>
+                    )}
+                    {/* PORTFOLIO */}
+                    {filledPortfolioItems.length > 0 && (
+                      <div className="cv-section cv-portfolio-section mt-7">
+                        <h4 className="border-b border-zinc-200 pb-2 text-[12px] font-bold uppercase tracking-[0.16em]">
+                          Karya &amp; Portofolio
+                        </h4>
+                        <div className="mt-4 space-y-4">
+                          {filledPortfolioItems.map((item) => {
+                            const safeUrl = getSafePortfolioUrl(item.url)
+                            return (
+                              <div key={item.id} className="cv-portfolio-item min-w-0">
+                                {item.title && (
+                                  <p className="break-words text-[13px] font-semibold text-zinc-800">
+                                    {item.title}
+                                  </p>
+                                )}
+                                {item.url && (
+                                  safeUrl ? (
+                                    <a href={safeUrl} target="_blank" rel="noreferrer" className="mt-1 block break-all text-[11px] text-blue-700 underline underline-offset-2">
+                                      {item.url}
+                                    </a>
+                                  ) : (
+                                    <p className="mt-1 break-all text-[11px] text-zinc-600">{item.url}</p>
+                                  )
+                                )}
+                                {item.description && (
+                                  <p className="cv-justified mt-2 text-[12px] leading-5 text-zinc-700">
+                                    {item.description}
+                                  </p>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {/* LANGUAGE SCORES */}
+                    {filledLanguageScores.length > 0 && (
+                      <div className="cv-section cv-language-section mt-7">
+                        <h4 className="border-b border-zinc-200 pb-2 text-[12px] font-bold uppercase tracking-[0.16em]">
+                          Skor Bahasa
+                        </h4>
+                        <div className="mt-4 space-y-3">
+                          {filledLanguageScores.map((item) => (
+                            <div key={item.id} className="cv-language-item flex min-w-0 items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                {item.language && (
+                                  <p className="break-words text-[13px] font-semibold text-zinc-800">
+                                    {item.language}
+                                  </p>
+                                )}
+                                {item.test && (
+                                  <p className="mt-1 break-words text-[12px] text-zinc-600">
+                                    {item.test}
+                                  </p>
+                                )}
+                              </div>
+                              {item.score && (
+                                <p className="max-w-[40%] min-w-0 break-words text-right text-[12px] font-semibold text-zinc-700">
+                                  Skor {item.score}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     {/* SKILLS */}
+                    {Boolean(aiResult?.skills?.length || isEditingResult || !aiResult) && (
+
                     <div className="cv-section cv-skills-section mt-7">
                       <h4 className="border-b border-zinc-200 pb-2 text-[12px] font-bold uppercase tracking-[0.16em]">
                         Keahlian
@@ -1436,10 +2023,15 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
                         </p>
                       )}
                     </div>
+                    )}
                     </div>
-                    <div className="mt-9 border-t border-zinc-200 pt-4 text-[10px] text-zinc-400">
+                    <footer
+                      className="cv-watermark-footer"
+                      draggable={false}
+                      aria-label="Watermark DinoEdu Space"
+                    >
                       CV dibuat menggunakan DinoEdu Space
-                    </div>
+                    </footer>
                   </div>
                 </div>
                 <div className="mt-4 text-center text-[12px] text-muted-foreground dino-no-print">
