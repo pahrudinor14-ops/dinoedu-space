@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+const MAX_REQUEST_BYTES = 48_000;
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -37,6 +38,32 @@ function jsonResponse(body: unknown, status = 200) {
 }
 function env(name: string): string | null {
   return Deno.env.get(name)?.trim() || null;
+}
+async function readBoundedBody(
+  request: Request,
+  maxBytes: number,
+): Promise<string | null> {
+  const reader = request.body?.getReader();
+  if (!reader) return "";
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    totalBytes += value.byteLength;
+    if (totalBytes > maxBytes) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -182,16 +209,16 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "Method not allowed." }, 405);
   }
   const contentLength = Number(request.headers.get("content-length") ?? "0");
-  if (contentLength > 48_000) {
+  if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BYTES) {
     return jsonResponse({ error: "Data CV terlalu besar." }, 413);
   }
-  let rawBody: string;
+  let rawBody: string | null;
   try {
-    rawBody = await request.text();
+    rawBody = await readBoundedBody(request, MAX_REQUEST_BYTES);
   } catch {
     return jsonResponse({ error: "Request tidak dapat dibaca." }, 400);
   }
-  if (new TextEncoder().encode(rawBody).byteLength > 48_000) {
+  if (rawBody === null) {
     return jsonResponse({ error: "Data CV terlalu besar." }, 413);
   }
   let body: unknown;

@@ -1,4 +1,27 @@
-﻿function jsonResponse(body: unknown, status = 200) {
+async function readBoundedBody(req: Request, maxBytes: number): Promise<string | null> {
+  const reader = req.body?.getReader()
+  if (!reader) return ""
+  const chunks: Uint8Array[] = []
+  let totalBytes = 0
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    totalBytes += value.byteLength
+    if (totalBytes > maxBytes) {
+      await reader.cancel()
+      return null
+    }
+    chunks.push(value)
+  }
+  const bytes = new Uint8Array(totalBytes)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return new TextDecoder().decode(bytes)
+}
+function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json" },
@@ -26,8 +49,8 @@ Deno.serve(async (req) => {
     if (Number.isFinite(contentLength) && contentLength > 32_000) {
       return jsonResponse({ error: "Payload terlalu besar." }, 413);
     }
-    const rawBody = await req.text();
-    if (new TextEncoder().encode(rawBody).byteLength > 32_000) {
+    const rawBody = await readBoundedBody(req, 32_000);
+    if (rawBody === null) {
       return jsonResponse({ error: "Payload terlalu besar." }, 413);
     }
     let payload: unknown;

@@ -1,4 +1,27 @@
-﻿import { createClient } from "npm:@supabase/supabase-js@2"
+import { createClient } from "npm:@supabase/supabase-js@2"
+async function readBoundedBody(req: Request, maxBytes: number): Promise<string | null> {
+  const reader = req.body?.getReader()
+  if (!reader) return ""
+  const chunks: Uint8Array[] = []
+  let totalBytes = 0
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    totalBytes += value.byteLength
+    if (totalBytes > maxBytes) {
+      await reader.cancel()
+      return null
+    }
+    chunks.push(value)
+  }
+  const bytes = new Uint8Array(totalBytes)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return new TextDecoder().decode(bytes)
+}
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -73,13 +96,13 @@ Deno.serve(async (req) => {
     if (Number.isFinite(contentLength) && contentLength > 8_000) {
       return jsonResponse({ error: "Request terlalu besar." }, 413)
     }
-    let rawBody: string
+    let rawBody: string | null
     try {
-      rawBody = await req.text()
+      rawBody = await readBoundedBody(req, 8_000)
     } catch {
       return jsonResponse({ error: "Request tidak dapat dibaca." }, 400)
     }
-    if (new TextEncoder().encode(rawBody).byteLength > 8_000) {
+    if (rawBody === null) {
       return jsonResponse({ error: "Request terlalu besar." }, 413)
     }
     let body: unknown
