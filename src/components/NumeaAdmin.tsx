@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from "react"
 import { ArrowLeft, Check, Clock3, Eye, Loader2, Search, ShieldAlert, UserCheck, UserX, X, type LucideIcon } from "lucide-react"
-import { supabase } from "../lib/supabase"
+import { supabase, supabaseUrl } from "../lib/supabase"
 interface NumeaAdminProps {
   onBack: () => void
   darkMode?: boolean
@@ -44,6 +44,75 @@ function normalizeInterests(value: unknown): string[] {
     .map((interest) => interest.trim())
     .filter(Boolean))]
 }
+const PROFILE_PHOTO_BUCKET = "numea-profile-photos"
+function normalizeProfilePhotoPath(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  let path = value.trim()
+  if (!path) return null
+
+  if (/^https?:\/\//i.test(path)) {
+    try {
+      const photoUrl = new URL(path)
+      if (photoUrl.origin !== new URL(supabaseUrl).origin) return null
+      const objectPrefix = "/storage/v1/object/"
+      const objectPrefixIndex = photoUrl.pathname.indexOf(objectPrefix)
+      if (objectPrefixIndex < 0) return null
+      const segments = photoUrl.pathname.slice(objectPrefixIndex + objectPrefix.length).split("/")
+      const visibility = segments.shift()
+      const bucket = segments.shift()
+      if (!visibility || !["public", "sign", "authenticated"].includes(visibility) || bucket !== PROFILE_PHOTO_BUCKET) return null
+      path = segments.join("/")
+    } catch {
+      return null
+    }
+  } else {
+    path = path.replace(/^\/+/, "")
+    const bucketPrefix = `${PROFILE_PHOTO_BUCKET}/`
+    if (path.startsWith(bucketPrefix)) path = path.slice(bucketPrefix.length)
+  }
+
+  try {
+    path = path.split("/").map((segment) => decodeURIComponent(segment)).join("/")
+  } catch {
+    return null
+  }
+  return path || null
+}
+async function signProfilePhotoPaths(paths: string[]): Promise<Map<string, string>> {
+  const signedUrlByPath = new Map<string, string>()
+  const storage = supabase.storage.from(PROFILE_PHOTO_BUCKET)
+  const batchSize = 50
+
+  for (let index = 0; index < paths.length; index += batchSize) {
+    const batch = paths.slice(index, index + batchSize)
+    try {
+      const { data, error } = await storage.createSignedUrls(batch, 60 * 60)
+      if (!error) {
+        for (const [resultIndex, avatar] of (data ?? []).entries()) {
+          if (avatar.error || !avatar.signedUrl) continue
+          const path = avatar.path ?? batch[resultIndex]
+          if (path) signedUrlByPath.set(path, avatar.signedUrl)
+        }
+      }
+    } catch {
+      // Retry failed items individually below so one invalid path cannot block the rest.
+    }
+
+    const pathsToRetry = batch.filter((path) => !signedUrlByPath.has(path))
+    const retries = await Promise.all(pathsToRetry.map(async (path) => {
+      try {
+        const { data, error } = await storage.createSignedUrl(path, 60 * 60)
+        return !error && data?.signedUrl ? [path, data.signedUrl] as const : null
+      } catch {
+        return null
+      }
+    }))
+    for (const retry of retries) {
+      if (retry) signedUrlByPath.set(retry[0], retry[1])
+    }
+  }
+  return signedUrlByPath
+}
 export default function NumeaAdmin({ onBack }: NumeaAdminProps) {
   const [requests, setRequests] = useState<JoinRequest[]>([])
   const [selectedRequest, setSelectedRequest] = useState<JoinRequest | null>(null)
@@ -85,30 +154,18 @@ export default function NumeaAdmin({ onBack }: NumeaAdminProps) {
       return
     }
     const profileByUser = new Map((profiles ?? []).map((profile) => [profile.user_id, profile]))
-    const avatarPaths = [...new Set((profiles ?? []).flatMap((profile) => profile.avatar_path ? [profile.avatar_path] : []))]
-    const avatarUrlByPath = new Map<string, string>()
-    if (avatarPaths.length > 0) {
-      const { data: signedAvatars, error: avatarError } = await supabase.storage
-        .from("numea-profile-photos")
-        .createSignedUrls(avatarPaths, 60 * 60)
-      if (avatarError) {
-        setMemberPhotoMessage("Foto profil gagal dimuat. Data anggota tetap ditampilkan.")
-      } else {
-        for (const avatar of signedAvatars ?? []) {
-          if (avatar.path && avatar.signedUrl) avatarUrlByPath.set(avatar.path, avatar.signedUrl)
-        }
-        if (signedAvatars?.some((avatar) => avatar.error || !avatar.signedUrl)) {
-          setMemberPhotoMessage("Beberapa foto profil belum dapat dimuat.")
-        } else {
-          setMemberPhotoMessage("")
-        }
-      }
-    } else {
-      setMemberPhotoMessage("")
-    }
+    const photoPathByUser = new Map((profiles ?? []).map((profile) => [profile.user_id, normalizeProfilePhotoPath(profile.avatar_path)]))
+    const avatarPaths = [...new Set([...photoPathByUser.values()].filter((path): path is string => Boolean(path)))]
+    const avatarUrlByPath = await signProfilePhotoPaths(avatarPaths)
+    const failedPhotoCount = (profiles ?? []).filter((profile) => {
+      if (!profile.avatar_path) return false
+      const path = photoPathByUser.get(profile.user_id)
+      return !path || !avatarUrlByPath.has(path)
+    }).length
+    setMemberPhotoMessage(failedPhotoCount > 0 ? "Beberapa foto profil belum dapat dimuat." : "")
     setMembers(loadedMembers.map((member) => {
       const profile = profileByUser.get(member.user_id)
-      const avatarPath = profile?.avatar_path
+      const avatarPath = photoPathByUser.get(member.user_id)
       return {
         ...member,
         interests: normalizeInterests(profile?.interests),
