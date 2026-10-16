@@ -339,7 +339,7 @@ async function handleGenerateAI() {
           body,
           #root,
           #root > div,
-          .modal-scrollbar-hidden.h-dvh {
+          .min-h-dvh {
             height: auto !important;
             min-height: 0 !important;
             overflow: visible !important;
@@ -388,7 +388,7 @@ async function handleGenerateAI() {
           }
         }
       `}</style>
-      <div className="modal-scrollbar-hidden h-dvh overflow-x-hidden overflow-y-auto bg-background text-foreground">
+      <div className="min-h-dvh overflow-x-clip bg-background text-foreground">
         {/* DINOEDU SPACE BACKGROUND */}
         <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
           <div className="dino-float absolute left-[-140px] top-[100px] h-[320px] w-[320px] rounded-full bg-[#EECDA3]/25 blur-3xl" />

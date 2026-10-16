@@ -378,7 +378,7 @@ async function handleGenerateQuestions() {
     window.print()
   }
   return (
-    <div className="modal-scrollbar-hidden min-h-dvh overflow-x-hidden overflow-y-auto bg-background text-foreground">
+    <div className="min-h-dvh overflow-x-clip bg-background text-foreground">
       <style>{`        .question-screen-card {
           background-color: #ffffff !important;
           border-color: #e4e4e7 !important;
