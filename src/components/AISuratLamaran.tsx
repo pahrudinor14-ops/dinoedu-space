@@ -1,5 +1,6 @@
 ﻿import {
   useEffect,
+  useRef,
   useState } from "react"
 import {
   ArrowLeft,
@@ -15,6 +16,7 @@ import {
   Save,
 } from "lucide-react"
 import { supabase } from "../lib/supabase"
+import { invokeDinoAI } from "../lib/invokeDinoAI"
 interface AISuratLamaranProps {
   onBack: () => void
 }
@@ -25,6 +27,11 @@ interface LetterResult {
   body: string[]
   closing: string
   signature: string
+}
+interface LetterResponse {
+  success?: boolean
+  error?: string
+  letter?: Partial<LetterResult> | null
 }
 export default function AISuratLamaran({
   onBack,
@@ -51,6 +58,7 @@ export default function AISuratLamaran({
   const [savedDocumentId, setSavedDocumentId] = useState<string | null>(null)
   const [isLoadingSaved, setIsLoadingSaved] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const generationInFlight = useRef(false)
   const isBasicDataComplete =
     name.trim() !== "" &&
     email.trim() !== "" &&
@@ -138,8 +146,8 @@ export default function AISuratLamaran({
       setIsLoadingSaved(false)
     }
   }
-  async function saveDocument(resultToSave: LetterResult | null = letterResult) {
-    if (!resultToSave) return
+  async function saveDocument(resultToSave: LetterResult | null = letterResult): Promise<boolean> {
+    if (!resultToSave) return false
     setIsSaving(true)
     setAiError("")
     try {
@@ -157,9 +165,11 @@ export default function AISuratLamaran({
         setSavedDocumentId(data.id)
       }
       setMessage("Surat lamaran berhasil disimpan")
+      return true
     } catch (error) {
       console.error("Save letter error:", error)
       setAiError(error instanceof Error ? error.message : "Surat lamaran gagal disimpan")
+      return false
     } finally {
       setIsSaving(false)
     }
@@ -179,32 +189,14 @@ async function handleGenerateAI() {
       )
       return
     }
+    if (generationInFlight.current) return
+    generationInFlight.current = true
     setAiLoading(true)
     setAiError("")
     setMessage("")
     setIsEditingResult(false)
     try {
-      const {
-        data: sessionData,
-        error: sessionError,
-      } = await supabase.auth.getSession()
-      if (
-        sessionError ||
-        !sessionData.session?.access_token
-      ) {
-        throw new Error(
-          "Session login tidak ditemukan. Silakan login kembali.",
-        )
-      }
-      const accessToken = sessionData.session.access_token
-      const {
-        data,
-        error,
-      } = await supabase.functions.invoke("dinoai-surat", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: {
+      const data = await invokeDinoAI<LetterResponse>("dinoai-surat", {
           name,
           email,
           phone,
@@ -221,44 +213,10 @@ async function handleGenerateAI() {
           experience,
           skills,
           motivation,
-        },
       })
-      if (error) {
-        let backendMessage = ""
-        if (
-          typeof error === "object" &&
-          error !== null &&
-          "context" in error
-        ) {
-          const context = (
-            error as {
-              context?: unknown
-            }
-          ).context
-          if (context instanceof Response) {
-            const body: unknown = await context
-              .clone()
-              .json()
-              .catch(() => null)
-            if (
-              typeof body === "object" &&
-              body !== null &&
-              "error" in body &&
-              typeof body.error === "string"
-            ) {
-              backendMessage = body.error
-            }
-          }
-        }
-        throw new Error(
-          backendMessage ||
-            error.message ||
-            "AI Surat Lamaran gagal memproses data",
-        )
-      }
       if (!data?.success || !data?.letter) {
         throw new Error(
-          "Respons dinoai-surat tidak sesuai. Silakan coba lagi.",
+          data?.error || "Respons dinoai-surat tidak sesuai. Silakan coba lagi.",
         )
       }
       const rawBody = Array.isArray(data.letter.body)
@@ -290,20 +248,23 @@ async function handleGenerateAI() {
             ? data.letter.signature
             : name,
       }
+      if (!nextLetterResult.opening.trim() && !nextLetterResult.body.some((paragraph) => paragraph.trim())) {
+        throw new Error("AI tidak mengembalikan isi surat yang dapat digunakan. Coba lagi sebentar.")
+      }
       setLetterResult(nextLetterResult)
-      await saveDocument(nextLetterResult)
-      setMessage(
-        "Surat lamaran berhasil dibuat dengan bantuan AI. Periksa dan edit hasilnya sebelum disimpan sebagai PDF",
-      )
+      const saved = await saveDocument(nextLetterResult)
+      setMessage(saved
+        ? "Surat lamaran berhasil dibuat dan disimpan. Periksa dan edit hasilnya sebelum disimpan sebagai PDF"
+        : "Surat lamaran berhasil dibuat, tetapi belum tersimpan. Periksa koneksi lalu tekan Simpan.")
     } catch (error) {
       console.error("AI Surat Lamaran error:", error)
-      setLetterResult(null)
       setAiError(
         error instanceof Error
           ? error.message
           : "Terjadi kesalahan saat membuat surat lamaran dengan AI",
       )
     } finally {
+      generationInFlight.current = false
       setAiLoading(false)
     }
   }

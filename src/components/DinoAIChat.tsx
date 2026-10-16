@@ -48,6 +48,31 @@ interface DinoAIQuota {
 }
 const welcomeMessage =
   "Halo, saya DinoAI. Saya siap membantu kamu belajar, bekerja, dan menyelesaikan berbagai kebutuhan";
+const maxRequestHistoryItems = 16;
+const maxRequestHistoryCharacters = 4_000;
+const maxRequestHistoryItemCharacters = 1_200;
+function buildRequestHistory(messages: ChatMessage[]) {
+  const previousMessages = messages.filter(
+    (message, index) =>
+      !(index === 0 && message.role === "assistant" && message.content === welcomeMessage),
+  ).slice(-maxRequestHistoryItems);
+  const recentHistory: Array<{ role: "user" | "model"; text: string }> = [];
+  let remainingCharacters = maxRequestHistoryCharacters;
+  for (let index = previousMessages.length - 1; index >= 0; index -= 1) {
+    if (remainingCharacters <= 0) break;
+    const message = previousMessages[index];
+    const text = message.content.trim().slice(
+      -Math.min(maxRequestHistoryItemCharacters, remainingCharacters),
+    );
+    if (!text) continue;
+    recentHistory.unshift({
+      role: message.role === "assistant" ? "model" : "user",
+      text,
+    });
+    remainingCharacters -= text.length;
+  }
+  return recentHistory;
+}
 const witaOffsetMs = 8 * 60 * 60 * 1000;
 function getNextWitaResetAt(nowMs = Date.now()) {
   const witaNow = new Date(nowMs + witaOffsetMs);
@@ -244,14 +269,26 @@ async function getFunctionErrorMessage(error: unknown) {
         "error" in body &&
         typeof body.error === "string"
       ) {
+        const creditsRestored = "creditsRestored" in body && body.creditsRestored === true;
+        const creditNotice = creditsRestored
+          ? " Kredit untuk permintaan ini telah dikembalikan."
+          : "";
         if (
-          /sedang padat|high demand|sementara tidak tersedia/i.test(body.error)
+          /sedang padat|sedang sibuk|high demand|sementara tidak tersedia/i.test(
+            body.error,
+          )
         ) {
-          return "DinoAI sedang padat atau sementara tidak tersedia. Silakan coba lagi beberapa saat. Credit kamu tidak terpotong";
+          return `DinoAI sedang sibuk atau sementara tidak tersedia. Silakan coba lagi beberapa saat.${creditNotice}`;
         }
-        return body.error;
+        return `${body.error}${creditNotice}`;
       }
     }
+  }
+  if (
+    error instanceof Error &&
+    /network|fetch|timeout|aborted/i.test(error.message)
+  ) {
+    return "Koneksi ke DinoAI terputus. Periksa koneksi internet lalu coba kirim kembali.";
   }
   return "DinoAI belum terhubung. Pastikan Edge Function dinoai-chat sudah di-deploy dan secret GEMINI_API_KEY_DINO_AI sudah diatur di Supabase.";
 }
@@ -522,19 +559,7 @@ export default function DinoAIChat({
       role: "user",
       content: text,
     };
-    const history = activeConversation.messages
-      .filter(
-        (message, index) =>
-          !(
-            index === 0 &&
-            message.role === "assistant" &&
-            message.content === welcomeMessage
-          ),
-      )
-      .map((message) => ({
-        role: message.role === "assistant" ? "model" : "user",
-        text: message.content,
-      }));
+    const history = buildRequestHistory(activeConversation.messages);
     setConversations((current) =>
       current.map((conversation) => {
         if (conversation.id !== conversationId) {
@@ -1189,6 +1214,7 @@ export default function DinoAIChat({
                 <div className="dino-glass flex items-end gap-3 rounded-[28px] p-3 shadow-xl shadow-black/5">
                   <textarea
                     value={input}
+                    maxLength={8_000}
                     onChange={(event) => setInput(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && !event.shiftKey) {

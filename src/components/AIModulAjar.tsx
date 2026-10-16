@@ -1,6 +1,7 @@
-﻿import { useEffect, useMemo, useState } from "react"
-import { ArrowLeft, BookOpen, Check, ChevronDown, ChevronUp, FilePlus2, Lightbulb, Save, Sparkles } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { ArrowLeft, BookOpen, Check, ChevronDown, ChevronUp, FilePlus2, Lightbulb, Save } from "lucide-react"
 import { supabase } from "../lib/supabase"
+import { invokeDinoAI } from "../lib/invokeDinoAI"
 interface AIModulAjarProps { onBack: () => void }
 interface ModulAjarResult {
   metadata: {
@@ -62,6 +63,7 @@ interface ModulAjarResult {
   dukunganBelajar: { remedial: string; pengayaan: string; dukunganKhusus: string }
   lampiran: { lkpd?: string; instrumenAsesmen?: string; rubrik?: string; lembarRefleksi?: string; bahanBacaan?: string }
 }
+interface ModulResponse { success?: boolean; error?: string; modul?: unknown }
 type EducationLevel = "PAUD" | "SD/MI" | "SMP/MTs" | "SMA/MA" | "SMK/MAK" | "Kesetaraan" | ""
 const phasesByLevel: Record<string,string[]> = { PAUD:["Fondasi"], "SD/MI":["Fase A","Fase B","Fase C"], "SMP/MTs":["Fase D"], "SMA/MA":["Fase E","Fase F"], "SMK/MAK":["Fase E","Fase F"], Kesetaraan:["Fase A","Fase B","Fase C","Fase D","Fase E","Fase F"] }
 const gradesByLevel: Record<string,string[]> = { PAUD:["Kelompok A","Kelompok B"], "SD/MI":["Kelas I","Kelas II","Kelas III","Kelas IV","Kelas V","Kelas VI"], "SMP/MTs":["Kelas VII","Kelas VIII","Kelas IX"], "SMA/MA":["Kelas X","Kelas XI","Kelas XII"], "SMK/MAK":["Kelas X","Kelas XI","Kelas XII","Kelas XIII"], Kesetaraan:["Setara SD","Setara SMP","Setara SMA"] }
@@ -78,6 +80,21 @@ const pedagogicalStrategies=["Berbasis masalah","Berbasis proyek","Inkuiri","Kon
 const contexts=["Kehidupan sehari-hari","Lingkungan sekolah","Lingkungan sekitar","Budaya dan kearifan lokal","Dunia kerja","Isu nyata"]
 const inputClass="w-full rounded-2xl border border-border/70 bg-white/40 px-4 py-3.5 text-[16px] outline-none backdrop-blur-xl transition placeholder:text-muted-foreground/70 focus:border-[#EF629F]/50 dark:bg-white/5"
 const selectClass="w-full rounded-2xl border border-border/70 bg-white/40 px-4 py-3.5 text-[16px] text-foreground outline-none backdrop-blur-xl transition focus:border-[#EF629F]/50 dark:bg-[#1D191F]"
+function isRecord(value:unknown):value is Record<string,unknown>{return typeof value==="object"&&value!==null}
+function isStringArray(value:unknown):value is string[]{return Array.isArray(value)&&value.every(item=>typeof item==="string")}
+function isAssessment(value:unknown,withCriteria:boolean){return isRecord(value)&&typeof value.teknik==="string"&&typeof value.instrumen==="string"&&(!withCriteria||typeof value.kriteria==="string")}
+function isModulAjarResult(value:unknown):value is ModulAjarResult{
+  if(!isRecord(value))return false
+  const metadata=value.metadata,identifikasi=value.identifikasi,tujuan=value.tujuanPembelajaran,desain=value.desainPembelajaran,asesmen=value.asesmen,media=value.mediaDanSumber,dukungan=value.dukunganBelajar,meetings=value.pengalamanBelajar
+  return isRecord(metadata)&&["judul","jenjang","fase","kelas","mataPelajaran","semester"].every(key=>typeof metadata[key]==="string")&&typeof metadata.jumlahPertemuan==="number"&&Number.isFinite(metadata.jumlahPertemuan)&&typeof metadata.durasiPerPertemuan==="number"&&Number.isFinite(metadata.durasiPerPertemuan)
+    &&isRecord(identifikasi)&&["karakteristikMurid","kesiapanMurid","kebutuhanBelajar"].every(key=>typeof identifikasi[key]==="string")
+    &&isRecord(tujuan)&&isStringArray(tujuan.tujuanPembelajaran)&&isStringArray(tujuan.indikatorKetercapaian)&&(tujuan.capaianPembelajaran===undefined||typeof tujuan.capaianPembelajaran==="string")
+    &&isRecord(desain)&&["praktikPedagogis","konteksPembelajaran","pemanfaatanTeknologi","lingkunganBelajar","kemitraanPembelajaran"].every(key=>typeof desain[key]==="string")
+    &&Array.isArray(meetings)&&meetings.length>0&&meetings.every(item=>isRecord(item)&&typeof item.pertemuan==="number"&&typeof item.alokasiWaktu==="number"&&typeof item.tujuanPertemuan==="string"&&isStringArray(item.kegiatanPendahuluan)&&isStringArray(item.kegiatanInti)&&isStringArray(item.kegiatanPenutup))
+    &&isRecord(asesmen)&&isAssessment(asesmen.diagnostik,false)&&isAssessment(asesmen.formatif,true)&&isAssessment(asesmen.sumatif,true)
+    &&isRecord(media)&&isStringArray(media.media)&&isStringArray(media.sumberBelajar)
+    &&isRecord(dukungan)&&["remedial","pengayaan","dukunganKhusus"].every(key=>typeof dukungan[key]==="string")
+}
 function Section({number,title,description,open,onToggle,children}:{number:string;title:string;description:string;open:boolean;onToggle:()=>void;children:React.ReactNode}){return <section className="dino-glass overflow-hidden rounded-[28px]"><button type="button" onClick={onToggle} className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left sm:px-7"><div className="flex min-w-0 items-center gap-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#EF629F]/10 text-sm font-bold text-[#EF629F]">{number}</span><span className="min-w-0"><span className="block text-base font-bold sm:text-lg">{title}</span><span className="mt-0.5 block text-sm leading-6 text-muted-foreground">{description}</span></span></div>{open?<ChevronUp className="h-5 w-5 shrink-0 text-muted-foreground"/>:<ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground"/>}</button>{open&&<div className="border-t border-border/60 px-6 pb-7 pt-6 sm:px-7">{children}</div>}</section>}
 function FieldLabel({children,optional=false}:{children:React.ReactNode;optional?:boolean}){return <label className="mb-2 block text-sm font-semibold">{children}{optional&&<span className="ml-1 font-normal text-muted-foreground">(opsional)</span>}</label>}
 export default function AIModulAjar({onBack}:AIModulAjarProps){
@@ -94,11 +111,12 @@ export default function AIModulAjar({onBack}:AIModulAjarProps){
   const [support,setSupport]=useState(true); const [enrichment,setEnrichment]=useState(true); const [productVariation,setProductVariation]=useState(false); const [alternativeActivity,setAlternativeActivity]=useState(false); const [outputMode,setOutputMode]=useState("complete"); const [attachments,setAttachments]=useState<string[]>([])
   const [openSections,setOpenSections]=useState<Record<string,boolean>>({context:true,curriculum:true,students:false,design:false,support:false,output:true}); const [message,setMessage]=useState(""); const [isGenerating,setIsGenerating]=useState(false); const [result,setResult]=useState<ModulAjarResult|null>(null); const [isEditing,setIsEditing]=useState(false); const [draft,setDraft]=useState<ModulAjarResult|null>(null); const [savedDocumentId,setSavedDocumentId]=useState<string|null>(null); const [isLoadingSaved,setIsLoadingSaved]=useState(true); const [isSaving,setIsSaving]=useState(false)
   const phases=useMemo(()=>educationLevel?phasesByLevel[educationLevel]??[]:[],[educationLevel]); const grades=useMemo(()=>educationLevel?gradesByLevel[educationLevel]??[]:[],[educationLevel]); const subjects=useMemo(()=>educationLevel?subjectsByLevel[educationLevel]??[]:[],[educationLevel])
+  const generationInFlight=useRef(false)
   const isComplete=Boolean(educationLevel&&phase&&grade&&subject&&semester&&topic.trim()&&(curriculumMode==="tp"?tp.trim():curriculumMode==="cp"?cp.trim():true))
   const toggleSection=(key:string)=>setOpenSections(v=>({...v,[key]:!v[key]})); const toggleDimension=(v:string)=>setDimensions(c=>c.includes(v)?c.filter(x=>x!==v):[...c,v]); const toggleAttachment=(v:string)=>setAttachments(c=>c.includes(v)?c.filter(x=>x!==v):[...c,v])
   const updateDraft=(updater:(value:ModulAjarResult)=>ModulAjarResult)=>setDraft(current=>current?updater(current):current)
   const startEditing=()=>{if(!result)return;setDraft(structuredClone(result));setIsEditing(true);window.scrollTo({top:0,behavior:"smooth"})}
-  const saveEditing=async()=>{if(!draft)return;const updated=structuredClone(draft);setResult(updated);setIsEditing(false);setDraft(null);await saveDocument(updated);setMessage("Perubahan Modul Ajar berhasil disimpan");window.scrollTo({top:0,behavior:"smooth"})}
+  const saveEditing=async()=>{if(!draft)return;const updated=structuredClone(draft);setResult(updated);setIsEditing(false);setDraft(null);const saved=await saveDocument(updated);if(saved)setMessage("Perubahan Modul Ajar berhasil disimpan");window.scrollTo({top:0,behavior:"smooth"})}
   const buildDocumentContent=(resultToSave:ModulAjarResult|null)=>({form:{educationLevel,phase,grade,subject,semester,topic,meetingCount,duration,curriculumMode,cp,tp,readiness,studentNotes,autoDimensions,dimensions,autoPedagogy,strategy,context,technologyMode,technology,support,enrichment,productVariation,alternativeActivity,outputMode,attachments},result:resultToSave})
   async function loadSavedDocument(){
     try{
@@ -144,7 +162,7 @@ export default function AIModulAjar({onBack}:AIModulAjarProps){
       setIsLoadingSaved(false)
     }
   }
-  async function saveDocument(resultToSave:ModulAjarResult|null){
+  async function saveDocument(resultToSave:ModulAjarResult|null):Promise<boolean>{
     try{
       setIsSaving(true)
       const {data:{user}}=await supabase.auth.getUser()
@@ -159,9 +177,12 @@ export default function AIModulAjar({onBack}:AIModulAjarProps){
         if(error)throw error
         setSavedDocumentId(data.id)
       }
+      setMessage("Modul Ajar berhasil disimpan")
+      return true
     }catch(error){
       console.error("Save Modul Ajar error:",error)
       setMessage(error instanceof Error?`Modul Ajar berhasil dibuat, tetapi gagal disimpan: ${error.message}`:"Modul Ajar berhasil dibuat, tetapi gagal disimpan")
+      return false
     }finally{
       setIsSaving(false)
     }
@@ -174,15 +195,12 @@ export default function AIModulAjar({onBack}:AIModulAjarProps){
       setOpenSections(v=>({...v,context:true,curriculum:true}))
       return
     }
+    if(generationInFlight.current)return
+    generationInFlight.current=true
     setIsGenerating(true)
     setMessage("")
     try{
-      const {data:{session}}=await supabase.auth.getSession()
-      if(!session?.access_token){
-        throw new Error("Sesi login tidak ditemukan. Silakan masuk kembali")
-      }
-      const {data,error}=await supabase.functions.invoke("dinoai-modul-ajar",{
-        body:{
+      const data=await invokeDinoAI<ModulResponse>("dinoai-modul-ajar",{
           educationLevel,
           phase,
           grade,
@@ -209,35 +227,25 @@ export default function AIModulAjar({onBack}:AIModulAjarProps){
           alternativeActivity,
           outputMode,
           attachments,
-        },
-        headers:{
-          Authorization:`Bearer ${session.access_token}`,
-        },
       })
-      if(error){
-        let message=error.message||"AI Modul Ajar gagal diproses"
-        try{
-          const context=await error.context?.json()
-          if(context?.error) message=context.error
-        }catch{}
-        throw new Error(message)
+      if(!data?.success||!isModulAjarResult(data.modul)){
+        throw new Error(data?.error||"AI tidak mengembalikan Modul Ajar dengan struktur lengkap. Silakan coba lagi")
       }
-      if(!data?.success||!data?.modul){
-        throw new Error(data?.error||"AI Modul Ajar tidak mengembalikan hasil")
-      }
-      setResult(data.modul as ModulAjarResult)
-      setMessage("Modul Ajar berhasil dibuat. Periksa hasil sebelum digunakan")
+      setResult(data.modul)
+      const saved=await saveDocument(data.modul)
+      setMessage(saved?"Modul Ajar berhasil dibuat dan disimpan. Periksa hasil sebelum digunakan":"Modul Ajar berhasil dibuat, tetapi belum tersimpan. Periksa koneksi lalu tekan Simpan.")
       window.scrollTo({top:0,behavior:"smooth"})
     }catch(error){
       console.error("AI Modul Ajar error:",error)
       setMessage(error instanceof Error?error.message:"Terjadi kesalahan saat membuat Modul Ajar")
     }finally{
+      generationInFlight.current=false
       setIsGenerating(false)
     }
   }
   return <div aria-busy={isLoadingSaved||isGenerating||isSaving} className="min-h-dvh overflow-x-hidden bg-background text-foreground"><div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"><div className="dino-float absolute left-[-140px] top-[120px] h-[320px] w-[320px] rounded-full bg-[#EECDA3]/25 blur-3xl"/><div className="dino-float-slow absolute right-[-120px] top-[180px] h-[360px] w-[360px] rounded-full bg-[#EF629F]/15 blur-3xl"/></div>
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8"><button type="button" onClick={onBack} className="dino-button inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-4 py-3 text-sm font-semibold backdrop-blur-xl dark:bg-white/5"><ArrowLeft className="h-4 w-4"/>Kembali</button><div className="flex items-center gap-2 text-sm font-semibold"><img src="/logodino.PNG" alt="" className="h-5 w-5 object-contain"/>AI Modul Ajar</div></div></header>
-    <main className="mx-auto max-w-7xl px-5 pb-20 pt-10 sm:px-6 sm:pt-14 lg:px-8"><section className="dino-enter mb-8"><div className="dino-glass relative overflow-hidden rounded-[32px] p-7 sm:p-10"><div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#EF629F]/10 blur-3xl"/><div className="relative max-w-4xl"><div className="flex items-center gap-2 text-sm font-semibold text-[#EF629F]"><Sparkles className="h-4 w-4"/>DinoEdu AI</div><h1 className="dino-hero-title mt-3 text-3xl font-bold sm:text-5xl">AI Modul Ajar</h1><p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground sm:text-lg">Bantu menyusun perencanaan pembelajaran yang praktis, terstruktur, selaras dengan tujuan, dan dapat disesuaikan dengan kebutuhan kelas</p><div className="mt-6 inline-flex items-center gap-2 rounded-full border border-[#EF629F]/15 bg-[#EF629F]/5 px-4 py-2 text-xs font-medium text-muted-foreground"><Lightbulb className="h-4 w-4 text-[#EF629F]"/>Isi seperlunya — DinoAI membantu melengkapi bagian yang relevan</div></div></div></section>
+    <main className="mx-auto max-w-7xl px-5 pb-20 pt-10 sm:px-6 sm:pt-14 lg:px-8"><section className="dino-enter mb-8"><div className="dino-glass relative overflow-hidden rounded-[32px] p-7 sm:p-10"><div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#EF629F]/10 blur-3xl"/><div className="relative max-w-4xl"><div className="flex items-center gap-2 text-sm font-semibold text-[#EF629F]"><img src="/logodino.PNG" alt="" className="h-4 w-4 scale-125 object-contain"/>DinoEdu AI</div><h1 className="dino-hero-title mt-3 text-3xl font-bold sm:text-5xl">AI Modul Ajar</h1><p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground sm:text-lg">Bantu menyusun perencanaan pembelajaran yang praktis, terstruktur, selaras dengan tujuan, dan dapat disesuaikan dengan kebutuhan kelas</p><div className="mt-6 inline-flex items-center gap-2 rounded-full border border-[#EF629F]/15 bg-[#EF629F]/5 px-4 py-2 text-xs font-medium text-muted-foreground"><Lightbulb className="h-4 w-4 text-[#EF629F]"/>Isi seperlunya — DinoAI membantu melengkapi bagian yang relevan</div></div></div></section>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]"><div className="space-y-5">
         <Section number="1" title="Konteks Pembelajaran" description="Informasi dasar yang menjadi konteks modul" open={openSections.context} onToggle={()=>toggleSection("context")}><div className="grid gap-5 sm:grid-cols-2">
           <div><FieldLabel>Jenjang</FieldLabel><select value={educationLevel} onChange={e=>{setEducationLevel(e.target.value as EducationLevel);setPhase("");setGrade("");setSubject("")}} className={selectClass}><option value="">Pilih jenjang</option>{Object.keys(phasesByLevel).map(x=><option key={x}>{x}</option>)}</select></div>
@@ -258,7 +266,7 @@ export default function AIModulAjar({onBack}:AIModulAjarProps){
         </div></Section>
         <Section number="5" title="Diferensiasi & Dukungan" description="Tambahkan dukungan yang membantu kebutuhan murid" open={openSections.support} onToggle={()=>toggleSection("support")}><div className="grid gap-3 sm:grid-cols-2">{[["support",support,setSupport,"Dukungan bagi murid yang membutuhkan bantuan"],["enrichment",enrichment,setEnrichment,"Aktivitas pengayaan"],["productVariation",productVariation,setProductVariation,"Variasi produk hasil belajar"],["alternativeActivity",alternativeActivity,setAlternativeActivity,"Alternatif aktivitas"]].map(([key,checked,setter,label])=><label key={String(key)} className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border/60 bg-white/30 p-4 text-sm leading-6 dark:bg-white/5"><input type="checkbox" checked={Boolean(checked)} onChange={e=>(setter as (v:boolean)=>void)(e.target.checked)} className="mt-1 accent-[#EF629F]"/>{label as string}</label>)}</div></Section>
         <Section number="6" title="Output & Lampiran" description="Pilih bentuk dokumen yang ingin dihasilkan" open={openSections.output} onToggle={()=>toggleSection("output")}><div className="grid gap-3 sm:grid-cols-2"><button type="button" onClick={()=>setOutputMode("complete")} className={`rounded-2xl border p-5 text-left ${outputMode==="complete"?"border-[#EF629F]/50 bg-[#EF629F]/10":"border-border/70 bg-white/30 dark:bg-white/5"}`}><div className="flex items-center gap-2 font-bold"><FilePlus2 className="h-5 w-5 text-[#EF629F]"/>Modul Ajar Lengkap</div><p className="mt-2 text-sm leading-6 text-muted-foreground">Identifikasi, desain, pengalaman belajar, asesmen, media, sumber, dan dukungan belajar</p></button><button type="button" onClick={()=>setOutputMode("compact")} className={`rounded-2xl border p-5 text-left ${outputMode==="compact"?"border-[#EF629F]/50 bg-[#EF629F]/10":"border-border/70 bg-white/30 dark:bg-white/5"}`}><div className="flex items-center gap-2 font-bold"><BookOpen className="h-5 w-5 text-[#EF629F]"/>Rencana Pembelajaran Ringkas</div><p className="mt-2 text-sm leading-6 text-muted-foreground">Fokus pada tujuan, langkah pembelajaran, pengalaman belajar, dan asesmen</p></button></div><div className="mt-6"><FieldLabel>Lampiran</FieldLabel><div className="grid gap-2 sm:grid-cols-2">{[["lkpd","LKPD"],["assessment","Instrumen Asesmen"],["rubric","Rubrik"],["reflection","Lembar Refleksi"],["reading","Bahan Bacaan"]].map(([v,l])=><label key={v} className="flex cursor-pointer items-center gap-3 rounded-xl border border-border/60 bg-white/30 p-3 text-sm dark:bg-white/5"><input type="checkbox" checked={attachments.includes(v)} onChange={()=>toggleAttachment(v)} className="accent-[#EF629F]"/>{l}</label>)}</div></div></Section>
-        <div className="rounded-[28px] border border-[#EF629F]/20 bg-[#EF629F]/5 p-5"><button type="button" onClick={handleGenerate} disabled={isGenerating} className="dino-gradient dino-button flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-base font-bold text-white shadow-lg shadow-pink-500/10 disabled:cursor-not-allowed disabled:opacity-60"><Sparkles className="h-5 w-5"/>{isGenerating?"DinoAI sedang menyusun modul...":"Buat Modul dengan DinoAI"}{!isGenerating&&<span className="ml-1 font-semibold opacity-90">(3 kredit)</span>}</button>{message&&<p className="mt-3 text-center text-sm leading-6 text-muted-foreground">{message}</p>}<p className="mt-3 text-center text-xs leading-5 text-muted-foreground">Hasil dapat ditinjau dan diedit sebelum digunakan</p></div>
+        <div className="rounded-[28px] border border-[#EF629F]/20 bg-[#EF629F]/5 p-5"><button type="button" onClick={handleGenerate} disabled={!isComplete||isGenerating} className={`dino-gradient mt-10 w-full rounded-2xl px-5 py-4 text-[15px] font-semibold text-white shadow-lg shadow-pink-500/10 transition-all duration-200 ${isComplete&&!isGenerating?"dino-button":"cursor-not-allowed opacity-50"}`}><img src="/logodino.PNG" alt="" className="mr-2 inline-block h-4 w-4 scale-125 object-contain"/>{isGenerating?"Sedang menyusun Modul Ajar...":result?"Buat Ulang dengan AI · 3 Kredit":"Buat Modul dengan AI · 3 Kredit"}</button>{message&&<p className="mt-3 text-center text-sm leading-6 text-muted-foreground">{message}</p>}<p className="mt-3 text-center text-xs leading-5 text-muted-foreground">Hasil dapat ditinjau dan diedit sebelum digunakan</p></div>
       </div><aside className="hidden lg:block"><div className="dino-glass sticky top-28 rounded-[28px] p-6"><div className="flex items-center gap-2 text-sm font-bold"><BookOpen className="h-5 w-5 text-[#EF629F]"/>Rancangan Modul</div><div className="mt-5 space-y-3 text-sm">{[["01","Identifikasi"],["02","Desain Pembelajaran"],["03","Pengalaman Belajar"],["04","Asesmen"],["05","Media & Sumber"],["06","Diferensiasi"]].map(([n,l])=><div key={n} className="flex items-center gap-3 rounded-xl border border-border/50 bg-white/25 px-3 py-2.5 dark:bg-white/5"><span className="text-xs font-bold text-[#EF629F]">{n}</span><span className="text-muted-foreground">{l}</span></div>)}</div><div className="mt-6 rounded-2xl border border-border/60 bg-muted/30 p-4 text-xs leading-5 text-muted-foreground">Struktur ini dirancang agar tujuan, pengalaman belajar, dan asesmen tetap saling terhubung</div></div></aside>{result&&<section className="dino-glass mt-6 overflow-hidden rounded-[32px] print-module">
   <div className="border-b border-border/60 px-6 py-6 sm:px-8 print-header">
     <div className="flex flex-wrap items-start justify-between gap-4">

@@ -6,7 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const MAX_REQUEST_BYTES = 48_000;
-const MAX_HISTORY_ITEMS = 20;
+const MAX_HISTORY_ITEMS = 16;
+const MAX_HISTORY_CHARACTERS = 4_000;
+const MAX_HISTORY_ITEM_CHARACTERS = 1_200;
+const RETRYABLE_GEMINI_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 interface HistoryItem {
   role: "user" | "model";
   text: string;
@@ -63,17 +66,25 @@ async function readBoundedBody(
 }
 function parseHistory(value: unknown): HistoryItem[] {
   if (!Array.isArray(value)) return [];
-  return value.slice(-MAX_HISTORY_ITEMS).flatMap((item): HistoryItem[] => {
-    if (!isRecord(item)) return [];
+  const recentHistory: HistoryItem[] = [];
+  let remainingCharacters = MAX_HISTORY_CHARACTERS;
+  for (const item of value.slice(-MAX_HISTORY_ITEMS).reverse()) {
+    if (!isRecord(item)) continue;
     if (
       (item.role !== "user" && item.role !== "model") ||
       typeof item.text !== "string"
     ) {
-      return [];
+      continue;
     }
-    const text = item.text.trim().slice(0, 8_000);
-    return text ? [{ role: item.role, text }] : [];
-  });
+    if (remainingCharacters <= 0) break;
+    const text = item.text.trim().slice(
+      -Math.min(MAX_HISTORY_ITEM_CHARACTERS, remainingCharacters),
+    );
+    if (!text) continue;
+    recentHistory.push({ role: item.role, text });
+    remainingCharacters -= text.length;
+  }
+  return recentHistory.reverse();
 }
 function quotaFailureStatus(reason: string): number {
   const normalized = reason.toLowerCase();
@@ -246,18 +257,37 @@ Deno.serve(async (request) => {
       clearTimeout(timeoutId);
     }
   };
-  try {
-    let response = await callGemini(model);
-    if (
-      model !== fallbackModel &&
-      [429, 500, 502, 503, 504].includes(response.status)
-    ) {
-      await response.body?.cancel();
-      console.warn("DinoAI Chat: model utama sedang sibuk; mencoba model cadangan.", {
-        httpStatus: response.status,
-      });
-      response = await callGemini(fallbackModel);
+  const callGeminiWithFallback = async () => {
+    if (model === fallbackModel) return callGemini(model);
+    let primaryResponse: Response | null = null;
+    try {
+      primaryResponse = await callGemini(model);
+    } catch (error) {
+      console.warn(
+        "DinoAI Chat: model utama gagal dihubungi; mencoba model cadangan.",
+        error instanceof Error ? error.name : "unknown",
+      );
     }
+    if (
+      primaryResponse &&
+      !RETRYABLE_GEMINI_STATUSES.has(primaryResponse.status)
+    ) {
+      return primaryResponse;
+    }
+    if (primaryResponse) {
+      console.warn("DinoAI Chat: model utama sedang sibuk; mencoba model cadangan.", {
+        httpStatus: primaryResponse.status,
+      });
+      try {
+        await primaryResponse.body?.cancel();
+      } catch {
+        // The primary response is discarded before the single fallback attempt.
+      }
+    }
+    return callGemini(fallbackModel);
+  };
+  try {
+    const response = await callGeminiWithFallback();
     const result: unknown = await response.json().catch(() => null);
     if (!response.ok) {
       console.error("Gemini request failed:", response.status);

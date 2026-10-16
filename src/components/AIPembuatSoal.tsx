@@ -1,6 +1,7 @@
 ﻿import {
   useEffect,
   useMemo,
+  useRef,
   useState } from "react"
 import {
   ArrowLeft,
@@ -14,6 +15,7 @@ import {
   Save,
 } from "lucide-react"
 import { supabase } from "../lib/supabase"
+import { invokeDinoAI } from "../lib/invokeDinoAI"
 interface AIPembuatSoalProps {
   onBack: () => void
 }
@@ -43,6 +45,11 @@ interface QuizResult {
   instructions: string
   questions: QuestionItem[]
   blueprint: BlueprintItem[]
+}
+interface QuizResponse {
+  success?: boolean
+  error?: string
+  quiz?: unknown
 }
 const QUESTION_TYPES: Array<QuestionType | "Campuran"> = [
   "Pilihan Ganda",
@@ -124,6 +131,7 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
   const [savedDocumentId, setSavedDocumentId] = useState<string | null>(null)
   const [isLoadingSaved, setIsLoadingSaved] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const generationInFlight = useRef(false)
   const isFormComplete = useMemo(
     () =>
       level.trim() !== "" &&
@@ -166,8 +174,8 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
       setIsLoadingSaved(false)
     }
   }
-  async function saveDocument(resultToSave: QuizResult | null = quizResult) {
-    if (!resultToSave) return
+  async function saveDocument(resultToSave: QuizResult | null = quizResult): Promise<boolean> {
+    if (!resultToSave) return false
     setIsSaving(true)
     setAiError("")
     try {
@@ -185,9 +193,11 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
         setSavedDocumentId(data.id)
       }
       setMessage("Soal berhasil disimpan")
+      return true
     } catch (error) {
       console.error("Save quiz error:", error)
       setAiError(error instanceof Error ? error.message : "Soal gagal disimpan")
+      return false
     } finally {
       setIsSaving(false)
     }
@@ -203,20 +213,18 @@ async function handleGenerateQuestions() {
       setMessage("Lengkapi jenjang, kelas, mata pelajaran, dan materi terlebih dahulu")
       return
     }
+    if (generationInFlight.current) return
+    const requestedCount = Number(questionCount)
+    if (!Number.isInteger(requestedCount) || requestedCount < 1 || requestedCount > 20) {
+      setMessage("Jumlah soal harus berupa angka antara 1 dan 20")
+      return
+    }
+    generationInFlight.current = true
     setAiLoading(true)
     setAiError("")
     setMessage("")
     try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-      if (sessionError || !sessionData.session?.access_token) {
-        throw new Error("Session login tidak ditemukan. Silakan login kembali")
-      }
-      const accessToken = sessionData.session.access_token
-      const { data, error } = await supabase.functions.invoke("dinoai-soal", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: {
+      const data = await invokeDinoAI<QuizResponse>("dinoai-soal", {
           level,
           grade,
           subject,
@@ -224,53 +232,35 @@ async function handleGenerateQuestions() {
           learningObjective,
           cognitiveLevel,
           questionType,
-          questionCount: Number(questionCount),
+          questionCount: requestedCount,
           context,
-        },
       })
-      if (error) {
-        let backendMessage = ""
-        if (typeof error === "object" && error !== null && "context" in error) {
-          const response = (error as { context?: unknown }).context
-          if (response instanceof Response) {
-            const body: unknown = await response.clone().json().catch(() => null)
-            if (
-              typeof body === "object" &&
-              body !== null &&
-              "error" in body &&
-              typeof body.error === "string"
-            ) {
-              backendMessage = body.error
-            }
-          }
-        }
-        throw new Error(
-          backendMessage || error.message || "AI Pembuat Soal gagal memproses data",
-        )
-      }
       if (!data?.success || !data?.quiz) {
-        throw new Error("Respons dinoai-soal tidak sesuai")
+        throw new Error(data?.error || "Respons dinoai-soal tidak sesuai")
       }
       const normalized = normalizeQuiz(data.quiz)
-      if (normalized.questions.length !== Number(questionCount)) {
+      if (normalized.questions.length !== requestedCount) {
         throw new Error(
-          `AI menghasilkan ${normalized.questions.length} soal, padahal diminta ${questionCount} soal. Silakan coba lagi`,
+          `AI menghasilkan ${normalized.questions.length} soal, padahal diminta ${requestedCount} soal. Silakan coba lagi`,
         )
       }
+      if (normalized.questions.some((question) => !question.question.trim() || !question.answer.trim())) {
+        throw new Error("Sebagian soal belum memiliki pertanyaan atau kunci jawaban lengkap. Silakan coba lagi")
+      }
       setQuizResult(normalized)
-      await saveDocument(normalized)
-      setMessage(
-        `Soal berhasil dibuat dengan bantuan AI menggunakan 2 kredit. Silakan periksa dan edit hasilnya`,
-      )
+      const saved = await saveDocument(normalized)
+      setMessage(saved
+        ? "Soal berhasil dibuat dan disimpan menggunakan 2 kredit. Silakan periksa dan edit hasilnya"
+        : "Soal berhasil dibuat, tetapi belum tersimpan. Periksa koneksi lalu tekan Simpan.")
     } catch (error) {
       console.error("AI Pembuat Soal error:", error)
-      setQuizResult(null)
       setAiError(
         error instanceof Error
           ? error.message
           : "Terjadi kesalahan saat membuat soal dengan AI",
       )
     } finally {
+      generationInFlight.current = false
       setAiLoading(false)
     }
   }
@@ -355,7 +345,25 @@ async function handleGenerateQuestions() {
   }
   return (
     <div className="modal-scrollbar-hidden min-h-dvh overflow-x-hidden overflow-y-auto bg-background text-foreground">
-      <style>{`        select,
+      <style>{`        .question-screen-card {
+          background-color: #ffffff !important;
+          border-color: #e4e4e7 !important;
+          color: #27272a !important;
+        }
+        .question-screen-card .text-card-foreground,
+        .question-screen-card .text-foreground { color: #18181b !important; }
+        .question-screen-card .text-muted-foreground { color: #52525b !important; }
+        .question-screen-card .border-border { border-color: #e4e4e7 !important; }
+        .question-screen-card .bg-muted,
+        .question-screen-card .bg-muted\\/70 { background-color: #f4f4f5 !important; }
+        .question-screen-card input,
+        .question-screen-card textarea,
+        .question-screen-card select {
+          background-color: #ffffff !important;
+          border-color: #d4d4d8 !important;
+          color: #27272a !important;
+        }
+        select,
         select option {
           background-color: #FFFFFF !important;
           color: #2B2729 !important;
@@ -673,7 +681,7 @@ async function handleGenerateQuestions() {
               </div>
               <div className="dino-glass rounded-[32px] p-5 sm:p-7">
                 {quizResult ? (
-                  <div className="question-screen-card rounded-2xl border border-border/70 bg-card p-7 text-card-foreground shadow-xl sm:p-8">
+                  <div className="question-screen-card rounded-2xl border border-zinc-200 bg-white p-7 text-zinc-900 shadow-xl sm:p-8">
                     <div className="border-b border-border pb-5">
                       {isEditingResult ? (
                         <input
@@ -864,7 +872,7 @@ async function handleGenerateQuestions() {
                     )}
                   </div>
                 ) : (
-                  <div className="flex min-h-[620px] items-center justify-center rounded-2xl border border-border/70 bg-card p-8 text-center text-card-foreground shadow-xl">
+                  <div className="question-screen-card flex min-h-[620px] items-center justify-center rounded-2xl border border-zinc-200 bg-white p-8 text-center text-zinc-900 shadow-xl">
                     <div className="max-w-sm">
                       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EF629F]/10">
                         <FileQuestion className="h-7 w-7 text-[#EF629F]" />
