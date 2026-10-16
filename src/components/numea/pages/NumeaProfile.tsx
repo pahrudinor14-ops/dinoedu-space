@@ -18,6 +18,14 @@ type NumeaProfileProps = {
 }
 const AVATAR_BUCKET = "numea-profile-photos"
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === "string" && message.trim()) return message
+  }
+  return fallback
+}
 export default function NumeaProfile({
   compact = false,
   onAvatarChange,
@@ -161,19 +169,34 @@ export default function NumeaProfile({
         .from(AVATAR_BUCKET)
         .upload(path, file, { upsert: false, contentType: file.type })
       if (uploadError) throw uploadError
-      const { error: updateError } = await supabase
+      const profilePayload = {
+        full_name: fullName.trim() || user.user_metadata?.full_name || "",
+        institution: institution.trim() || null,
+        interests: hobbies.split(",").map((item) => item.trim()).filter(Boolean),
+        avatar_path: path,
+        updated_at: new Date().toISOString(),
+      }
+      const { data: updatedRows, error: updateError } = await supabase
         .from("numea_profiles")
-        .upsert({
-          user_id: user.id,
-          full_name: fullName.trim() || user.user_metadata?.full_name || "",
-          institution: institution.trim() || null,
-          interests: hobbies.split(",").map((item) => item.trim()).filter(Boolean),
-          avatar_path: path,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "user_id" })
+        .update(profilePayload)
+        .eq("user_id", user.id)
+        .select("user_id")
       if (updateError) {
         await supabase.storage.from(AVATAR_BUCKET).remove([path])
         throw updateError
+      }
+      if (!updatedRows?.length) {
+        const { error: insertError } = await supabase
+          .from("numea_profiles")
+          .insert({
+            user_id: user.id,
+            role: user.user_metadata?.role ?? "user",
+            ...profilePayload,
+          })
+        if (insertError) {
+          await supabase.storage.from(AVATAR_BUCKET).remove([path])
+          throw insertError
+        }
       }
       const { data: signed, error: signedError } = await supabase.storage
         .from(AVATAR_BUCKET)
@@ -188,7 +211,7 @@ export default function NumeaProfile({
       }
       setSuccess("Foto profil berhasil diperbarui.")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Foto profil gagal diperbarui.")
+      setError(getErrorMessage(err, "Foto profil gagal diperbarui."))
     } finally {
       setUploadingAvatar(false)
     }
