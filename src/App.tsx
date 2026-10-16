@@ -484,6 +484,13 @@ useEffect(() => {
     setShowAuth(false);
     navigateTo("/app");
   };
+  const openDashboardOrAuth = () => {
+    if (user) {
+      openDashboard();
+      return;
+    }
+    setShowAuth(true);
+  };
   const backHome = () => {
     navigateTo("/");
   };
@@ -913,7 +920,7 @@ useEffect(() => {
                 >
                   <button
                     type="button"
-                    onClick={() => setShowAuth(true)}
+                    onClick={openDashboardOrAuth}
                     className="dino-gradient dino-button group inline-flex items-center gap-2 rounded-full px-7 py-4 text-[17px] font-semibold text-white shadow-xl shadow-pink-500/15"
                   >
                     Jelajahi DinoAI
@@ -990,7 +997,7 @@ useEffect(() => {
                       </p>
                       <button
                         type="button"
-                        onClick={() => setShowAuth(true)}
+                        onClick={openDashboardOrAuth}
                         className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#EF629F] transition-all duration-200 hover:gap-3"
                       >
                         Mulai gunakan
@@ -1073,7 +1080,7 @@ useEffect(() => {
                     <div className="mt-auto pt-8">
                       <button
                         type="button"
-                        onClick={() => setShowAuth(true)}
+                        onClick={openDashboardOrAuth}
                         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/30 sm:w-auto"
                       >
                         Jelajahi DinoMath
@@ -1132,7 +1139,7 @@ useEffect(() => {
                     <div className="mt-auto pt-8">
                       <button
                         type="button"
-                        onClick={() => setShowAuth(true)}
+                        onClick={openDashboardOrAuth}
                         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#EF629F] to-purple-500 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-pink-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-pink-500/30 sm:w-auto"
                       >
                         Kenali NUMEA EDU
@@ -1330,7 +1337,7 @@ useEffect(() => {
               </a>
               <button
                 type="button"
-                onClick={() => setShowAuth(true)}
+                onClick={openDashboardOrAuth}
                 className="dino-button dino-gradient flex h-12 w-full items-center justify-center rounded-full text-white shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EF629F]"
                 aria-label="DinoAI"
               >

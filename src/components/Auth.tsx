@@ -32,14 +32,6 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
     resetFeedback()
     setMode(nextMode)
   }
-  const handleExistingAccount = () => {
-    setMode("login")
-    setPassword("")
-    setConfirmPassword("")
-    setMessage(
-      "Email ini sudah terdaftar. Silakan masuk dengan metode yang sebelumnya digunakan."
-    )
-  }
   const handleGoogleLogin = async () => {
     resetFeedback()
     setGoogleLoading(true)
@@ -80,29 +72,18 @@ export default function Auth({ onSuccess, onClose }: AuthProps) {
     setLoading(true)
     try {
       if (mode === "register") {
-        const { data: signUpData, error: signUpError } =
-          await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
             emailRedirectTo: window.location.origin,
           },
         })
-        const duplicateEmailError = signUpError?.message
-          .toLowerCase()
-          .includes("already registered")
-        if (
-          duplicateEmailError ||
-          signUpData.user?.identities?.length === 0
-        ) {
-          handleExistingAccount()
-          return
-        }
         if (signUpError) {
           throw signUpError
         }
         setMessage(
-          "Akun berhasil dibuat, silakan cek email untuk melakukan verifikasi"
+          "Jika email ini dapat didaftarkan, tautan verifikasi akan dikirim. Jika akun sudah ada, masuk menggunakan akun tersebut."
         )
         setPassword("")
         setConfirmPassword("")

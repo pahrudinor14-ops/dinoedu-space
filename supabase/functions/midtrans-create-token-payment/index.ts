@@ -74,9 +74,22 @@ Deno.serve(async (req) => {
     if (authError || !user) {
       return jsonResponse({ error: "Sesi pengguna tidak valid." }, 401);
     }
+    const contentLength = Number(req.headers.get("content-length") ?? "0");
+    if (Number.isFinite(contentLength) && contentLength > 8_000) {
+      return jsonResponse({ error: "Request terlalu besar." }, 413);
+    }
+    let rawBody: string;
+    try {
+      rawBody = await req.text();
+    } catch {
+      return jsonResponse({ error: "Request tidak dapat dibaca." }, 400);
+    }
+    if (new TextEncoder().encode(rawBody).byteLength > 8_000) {
+      return jsonResponse({ error: "Request terlalu besar." }, 413);
+    }
     let body: unknown;
     try {
-      body = await req.json();
+      body = JSON.parse(rawBody);
     } catch {
       return jsonResponse({ error: "Request JSON tidak valid." }, 400);
     }
@@ -138,6 +151,34 @@ Deno.serve(async (req) => {
           error: "Kunci sudah digunakan. Buat kunci baru untuk order baru.",
           status: existing.status,
         },
+        409,
+      );
+    }
+    const { data: pendingOrder, error: pendingError } = await admin
+      .from("dino_ai_token_payment_orders")
+      .select("order_id, amount_idr, credits, currency, status, qr_url")
+      .eq("user_id", user.id)
+      .eq("status", "pending")
+      .limit(1)
+      .maybeSingle();
+    if (pendingError) {
+      console.error("Token payment: gagal memeriksa order pending.", pendingError.code);
+      return jsonResponse({ error: "Pesanan token tidak dapat diperiksa." }, 500);
+    }
+    if (pendingOrder) {
+      if (pendingOrder.qr_url) {
+        return jsonResponse({
+          orderId: pendingOrder.order_id,
+          amountIdr: pendingOrder.amount_idr,
+          credits: pendingOrder.credits,
+          currency: pendingOrder.currency,
+          status: pendingOrder.status,
+          qrUrl: pendingOrder.qr_url,
+          reused: true,
+        });
+      }
+      return jsonResponse(
+        { error: "Pesanan token sebelumnya sedang dibuat. Periksa status sebelum mencoba lagi." },
         409,
       );
     }

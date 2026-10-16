@@ -60,6 +60,22 @@ const navItems = [
   { label: "Konsultasi", icon: MessageCircle },
   { label: "Sertifikat", icon: ShieldCheck },
 ]
+function getSafeNotificationPath(value: string): string | null {
+  try {
+    const url = new URL(value, window.location.origin)
+    if (
+      url.origin !== window.location.origin ||
+      (url.protocol !== "http:" && url.protocol !== "https:") ||
+      url.username ||
+      url.password
+    ) {
+      return null
+    }
+    return `${url.pathname}${url.search}${url.hash}`
+  } catch {
+    return null
+  }
+}
 const aiTools = [
   {
     title: "DinoAI Chat",
@@ -153,6 +169,17 @@ export default function NumeaPage(props: NumeaPageProps) {
     }
     navigateTab("Beranda", true)
   }
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [showAdmin, setShowAdmin] = useState(
+    () => window.location.hash === "#admin" || window.history.state?.numeaAdmin === true,
+  )
+  const [showProfile, setShowProfile] = useState(false)
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null)
+  const [notifications, setNotifications] = useState<NumeaNotification[]>([])
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [notificationsLoading, setNotificationsLoading] = useState(false)
+  const [notificationsError, setNotificationsError] = useState("")
+  const [menuSearch, setMenuSearch] = useState("")
   useEffect(() => {
     const syncTabFromUrl = () => {
       if (window.location.pathname !== "/numea") return
@@ -169,17 +196,6 @@ export default function NumeaPage(props: NumeaPageProps) {
     window.addEventListener("popstate", syncTabFromUrl)
     return () => window.removeEventListener("popstate", syncTabFromUrl)
   }, [])
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [showAdmin, setShowAdmin] = useState(
-    () => window.location.hash === "#admin" || window.history.state?.numeaAdmin === true,
-  )
-  const [showProfile, setShowProfile] = useState(false)
-  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null)
-  const [notifications, setNotifications] = useState<NumeaNotification[]>([])
-  const [notificationsOpen, setNotificationsOpen] = useState(false)
-  const [notificationsLoading, setNotificationsLoading] = useState(false)
-  const [notificationsError, setNotificationsError] = useState("")
-  const [menuSearch, setMenuSearch] = useState("")
   const openAdmin = () => {
     const state = {
       ...(window.history.state ?? {}),
@@ -250,12 +266,9 @@ export default function NumeaPage(props: NumeaPageProps) {
           if (!cancelled) setNotifications([])
           return
         }
-        const { data, error } = await supabase
-          .from("numea_notifications")
-          .select("id, title, message, type, link, read_at, created_at")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(30)
+        const { data, error } = await supabase.rpc("numea_get_notifications", {
+          p_limit: 30,
+        })
         if (error) throw error
         if (!cancelled) setNotifications((data ?? []) as NumeaNotification[])
         channel = supabase
@@ -266,15 +279,12 @@ export default function NumeaPage(props: NumeaPageProps) {
               event: "*",
               schema: "public",
               table: "numea_notifications",
-              filter: `user_id=eq.${user.id}`,
             },
             async () => {
-              const { data: refreshed, error: refreshError } = await supabase
-                .from("numea_notifications")
-                .select("id, title, message, type, link, read_at, created_at")
-                .eq("user_id", user.id)
-                .order("created_at", { ascending: false })
-                .limit(30)
+              const { data: refreshed, error: refreshError } = await supabase.rpc(
+                "numea_get_notifications",
+                { p_limit: 30 },
+              )
               if (refreshError) {
                 console.error("Gagal memperbarui notifikasi:", refreshError)
                 return
@@ -303,23 +313,26 @@ export default function NumeaPage(props: NumeaPageProps) {
   }, [])
   const unreadNotificationCount = notifications.filter((item) => !item.read_at).length
   async function markNotificationRead(notification: NumeaNotification) {
-    // Klik berarti notifikasi sudah ditangani: hapus dari database agar tidak
-    // muncul kembali setelah refresh. Jika penghapusan gagal, jangan navigasi.
-    const { error } = await supabase
-      .from("numea_notifications")
-      .delete()
-      .eq("id", notification.id)
-    if (error) {
-      setNotificationsError("Notifikasi gagal dihapus. Periksa izin tabel notifikasi.")
+    const { data: marked, error } = await supabase.rpc(
+      "numea_mark_notification_read",
+      { p_notification_id: notification.id },
+    )
+    if (error || !marked) {
+      setNotificationsError("Notifikasi gagal ditandai sudah dibaca. Coba muat ulang.")
       return
     }
     setNotifications((current) =>
-      current.filter((item) => item.id !== notification.id),
+      current.map((item) =>
+        item.id === notification.id
+          ? { ...item, read_at: item.read_at ?? new Date().toISOString() }
+          : item,
+      ),
     )
     setNotificationsError("")
     setNotificationsOpen(false)
     if (notification.link) {
-      const link = notification.link
+      const link = getSafeNotificationPath(notification.link)
+      if (!link) return
       if (link.startsWith("/numea#")) {
         const hash = link.split("#")[1]?.toLowerCase()
         const target = navItems.find(
@@ -329,26 +342,24 @@ export default function NumeaPage(props: NumeaPageProps) {
           navigateTab(target.label)
           window.scrollTo({ top: 0, behavior: "smooth" })
         } else {
-          window.location.href = link
+          window.location.assign(link)
         }
       } else {
-        window.location.href = link
+        window.location.assign(link)
       }
     }
   }
   async function markAllNotificationsRead() {
-    // Sesuai perilaku yang diminta: tindakan "Baca semua" membersihkan inbox.
-    const notificationIds = notifications.map((item) => item.id)
-    if (notificationIds.length === 0) return
-    const { error } = await supabase
-      .from("numea_notifications")
-      .delete()
-      .in("id", notificationIds)
+    if (unreadNotificationCount === 0) return
+    const { error } = await supabase.rpc("numea_mark_all_notifications_read")
     if (error) {
-      setNotificationsError("Notifikasi gagal dihapus. Periksa izin tabel notifikasi.")
+      setNotificationsError("Notifikasi gagal ditandai sudah dibaca. Coba muat ulang.")
       return
     }
-    setNotifications([])
+    const readAt = new Date().toISOString()
+    setNotifications((current) =>
+      current.map((item) => ({ ...item, read_at: item.read_at ?? readAt })),
+    )
     setNotificationsError("")
   }
   if (showAdmin) {

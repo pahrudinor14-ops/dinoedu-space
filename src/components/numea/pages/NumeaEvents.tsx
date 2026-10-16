@@ -34,6 +34,16 @@ interface Props {
 }
 const inputClass = "w-full rounded-xl border border-border/70 bg-background/70 px-3.5 py-3 text-sm outline-none focus:border-[#E95C9E]"
 const buttonClass = "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+function safeMeetingUrl(value: string | null | undefined): string | null {
+  if (!value) return null
+  try {
+    const url = new URL(value)
+    if (url.protocol !== "https:" || url.username || url.password) return null
+    return url.toString()
+  } catch {
+    return null
+  }
+}
 const blankForm = {
   title: "", description: "", category: "Webinar", location: "Online", meeting_url: "",
   starts_at: "", ends_at: "", registration_deadline: "", capacity: "",
@@ -57,6 +67,7 @@ export default function NumeaEvents({ onBack }: Props) {
   const [userId, setUserId] = useState("")
   const [isAdmin, setIsAdmin] = useState(false)
   const [events, setEvents] = useState<NumeaEvent[]>([])
+  const [currentTime, setCurrentTime] = useState(0)
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [myRegistrations, setMyRegistrations] = useState<Registration[]>([])
   const [loading, setLoading] = useState(true)
@@ -100,7 +111,19 @@ export default function NumeaEvents({ onBack }: Props) {
       setLoading(false)
     }
   }, [])
-  useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void load() }, 0)
+    return () => window.clearTimeout(timer)
+  }, [load])
+  useEffect(() => {
+    const updateTime = () => setCurrentTime(Date.now())
+    const firstUpdate = window.setTimeout(updateTime, 0)
+    const interval = window.setInterval(updateTime, 60_000)
+    return () => {
+      window.clearTimeout(firstUpdate)
+      window.clearInterval(interval)
+    }
+  }, [])
   const selectedEvent = events.find((event) => event.id === selectedEventId) ?? null
   function startEdit(event: NumeaEvent) {
     setEditingId(event.id)
@@ -133,7 +156,7 @@ export default function NumeaEvents({ onBack }: Props) {
       const payload = {
         title: form.title.trim(), description: form.description.trim(),
         category: form.category.trim() || "Kegiatan", location: form.location.trim() || "Online",
-        meeting_url: form.meeting_url.trim() || null,
+        meeting_url: form.meeting_url.trim() ? safeMeetingUrl(form.meeting_url.trim()) : null,
         starts_at: new Date(form.starts_at).toISOString(),
         ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
         registration_deadline: form.registration_deadline ? new Date(form.registration_deadline).toISOString() : null,
@@ -142,6 +165,9 @@ export default function NumeaEvents({ onBack }: Props) {
       }
       if (payload.capacity !== null && (!Number.isInteger(payload.capacity) || payload.capacity < 1)) {
         throw new Error("Kapasitas harus berupa bilangan bulat positif.")
+      }
+      if (form.meeting_url.trim() && !payload.meeting_url) {
+        throw new Error("Tautan acara harus memakai alamat HTTPS yang valid.")
       }
       const result = editingId
         ? await supabase.from("numea_events").update(payload).eq("id", editingId)
@@ -261,7 +287,7 @@ export default function NumeaEvents({ onBack }: Props) {
             const registration = myRegistrations.find((r) => r.event_id === event.id)
             const registeredCount = registrations.filter((r) => r.event_id === event.id && r.status === "registered").length
             const isFull = event.capacity !== null && registeredCount >= event.capacity
-            const isPastDeadline = Boolean(event.registration_deadline && new Date(event.registration_deadline).getTime() < Date.now())
+            const isPastDeadline = Boolean(event.registration_deadline && new Date(event.registration_deadline).getTime() < currentTime)
             return <article key={event.id} className="overflow-hidden rounded-2xl border border-border/70 bg-card/70">
               <div className="h-1.5 bg-gradient-to-r from-[#F6C64F] via-[#FF7411] to-[#E95C9E]" />
               <div className="space-y-4 p-5">
@@ -273,7 +299,7 @@ export default function NumeaEvents({ onBack }: Props) {
                     ? <button type="button" onClick={() => void cancelRegistration(registration)} className={`${buttonClass} border border-border/70`}><XCircle className="h-4 w-4" /> Batalkan pendaftaran</button>
                     : <button type="button" disabled={saving || isFull || isPastDeadline} onClick={() => void register(event)} className={`${buttonClass} bg-gradient-to-r from-[#FF7411] to-[#E95C9E] text-white`}><Ticket className="h-4 w-4" />{isFull ? "Kuota penuh" : isPastDeadline ? "Pendaftaran ditutup" : "Daftar acara"}</button>)}
                   {registration?.status === "registered" && !isAdmin && <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600"><CheckCircle2 className="h-4 w-4" /> Terdaftar</span>}
-                  {event.meeting_url && event.status === "published" && <a href={event.meeting_url} target="_blank" rel="noreferrer" className={`${buttonClass} border border-border/70`}><ExternalLink className="h-4 w-4" /> Tautan acara</a>}
+                  {event.status === "published" && safeMeetingUrl(event.meeting_url) && <a href={safeMeetingUrl(event.meeting_url)!} target="_blank" rel="noreferrer" className={`${buttonClass} border border-border/70`}><ExternalLink className="h-4 w-4" /> Tautan acara</a>}
                   {isAdmin && <><button type="button" onClick={() => startEdit(event)} className={`${buttonClass} border border-border/70`}>Edit</button><button type="button" onClick={() => void toggleParticipants(event)} className={`${buttonClass} border border-border/70`}><Users className="h-4 w-4" /> Peserta ({registeredCount})</button>{event.status !== "published" && event.status !== "completed" && <button type="button" onClick={() => void changeStatus(event, "published")} className={`${buttonClass} border border-emerald-500/30 text-emerald-600`}><CheckCircle2 className="h-4 w-4" /> Terbitkan</button>}{event.status === "published" && <button type="button" onClick={() => void changeStatus(event, "cancelled")} className={`${buttonClass} border border-red-500/30 text-red-600`}><XCircle className="h-4 w-4" /> Batalkan acara</button>}{event.status === "published" && <button type="button" onClick={() => void changeStatus(event, "completed")} className={`${buttonClass} border border-border/70`}>Tandai selesai</button>}<button type="button" disabled={saving} onClick={() => void deleteEvent(event)} className={`${buttonClass} border border-red-500/40 text-red-600`}><XCircle className="h-4 w-4" /> Hapus permanen</button></>}
                 </div>
                 {isAdmin && selectedEventId === event.id && <div className="rounded-xl border border-border/70 p-3"><h4 className="mb-2 text-sm font-bold">Daftar peserta</h4>{participantLoading ? <p className="text-sm text-muted-foreground">Memuat identitas peserta…</p> : selectedRegistrations.filter((r) => r.status === "registered").length === 0 ? <p className="text-sm text-muted-foreground">Belum ada peserta terdaftar.</p> : <ul className="space-y-2">{selectedRegistrations.filter((r) => r.status === "registered").map((r) => <li key={r.id} className="break-all text-sm"><span className="font-semibold">{participantNames[r.user_id] || r.user_id}</span> <span className="text-muted-foreground">· {localDateTime(r.registered_at)}</span>{!participantNames[r.user_id] && <span className="block text-xs text-muted-foreground">Nama belum tersedia · ID: {r.user_id}</span>}</li>)}</ul>}<p className="mt-2 text-xs text-muted-foreground">Nama profil ditampilkan bila tersedia. Email peserta tidak ditampilkan.</p></div>}

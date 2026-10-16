@@ -22,7 +22,14 @@ Deno.serve(async (req) => {
   }
   try {
     // Baca payload mentah supaya body notifikasi tetap utuh saat diteruskan.
+    const contentLength = Number(req.headers.get("content-length") ?? "0");
+    if (Number.isFinite(contentLength) && contentLength > 32_000) {
+      return jsonResponse({ error: "Payload terlalu besar." }, 413);
+    }
     const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength > 32_000) {
+      return jsonResponse({ error: "Payload terlalu besar." }, 413);
+    }
     let payload: unknown;
     try {
       payload = JSON.parse(rawBody);
@@ -37,7 +44,6 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Format payload tidak valid." }, 400);
     }
     const orderId = (payload as Record<string, unknown>).order_id;
-    console.log("Dispatcher received order_id:", orderId);
     if (typeof orderId !== "string") {
   console.error("Dispatcher rejected payload: missing order_id", {
     payloadType: Array.isArray(payload) ? "array" : typeof payload,
@@ -57,7 +63,8 @@ Deno.serve(async (req) => {
   });
 } else {
   console.error("Dispatcher rejected unknown order prefix", {
-    orderId,
+    orderIdLength: orderId.length,
+    orderIdPrefix: orderId.slice(0, 9),
   });
   return jsonResponse({ error: "Prefix order ID tidak dikenal." }, 400);
 }
@@ -75,11 +82,6 @@ Deno.serve(async (req) => {
       body: rawBody,
     });
     const responseBody = await response.text();
-    console.log("Dispatcher target response:", {
-    targetFunction,
-    status: response.status,
-    body: responseBody.slice(0, 500),
-    });
     console.log("Payment dispatcher:", {
       targetFunction,
       status: response.status,

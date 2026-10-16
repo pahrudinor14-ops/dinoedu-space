@@ -95,30 +95,6 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
     if (Array.isArray(content.experiences)) setExperiences(content.experiences)
     if (content.aiResult && typeof content.aiResult === "object") setAiResult(content.aiResult)
   }
-  async function loadSavedCV() {
-    setIsLoadingSaved(true)
-    try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-      if (sessionError || !sessionData.session?.user) return
-      const { data, error } = await supabase
-        .from("ai_documents")
-        .select("id,title,content,updated_at")
-        .eq("document_type", "cv")
-        .eq("user_id", sessionData.session.user.id)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      if (error) throw error
-      if (!data) return
-      setDocumentId(data.id)
-      if (data.content && typeof data.content === "object") applySavedContent(data.content as Partial<SavedCVContent>)
-      setMessage("CV terakhir berhasil dimuat dari penyimpanan")
-    } catch (error) {
-      console.error("Load saved CV error:", error)
-    } finally {
-      setIsLoadingSaved(false)
-    }
-  }
   async function saveCV(showMessage = true, overrideContent?: SavedCVContent) {
     if (!aiResult && !overrideContent?.aiResult) {
       setMessage("Buat CV dengan AI terlebih dahulu sebelum menyimpan")
@@ -150,11 +126,38 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
     }
   }
   useEffect(() => {
-    void loadSavedCV()
+    let isMounted = true
+    void supabase.auth.getSession()
+      .then(async ({ data: sessionData, error: sessionError }) => {
+        if (sessionError || !sessionData.session?.user) return
+        const { data, error } = await supabase
+          .from("ai_documents")
+          .select("id,title,content,updated_at")
+          .eq("document_type", "cv")
+          .eq("user_id", sessionData.session.user.id)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (error) throw error
+        if (!isMounted || !data) return
+        setDocumentId(data.id)
+        if (data.content && typeof data.content === "object") applySavedContent(data.content as Partial<SavedCVContent>)
+        setMessage("CV terakhir berhasil dimuat dari penyimpanan")
+      })
+      .catch((error: unknown) => {
+        console.error("Load saved CV error:", error)
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingSaved(false)
+      })
+    return () => {
+      isMounted = false
+    }
   }, [])
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
   const isBasicDataComplete =
     name.trim() !== "" &&
-    email.trim() !== "" &&
+    isEmailValid &&
     phone.trim() !== "" &&
     location.trim() !== ""
   const filledExperiences = experiences.filter(
@@ -316,21 +319,23 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
           Authorization: `Bearer ${accessToken}`,
         },
         body: {
-          name,
-          email,
-          phone,
-          location,
+          idempotencyKey: crypto.randomUUID(),
           summary,
           education: {
             institution,
             studyProgram,
             year: educationYear,
           },
-          experiences,
+          experiences: experiences.map(({ position, company, description }) => ({
+            position,
+            company,
+            description,
+          })),
         },
       })
       if (error) {
         let backendMessage = ""
+        let creditNotice = ""
         if (
           typeof error === "object" &&
           error !== null &&
@@ -354,12 +359,22 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
             ) {
               backendMessage = body.error
             }
+            if (
+              typeof body === "object" &&
+              body !== null &&
+              "creditsRestored" in body &&
+              typeof body.creditsRestored === "boolean"
+            ) {
+              creditNotice = body.creditsRestored
+                ? " Kredit AI untuk permintaan ini sudah dikembalikan."
+                : " Periksa saldo kredit sebelum mencoba kembali."
+            }
           }
         }
         throw new Error(
-          backendMessage ||
+          `${backendMessage ||
             error.message ||
-            "AI CV Maker gagal memproses data",
+            "AI CV Maker gagal memproses data"}${creditNotice}`,
         )
       }
       if (!data?.success || !data?.cv) {
@@ -391,8 +406,12 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
         experiences,
         aiResult: generatedResult,
       }
-      await saveCV(false, generatedContent)
-      setMessage("CV berhasil dibuat dan disimpan. Periksa serta edit hasilnya jika diperlukan")
+      const wasSaved = await saveCV(false, generatedContent)
+      setMessage(
+        wasSaved
+          ? "CV berhasil dibuat dan disimpan. Periksa serta edit hasilnya jika diperlukan"
+          : "CV berhasil dibuat, tetapi belum tersimpan. Hasil tetap tersedia; coba simpan kembali.",
+      )
     } catch (error) {
       console.error("AI CV Maker error:", error)
       setAiResult(null)
@@ -785,9 +804,12 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
                       ? "Buat Ulang dengan AI · 2 Kredit"
                       : "Buat CV dengan AI · 2 Kredit"}
                 </button>
+                <p className="mt-3 text-center text-[12px] leading-5 text-muted-foreground">
+                  Nama, email, nomor HP, dan lokasi hanya dipakai pada CV serta penyimpanan akun. Data tersebut tidak dikirim ke AI.
+                </p>
                 {!isBasicDataComplete && (
                   <p className="mt-3 text-center text-[12px] text-muted-foreground">
-                    Lengkapi data wajib untuk menggunakan AI
+                    Lengkapi nama, nomor HP, lokasi, dan gunakan format email yang valid
                   </p>
                 )}
                 {isLoadingSaved && (

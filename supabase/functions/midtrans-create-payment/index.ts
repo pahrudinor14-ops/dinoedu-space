@@ -69,9 +69,22 @@ Deno.serve(async (req) => {
     })
     const { data: { user }, error: authError } = await authClient.auth.getUser(token)
     if (authError || !user) return jsonResponse({ error: "Sesi pengguna tidak valid." }, 401)
+    const contentLength = Number(req.headers.get("content-length") ?? "0")
+    if (Number.isFinite(contentLength) && contentLength > 8_000) {
+      return jsonResponse({ error: "Request terlalu besar." }, 413)
+    }
+    let rawBody: string
+    try {
+      rawBody = await req.text()
+    } catch {
+      return jsonResponse({ error: "Request tidak dapat dibaca." }, 400)
+    }
+    if (new TextEncoder().encode(rawBody).byteLength > 8_000) {
+      return jsonResponse({ error: "Request terlalu besar." }, 413)
+    }
     let body: unknown
     try {
-      body = await req.json()
+      body = JSON.parse(rawBody)
     } catch {
       return jsonResponse({ error: "Request harus berupa JSON yang valid." }, 400)
     }
@@ -124,6 +137,33 @@ Deno.serve(async (req) => {
         status: existing.status,
       }, 409)
     }
+    const { data: pendingOrder, error: pendingError } = await admin
+      .from("dino_supporter_payment_orders")
+      .select("order_id, amount_idr, currency, status, qr_url")
+      .eq("user_id", user.id)
+      .eq("status", "pending")
+      .limit(1)
+      .maybeSingle()
+    if (pendingError) {
+      console.error("midtrans-create-payment: failed to check pending order", pendingError.code)
+      return jsonResponse({ error: "Pesanan pembayaran tidak dapat diperiksa." }, 500)
+    }
+    if (pendingOrder) {
+      if (pendingOrder.qr_url) {
+        return jsonResponse({
+          orderId: pendingOrder.order_id,
+          amountIdr: pendingOrder.amount_idr,
+          currency: pendingOrder.currency,
+          status: pendingOrder.status,
+          qrUrl: pendingOrder.qr_url,
+          qr_url: pendingOrder.qr_url,
+          reused: true,
+        })
+      }
+      return jsonResponse({
+        error: "Pesanan pembayaran sebelumnya sedang dibuat. Periksa status sebelum mencoba lagi.",
+      }, 409)
+    }
     const orderId = `DINO-SUP-${crypto.randomUUID()}`
     const { error: insertError } = await admin
       .from("dino_supporter_payment_orders")
@@ -147,7 +187,7 @@ Deno.serve(async (req) => {
     }
     let midtransResponse: Response
     try {
-      midtransResponse = await fetch("https\://api.sandbox.midtrans.com/v2/charge", {
+      midtransResponse = await fetch("https://api.sandbox.midtrans.com/v2/charge", {
         method: "POST",
         headers: {
           Accept: "application/json",
@@ -203,22 +243,11 @@ Deno.serve(async (req) => {
     const action = item as Record<string, unknown>
     let hostname: string | null = null
     let protocol: string | null = null
-    let urlForManualCheck: string | null = null
     try {
       if (typeof action.url === "string") {
         const parsed = new URL(action.url)
         hostname = parsed.hostname
         protocol = parsed.protocol
-        // Only expose the transaction-specific QR image URL for the exact
-        // Midtrans Sandbox host so it can be opened manually for diagnosis.
-        if (
-          protocol === "https:" &&
-          hostname === "merchants-app.sbx.midtrans.com" &&
-          !parsed.username &&
-          !parsed.password
-        ) {
-          urlForManualCheck = parsed.toString()
-        }
       }
     } catch {
       // URL tidak valid; jangan tampilkan URL mentah.
@@ -227,7 +256,6 @@ Deno.serve(async (req) => {
       name: typeof action.name === "string" ? action.name : null,
       hostname,
       protocol,
-      urlForManualCheck,
       allowedSandboxHost:
         protocol === "https:" &&
         hostname === "api.sandbox.midtrans.com",

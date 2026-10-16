@@ -149,6 +149,8 @@ begin
     );
 end;
 $function$;
+REVOKE ALL ON FUNCTION public.get_dino_ai_quota() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_dino_ai_quota() TO authenticated;
 CREATE OR REPLACE FUNCTION public.reserve_dino_ai_credit(p_user_id uuid, p_feature text, p_idempotency_key text)
  RETURNS TABLE(allowed boolean, credits_consumed integer, credits_remaining integer, reason text)
  LANGUAGE plpgsql
@@ -393,3 +395,9 @@ begin
   return query select true, v_cost, v_remaining, 'reserved'::text;
 end;
 $function$;
+-- This SECURITY DEFINER function accepts a user ID, so browser roles must never
+-- be able to call it directly. Trusted Edge Functions make the reservation.
+REVOKE ALL ON FUNCTION public.reserve_dino_ai_credit(uuid, text, text)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.reserve_dino_ai_credit(uuid, text, text)
+  TO service_role;

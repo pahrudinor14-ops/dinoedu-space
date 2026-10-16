@@ -10,6 +10,7 @@
 create index if not exists dinoai_chat_conversations_user_updated_idx
   on public.dinoai_chat_conversations (user_id, updated_at desc);
 alter table public.dinoai_chat_conversations enable row level security;
+revoke all on table public.dinoai_chat_conversations from public, anon;
 drop policy if exists "Users can read own DinoAI conversations"
   on public.dinoai_chat_conversations;
 create policy "Users can read own DinoAI conversations"

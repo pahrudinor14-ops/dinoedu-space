@@ -1,0 +1,32 @@
+project_id = "dinoedu-space"
+
+# All user-facing functions require a Supabase JWT. The application also checks
+# the user token inside its AI and payment handlers before using service_role.
+[functions.dinoai-chat]
+verify_jwt = true
+
+[functions.dinoai-cv]
+verify_jwt = true
+
+[functions.midtrans-create-payment]
+verify_jwt = true
+
+[functions.midtrans-create-token-payment]
+verify_jwt = true
+
+[functions.midtrans-payment-status]
+verify_jwt = true
+
+[functions.midtrans-token-payment-status]
+verify_jwt = true
+
+# Midtrans calls this one public dispatcher. It forwards only to the JWT-gated
+# webhook handlers, which independently validate the Midtrans signature/status.
+[functions.midtrans-payment-webhook]
+verify_jwt = false
+
+[functions.midtrans-webhook]
+verify_jwt = true
+
+[functions.midtrans-token-webhook]
+verify_jwt = true
