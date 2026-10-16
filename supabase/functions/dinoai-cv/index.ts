@@ -97,6 +97,11 @@ function readText(
 }
 function parseCVInput(value: unknown): { input: CVInput; idempotencyKey: string } {
   if (!isRecord(value)) throw new InputError("Format request tidak valid.");
+  // Contact data is validated for the CV request but deliberately excluded from the AI prompt.
+  readText(value.name, "Nama", 120, true);
+  readText(value.email, "Email", 254, true);
+  readText(value.phone, "Nomor HP", 40, true);
+  readText(value.location, "Lokasi", 240, true);
   const idempotencyKey = readText(
     value.idempotencyKey,
     "Kunci permintaan",
@@ -285,6 +290,51 @@ Deno.serve(async (request) => {
       return false;
     }
   };
+  const completeReservation = async () => {
+    try {
+      const { data, error } = await admin.rpc("complete_dino_ai_credit_request", {
+        p_user_id: authData.user.id,
+        p_idempotency_key: idempotencyKey,
+      });
+      if (!error && data === true) return true;
+      if (error) {
+        console.warn("AI CV Maker: completion RPC gagal; mencoba pembaruan langsung.", error.code);
+      }
+    } catch {
+      console.warn("AI CV Maker: completion RPC tidak terjangkau; mencoba pembaruan langsung.");
+    }
+    try {
+      const { data, error } = await admin
+        .from("dino_ai_credit_requests")
+        .update({
+          status: "succeeded",
+          result_reason: "Hasil AI berhasil dibuat",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", authData.user.id)
+        .eq("idempotency_key", idempotencyKey)
+        .eq("feature", "ai-cv-maker")
+        .eq("status", "reserved")
+        .select("status")
+        .maybeSingle();
+      if (error) {
+        console.error("AI CV Maker: pembaruan langsung status kredit gagal.", error.code);
+        return false;
+      }
+      if (data?.status === "succeeded") return true;
+      const { data: existing, error: lookupError } = await admin
+        .from("dino_ai_credit_requests")
+        .select("status")
+        .eq("user_id", authData.user.id)
+        .eq("idempotency_key", idempotencyKey)
+        .eq("feature", "ai-cv-maker")
+        .maybeSingle();
+      return !lookupError && existing?.status === "succeeded";
+    } catch {
+      console.error("AI CV Maker: pembaruan status kredit tidak dapat dipastikan.");
+      return false;
+    }
+  };
   let reservationData: unknown;
   let reservationError: { code?: string } | null;
   try {
@@ -403,34 +453,17 @@ Deno.serve(async (request) => {
       const creditsRestored = await releaseReservation("invalid_generated_cv");
       return jsonResponse({ error: "Hasil AI belum dapat digunakan. Coba buat ulang.", creditsRestored }, 502);
     }
-    try {
-      const { data: completionRecorded, error: completionError } = await admin.rpc(
-        "complete_dino_ai_credit_request",
-        {
-          p_user_id: authData.user.id,
-          p_idempotency_key: idempotencyKey,
-        },
-      );
-      if (completionError || completionRecorded !== true) {
-        console.error("AI CV Maker: status penyelesaian kredit tidak tercatat.", completionError?.code);
-        const creditsRestored = await releaseReservation("credit_completion_failed");
-        return jsonResponse(
-          {
-            error: "Status kredit belum dapat dipastikan. Coba lagi nanti.",
-            creditsRestored,
-          },
-          503,
-        );
-      }
-    } catch {
-      console.error("AI CV Maker: status penyelesaian kredit tidak dapat diperbarui.");
-      const creditsRestored = await releaseReservation("credit_completion_failed");
+    const completionRecorded = await completeReservation();
+    if (!completionRecorded) {
+      console.error("AI CV Maker: status penyelesaian kredit tidak tercatat.");
       return jsonResponse(
         {
-          error: "Status kredit belum dapat dipastikan. Coba lagi nanti.",
-          creditsRestored,
+          success: true,
+          cv,
+          creditsConsumed: 2,
+          quotaWarning: "CV berhasil dibuat, tetapi status pencatatan kuota belum dapat dipastikan. Jangan buat ulang dulu agar tidak terhitung dua kali.",
         },
-        503,
+        200,
       );
     }
     return jsonResponse({ success: true, cv, creditsConsumed: 2 });
