@@ -29,6 +29,7 @@ interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+  incomplete?: boolean;
 }
 interface ChatConversation {
   id: string;
@@ -48,9 +49,9 @@ interface DinoAIQuota {
 }
 const welcomeMessage =
   "Halo, saya DinoAI. Saya siap membantu kamu belajar, bekerja, dan menyelesaikan berbagai kebutuhan";
-const maxRequestHistoryItems = 16;
-const maxRequestHistoryCharacters = 4_000;
-const maxRequestHistoryItemCharacters = 1_200;
+const maxRequestHistoryItems = 12;
+const maxRequestHistoryCharacters = 3_000;
+const maxRequestHistoryItemCharacters = 1_000;
 function buildRequestHistory(messages: ChatMessage[]) {
   const previousMessages = messages.filter(
     (message, index) =>
@@ -613,6 +614,7 @@ export default function DinoAIChat({
         id: createId(),
         role: "assistant",
         content: reply,
+        incomplete: data?.incomplete === true,
       };
       setConversations((current) =>
         current.map((conversation) =>
@@ -1003,7 +1005,7 @@ export default function DinoAIChat({
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex min-w-0 items-end gap-3 ${
+                  className={`flex min-w-0 shrink-0 items-end gap-3 ${
                     message.role === "user" ? "justify-end" : "justify-start"
                   }`}
                 >
@@ -1162,6 +1164,15 @@ export default function DinoAIChat({
                         >
                           {message.content}
                         </ReactMarkdown>
+                        {message.incomplete && (
+                          <p className="mt-4 rounded-xl border border-[#EF629F]/20 bg-[#EF629F]/5 px-3 py-2 text-sm leading-6 text-muted-foreground">
+                            Jawaban mencapai batas panjang sebelum semua rincian tersampaikan. Balas{" "}
+                            <strong className="font-semibold text-foreground">
+                              “lanjutkan dari bagian terakhir”
+                            </strong>{" "}
+                            untuk meneruskan tanpa mengulang bagian sebelumnya.
+                          </p>
+                        )}
                       </div>
                     ) : (
                       message.content

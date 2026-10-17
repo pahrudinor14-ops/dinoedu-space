@@ -6,9 +6,12 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const MAX_REQUEST_BYTES = 48_000;
-const MAX_HISTORY_ITEMS = 16;
-const MAX_HISTORY_CHARACTERS = 4_000;
-const MAX_HISTORY_ITEM_CHARACTERS = 1_200;
+const MAX_HISTORY_ITEMS = 12;
+const MAX_HISTORY_CHARACTERS = 3_000;
+const MAX_HISTORY_ITEM_CHARACTERS = 1_000;
+const MAX_OUTPUT_TOKENS = 2_048;
+const MAX_CONTINUATION_OUTPUT_TOKENS = 1_536;
+const MAX_CONTINUATION_ROUNDS = 1;
 const RETRYABLE_GEMINI_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 interface HistoryItem {
   role: "user" | "model";
@@ -222,22 +225,24 @@ Deno.serve(async (request) => {
   }
   const model = geminiModel();
   const fallbackModel = "gemini-3.6-flash";
-  const requestBody = JSON.stringify({
-    systemInstruction: {
-      parts: [{
-        text: "Kamu adalah DinoAI, asisten belajar yang ramah, jelas, dan profesional. Jawab dalam Bahasa Indonesia kecuali pengguna meminta bahasa lain. Susun jawaban dengan paragraf singkat dan runtut. Untuk jawaban panjang, gunakan heading Markdown yang ringkas; gunakan daftar bernomor untuk langkah dan bullet untuk beberapa pilihan. Tebalkan istilah penting secukupnya. Tulis rumus sebagai LaTeX inline dengan $...$ atau sebagai blok dengan $$...$$. Untuk setiap soal angka, identifikasi jumlah total, bagian, dan satuannya sebelum menghitung; pastikan pembilang dan penyebut cocok dengan konteks, hitung ulang hasil, serta cek kesetaraan pecahan. Pecahan a/b berarti a bagian dari total b bagian yang sama besar. Jangan menambah jumlah atau asumsi yang tidak disebutkan. Contoh: jika totalnya 3 kotak dan ketiganya dibagikan, tulis 3/3 = 1; jangan menulis 3/4 kecuali totalnya memang 4 bagian. Jangan menjadikan kalimat panjang sebagai pembilang atau penyebut. Jelaskan hubungan dalam kalimat biasa, misalnya bagian yang diambil dibagi total bagian, lalu tampilkan pecahan singkat dengan angka seperti 2/8 = 1/4. Jika angka belum tersedia, gunakan simbol singkat seperti a/b dan jelaskan arti simbol di luar rumus. Jika informasi tidak cukup atau konteks bertentangan, jelaskan kekurangannya atau minta klarifikasi alih-alih menebak. Hindari dinding teks, pengulangan, dan format yang berlebihan. Jelaskan materi langkah demi langkah, jangan mengarang fakta, dan akui jika kamu tidak yakin.",
-      }],
-    },
-    contents: [
-      ...conversationHistory.map((item) => ({
-        role: item.role,
-        parts: [{ text: item.text }],
-      })),
-      { role: "user", parts: [{ text: message }] },
-    ],
-    generationConfig: { maxOutputTokens: 1200 },
+  const systemInstruction =
+    "Kamu DinoAI, asisten belajar yang ramah, jelas, dan profesional. Jawab dalam Bahasa Indonesia kecuali diminta lain. Dahulukan jawaban inti; buat ringkas tetapi tetap tuntas dan sesuaikan kedalaman dengan pertanyaan. Hindari pengulangan dan pembukaan panjang. Untuk topik rumit, gunakan heading atau daftar seperlunya, jelaskan langkah penting, lalu beri kesimpulan atau tindakan berikutnya jika relevan. Jangan mengarang fakta. Jika informasi kurang atau bertentangan, jelaskan keterbatasannya atau minta klarifikasi. Untuk matematika, gunakan LaTeX singkat. Sebelum menghitung, kenali total, bagian, dan satuannya; pastikan pembilang dan penyebut sesuai konteks, hitung ulang, dan cek kesetaraan. Pecahan a/b berarti a bagian dari total b bagian. Jangan menambah angka: jika 3 dari 3 kotak dibagikan, tulis 3/3 = 1, bukan 3/4. Jelaskan hubungan dengan kalimat biasa, bukan kalimat panjang di dalam rumus. Jika data belum ada, gunakan a/b dan jelaskan simbolnya. Akui jika tidak yakin.";
+  const initialContents = [
+    ...conversationHistory.map((item) => ({
+      role: item.role,
+      parts: [{ text: item.text }],
+    })),
+    { role: "user", parts: [{ text: message }] },
+  ];
+  const makeRequestBody = (
+    contents: typeof initialContents,
+    maxOutputTokens: number,
+  ) => JSON.stringify({
+    systemInstruction: { parts: [{ text: systemInstruction }] },
+    contents,
+    generationConfig: { maxOutputTokens },
   });
-  const callGemini = async (modelName: string) => {
+  const callGemini = async (modelName: string, requestBody: string) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 35_000);
     try {
@@ -257,11 +262,11 @@ Deno.serve(async (request) => {
       clearTimeout(timeoutId);
     }
   };
-  const callGeminiWithFallback = async () => {
-    if (model === fallbackModel) return callGemini(model);
+  const callGeminiWithFallback = async (requestBody: string) => {
+    if (model === fallbackModel) return callGemini(model, requestBody);
     let primaryResponse: Response | null = null;
     try {
-      primaryResponse = await callGemini(model);
+      primaryResponse = await callGemini(model, requestBody);
     } catch (error) {
       console.warn(
         "DinoAI Chat: model utama gagal dihubungi; mencoba model cadangan.",
@@ -284,34 +289,80 @@ Deno.serve(async (request) => {
         // The primary response is discarded before the single fallback attempt.
       }
     }
-    return callGemini(fallbackModel);
+    return callGemini(fallbackModel, requestBody);
   };
   try {
-    const response = await callGeminiWithFallback();
-    const result: unknown = await response.json().catch(() => null);
-    if (!response.ok) {
-      console.error("Gemini request failed:", response.status);
-      const creditsRestored = await releaseReservation(`gemini_http_${response.status}`);
-      return jsonResponse({
-        error: response.status === 429
-          ? "Layanan AI sedang sibuk. Coba lagi beberapa saat."
-          : "Layanan AI sedang bermasalah. Coba lagi sebentar lagi.",
-        creditsRestored,
-      }, response.status === 429 ? 429 : 502);
+    let contents = initialContents;
+    let reply = "";
+    let incomplete = false;
+    for (
+      let continuationRound = 0;
+      continuationRound <= MAX_CONTINUATION_ROUNDS;
+      continuationRound += 1
+    ) {
+      const response = await callGeminiWithFallback(
+        makeRequestBody(
+          contents,
+          continuationRound === 0
+            ? MAX_OUTPUT_TOKENS
+            : MAX_CONTINUATION_OUTPUT_TOKENS,
+        ),
+      );
+      const result: unknown = await response.json().catch(() => null);
+      if (!response.ok) {
+        console.error("Gemini request failed:", response.status);
+        const creditsRestored = await releaseReservation(`gemini_http_${response.status}`);
+        return jsonResponse({
+          error: response.status === 429
+            ? "Layanan AI sedang sibuk. Coba lagi beberapa saat."
+            : "Layanan AI sedang bermasalah. Coba lagi sebentar lagi.",
+          creditsRestored,
+        }, response.status === 429 ? 429 : 502);
+      }
+      const candidates = isRecord(result) && Array.isArray(result.candidates)
+        ? result.candidates
+        : [];
+      const candidate = isRecord(candidates[0]) ? candidates[0] : null;
+      const content = candidate && isRecord(candidate.content)
+        ? candidate.content
+        : null;
+      const parts = content && Array.isArray(content.parts) ? content.parts : [];
+      const continuation = parts
+        .filter(isRecord)
+        .map((part) => typeof part.text === "string" ? part.text : "")
+        .join("");
+      const finishReason = candidate && typeof candidate.finishReason === "string"
+        ? candidate.finishReason
+        : "";
+      if (!continuation.trim()) {
+        if (reply) {
+          incomplete = true;
+          break;
+        }
+        const creditsRestored = await releaseReservation("empty_gemini_response");
+        return jsonResponse({
+          error: "DinoAI tidak menghasilkan jawaban. Coba ubah pertanyaanmu.",
+          creditsRestored,
+        }, 502);
+      }
+      reply += continuation;
+      if (finishReason !== "MAX_TOKENS") break;
+      if (continuationRound === MAX_CONTINUATION_ROUNDS) {
+        incomplete = true;
+        break;
+      }
+      contents = [
+        ...initialContents,
+        { role: "model", parts: [{ text: reply }] },
+        {
+          role: "user",
+          parts: [{
+            text: "Lanjutkan tepat dari bagian terakhir tanpa mengulang. Dahulukan bagian penting yang belum tersampaikan, gunakan penjelasan ringkas, dan akhiri dengan kesimpulan yang jelas.",
+          }],
+        },
+      ];
     }
-    const candidates = isRecord(result) && Array.isArray(result.candidates)
-      ? result.candidates
-      : [];
-    const candidate = isRecord(candidates[0]) ? candidates[0] : null;
-    const content = candidate && isRecord(candidate.content)
-      ? candidate.content
-      : null;
-    const parts = content && Array.isArray(content.parts) ? content.parts : [];
-    const reply = parts
-      .filter(isRecord)
-      .map((part) => typeof part.text === "string" ? part.text : "")
-      .join("")
-      .trim();
+    reply = reply.trim();
     if (!reply) {
       const creditsRestored = await releaseReservation("empty_gemini_response");
       return jsonResponse({
@@ -336,7 +387,7 @@ Deno.serve(async (request) => {
       await releaseReservation("credit_completion_failed");
       return jsonResponse({ error: "Status kredit belum dapat dipastikan. Coba lagi nanti." }, 503);
     }
-    return jsonResponse({ reply });
+    return jsonResponse({ reply, incomplete });
   } catch (error) {
     console.error("DinoAI Chat request gagal:", error instanceof Error ? error.name : "unknown");
     const creditsRestored = await releaseReservation("gemini_network_error");
