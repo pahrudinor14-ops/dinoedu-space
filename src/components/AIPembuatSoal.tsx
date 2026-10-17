@@ -49,6 +49,7 @@ interface QuizResult {
 interface QuizResponse {
   success?: boolean
   error?: string
+  quotaWarning?: string
   quiz?: unknown
 }
 const QUESTION_TYPES: Array<QuestionType | "Campuran"> = [
@@ -79,7 +80,10 @@ function normalizeQuestion(item: unknown, index: number): QuestionItem {
     cognitiveLevel: normalizeCognitiveLevel(source?.cognitiveLevel),
     question: typeof source?.question === "string" ? source.question : "",
     options: Array.isArray(source?.options)
-      ? source.options.filter((value): value is string => typeof value === "string").slice(0, 5)
+      ? source.options
+          .filter((value): value is string => typeof value === "string")
+          .slice(0, 5)
+          .map((value) => value.replace(/^\s*[A-E][.)]\s*/i, "").trim())
       : [],
     answer: typeof source?.answer === "string" ? source.answer : "",
     explanation: typeof source?.explanation === "string" ? source.explanation : "",
@@ -113,6 +117,29 @@ function normalizeQuiz(value: unknown): QuizResult {
       .filter((item) => item.indicator || item.material || item.cognitiveLevel),
   }
 }
+function buildAutomaticQuizTitle(
+  subjectValue: string,
+  topicValue: string,
+  gradeValue: string,
+  levelValue: string,
+): string {
+  const subjectName = subjectValue.trim() || "Mata Pelajaran"
+  const topicName = topicValue.trim() || "Materi"
+  const gradeName = gradeValue.trim()
+  const levelName = levelValue.trim()
+  return ("Penilaian Harian " + subjectName + ": " + topicName + " " + gradeName + " " + levelName)
+    .replace(/\s+/g, " ")
+    .trim()
+}
+function createIdempotencyKey(): string {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID()
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  bytes[6] = (bytes[6] & 0x0f) | 0x40
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
 export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
   const [level, setLevel] = useState("SD")
   const [grade, setGrade] = useState("Kelas IV")
@@ -141,6 +168,7 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
       topic.trim() !== "",
     [level, grade, subject, topic],
   )
+  const isFormBusy = aiLoading || isLoadingSaved || isSaving || isDeleting
     const buildDocumentContent = (result: QuizResult | null = quizResult) => ({
     form: { level, grade, subject, topic, learningObjective, cognitiveLevel, questionType, questionCount, context },
     result,
@@ -157,6 +185,10 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
       setSavedDocumentId(data.id)
       const content = data.content as { form?: Record<string, unknown>; result?: QuizResult | null }
       const form = content?.form
+      const savedLevel = typeof form?.level === "string" ? form.level : level
+      const savedGrade = typeof form?.grade === "string" ? form.grade : grade
+      const savedSubject = typeof form?.subject === "string" ? form.subject : subject
+      const savedTopic = typeof form?.topic === "string" ? form.topic : topic
       if (form) {
         if (typeof form.level === "string") setLevel(form.level)
         if (typeof form.grade === "string") setGrade(form.grade)
@@ -168,7 +200,11 @@ export default function AIPembuatSoal({ onBack }: AIPembuatSoalProps) {
         if (typeof form.questionCount === "string") setQuestionCount(form.questionCount)
         if (typeof form.context === "string") setContext(form.context)
       }
-      if (content?.result) setQuizResult(normalizeQuiz(content.result))
+      if (content?.result) {
+        const savedResult = normalizeQuiz(content.result)
+        savedResult.title = buildAutomaticQuizTitle(savedSubject, savedTopic, savedGrade, savedLevel)
+        setQuizResult(savedResult)
+      }
     } catch (error) {
       console.error("Load saved quiz error:", error)
     } finally {
@@ -259,6 +295,7 @@ async function handleGenerateQuestions() {
     setMessage("")
     try {
       const data = await invokeDinoAI<QuizResponse>("dinoai-soal", {
+          idempotencyKey: createIdempotencyKey(),
           level,
           grade,
           subject,
@@ -273,6 +310,7 @@ async function handleGenerateQuestions() {
         throw new Error(data?.error || "Respons dinoai-soal tidak sesuai")
       }
       const normalized = normalizeQuiz(data.quiz)
+      normalized.title = buildAutomaticQuizTitle(subject, topic, grade, level)
       if (normalized.questions.length !== requestedCount) {
         throw new Error(
           `AI menghasilkan ${normalized.questions.length} soal, padahal diminta ${requestedCount} soal. Silakan coba lagi`,
@@ -283,9 +321,12 @@ async function handleGenerateQuestions() {
       }
       setQuizResult(normalized)
       const saved = await saveDocument(normalized)
-      setMessage(saved
+      const resultMessage = saved
         ? "Soal berhasil dibuat dan disimpan menggunakan 2 kredit. Silakan periksa dan edit hasilnya"
-        : "Soal berhasil dibuat, tetapi belum tersimpan. Periksa koneksi lalu tekan Simpan.")
+        : "Soal berhasil dibuat, tetapi belum tersimpan. Periksa koneksi lalu tekan Simpan."
+      setMessage(data.quotaWarning
+        ? `${resultMessage} ${data.quotaWarning}`
+        : resultMessage)
     } catch (error) {
       console.error("AI Pembuat Soal error:", error)
       setAiError(
@@ -406,6 +447,7 @@ async function handleGenerateQuestions() {
           background-color: #EF629F !important;
           color: #FFFFFF !important;
         }
+        .question-print-document { display: none; }
         .dark select,
         html.dark select {
           color-scheme: dark !important;
@@ -425,29 +467,134 @@ async function handleGenerateQuestions() {
           -webkit-text-fill-color: #FFFFFF !important;
         }
 @media print {
-          @page { size: A4; margin: 12mm; }
+          @page {
+            size: A4;
+            margin: 12mm 12mm 19mm;
+            @bottom-center {
+              content: "Soal dibuat menggunakan DinoEdu Space";
+              border-top: 0.5pt solid #e4e4e7;
+              padding-top: 2mm;
+              color: #a1a1aa;
+              font-family: "Poppins", sans-serif;
+              font-size: 8pt;
+              line-height: 1.2;
+              text-align: center;
+              letter-spacing: 0.04em;
+            }
+          }
           html, body {
             width: 100% !important;
             min-height: 0 !important;
             background: #ffffff !important;
           }
-          body \* { visibility: hidden !important; }
-          .question-print-area,
-          .question-print-area \* { visibility: visible !important; }
-          .question-print-area {
+          body * { visibility: hidden !important; }
+          .question-print-document,
+          .question-print-document * { visibility: visible !important; }
+          .question-print-document {
+            display: block !important;
             position: absolute !important;
             top: 0 !important;
             left: 0 !important;
             width: 100% !important;
             margin: 0 !important;
-            padding: 0 !important;
+            padding: 4mm !important;
             background: #ffffff !important;
             color: #000000 !important;
+            font-family: "Poppins", sans-serif !important;
+            font-size: 12pt !important;
+            line-height: 1.5 !important;
             box-shadow: none !important;
             border: 0 !important;
           }
+          .question-print-document * {
+            color: #000000 !important;
+            font-family: "Poppins", sans-serif !important;
+            font-size: 12pt !important;
+            line-height: 1.5 !important;
+            overflow-wrap: anywhere !important;
+          }
+          .question-print-header {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+          }
+          .question-print-title {
+            font-size: 14pt !important;
+            text-align: center !important;
+          }
+          .question-print-document .question-print-metadata {
+            text-align: center !important;
+            border-bottom: 0.5pt solid #b8b8b8 !important;
+            padding-bottom: 2mm !important;
+            margin-bottom: 4mm !important;
+          }
+          .question-print-document p,
+          .question-print-document td {
+            text-align: justify !important;
+          }
+          .question-print-document img {
+            display: block !important;
+            width: auto !important;
+            max-width: 100% !important;
+            height: auto !important;
+            max-height: 240mm !important;
+            object-fit: contain !important;
+            margin: 0 auto !important;
+          }
           .question-no-print { display: none !important; }
-          .question-print-break {
+          .question-print-area {
+            column-count: 2 !important;
+            column-gap: 12mm !important;
+            column-fill: balance !important;
+          }
+          .question-print-item {
+            break-inside: avoid-column !important;
+            page-break-inside: avoid !important;
+            border: 0 !important;
+            margin: 0 0 1.5em !important;
+            padding: 0 !important;
+          }
+          .question-print-answer-section,
+          .question-print-explanation-section,
+          .question-print-blueprint-section {
+            break-before: page !important;
+            page-break-before: always !important;
+          }
+          .question-print-answer-section,
+          .question-print-explanation-section {
+            column-count: 2 !important;
+            column-gap: 12mm !important;
+            column-fill: balance !important;
+          }
+          .question-print-answer-section h2,
+          .question-print-explanation-section h2 {
+            column-span: all !important;
+          }
+          .question-print-document h1,
+          .question-print-document h2 {
+            break-after: avoid !important;
+            page-break-after: avoid !important;
+          }
+          .question-print-answer-item {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+            margin: 0 0 1.5em !important;
+          }
+          .question-print-blueprint-section table {
+            width: 100% !important;
+            table-layout: fixed !important;
+            border-collapse: collapse !important;
+          }
+          .question-print-blueprint-section th {
+            text-align: left !important;
+          }
+          .question-print-blueprint-section th,
+          .question-print-blueprint-section td {
+            overflow-wrap: break-word !important;
+            word-break: normal !important;
+            hyphens: none !important;
+          }
+          .question-print-blueprint-section thead { display: table-header-group !important; }
+          .question-print-blueprint-section tr {
             break-inside: avoid !important;
             page-break-inside: avoid !important;
           }
@@ -642,9 +789,9 @@ async function handleGenerateQuestions() {
               <button
                 type="button"
                 onClick={handleGenerateQuestions}
-                disabled={!isFormComplete || aiLoading}
+                disabled={!isFormComplete || isFormBusy}
                 className={`dino-gradient mt-10 flex w-full items-center justify-center rounded-2xl px-5 py-4 text-[15px] font-semibold text-white shadow-lg shadow-pink-500/10 transition-all duration-200 ${
-                  isFormComplete && !aiLoading
+                  isFormComplete && !isFormBusy
                     ? "dino-button"
                     : "cursor-not-allowed opacity-50"
                 }`}
@@ -759,7 +906,7 @@ async function handleGenerateQuestions() {
                         </p>
                       )}
                     </div>
-                    <div className="question-print-area mt-7 space-y-6">
+                    <div className="question-preview-area mt-7 space-y-6">
                       {quizResult.questions.map((item, index) => (
                         <article key={`${item.number}-${index}`} className="question-print-break border-b border-border pb-5 last:border-0">
                           <div className="mb-2 flex items-start justify-between gap-3">
@@ -929,6 +1076,91 @@ async function handleGenerateQuestions() {
                 )}
               </div>
             </div>
+            {quizResult && (
+              <div className="question-print-document">
+                <header className="question-print-header mb-6">
+                  <h1 className="question-print-title font-bold">{quizResult.title}</h1>
+                  <p className="question-print-metadata mt-2">
+                    {level} • {grade} • {subject || "Mata Pelajaran"} • {topic}
+                  </p>
+                  <p className="mt-2">{quizResult.instructions}</p>
+                </header>
+
+                <section className="question-print-area">
+                  {quizResult.questions.map((item, index) => (
+                    <article key={`${item.number}-${index}`} className="question-print-item">
+                      <p className="font-semibold">SOAL {item.number}</p>
+                      <p className="mt-2">{item.question || "Pertanyaan belum diisi"}</p>
+                      {(item.type === "Pilihan Ganda" || item.type === "Pilihan Ganda Kompleks") && (
+                        <div className="mt-2">
+                          {item.options.map((option, optionIndex) => (
+                            <p key={optionIndex}>
+                              <strong>{String.fromCharCode(65 + optionIndex)}.</strong> {option}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </section>
+
+                <section className="question-print-blueprint-section">
+                  <h2 className="mb-5 font-bold">Kisi-kisi Soal</h2>
+                  {quizResult.blueprint.length > 0 ? (
+                    <table>
+                      <colgroup>
+                        <col style={{ width: "42%" }} />
+                        <col style={{ width: "29%" }} />
+                        <col style={{ width: "29%" }} />
+                      </colgroup>
+                      <thead>
+                        <tr>
+                          <th className="border border-zinc-500 p-2 text-left">Indikator</th>
+                          <th className="border border-zinc-500 p-2 text-left">Materi</th>
+                          <th className="border border-zinc-500 p-2 text-left">Level kognitif</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {quizResult.blueprint.map((item, index) => (
+                          <tr key={index}>
+                            <td className="border border-zinc-500 p-2 align-top">{item.indicator}</td>
+                            <td className="border border-zinc-500 p-2 align-top">{item.material}</td>
+                            <td className="border border-zinc-500 p-2 align-top">{item.cognitiveLevel}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p>Kisi-kisi belum tersedia.</p>
+                  )}
+                </section>
+
+                <section className="question-print-answer-section">
+                  <h2 className="mb-5 font-bold">Kunci Jawaban</h2>
+                  {quizResult.questions.map((item, index) => (
+                    <article key={`${item.number}-${index}`} className="question-print-answer-item">
+                      <p className="font-semibold">Soal {item.number}</p>
+                      <p className="mt-1">
+                        <strong>Kunci:</strong> {item.answer || "Belum tersedia"}
+                      </p>
+                    </article>
+                  ))}
+                </section>
+
+                <section className="question-print-explanation-section">
+                  <h2 className="mb-5 font-bold">Pembahasan</h2>
+                  {quizResult.questions.map((item, index) => (
+                    <article key={`${item.number}-${index}`} className="question-print-answer-item">
+                      <p className="font-semibold">Soal {item.number}</p>
+                      <p className="mt-1">
+                        <strong>Pembahasan:</strong> {item.explanation || "Belum tersedia"}
+                      </p>
+                    </article>
+                  ))}
+                </section>
+
+              </div>
+            )}
           </div>
         </section>
       </main>

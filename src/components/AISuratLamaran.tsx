@@ -1,4 +1,5 @@
 ﻿import {
+  useCallback,
   useEffect,
   useRef,
   useState } from "react"
@@ -32,7 +33,70 @@ interface LetterResult {
 interface LetterResponse {
   success?: boolean
   error?: string
+  quotaWarning?: string
   letter?: Partial<LetterResult> | null
+}
+const LETTER_TEMPLATES = [
+  {
+    id: "formal_resmi",
+    label: "Formal Resmi",
+    description: "Struktur surat Indonesia yang sopan untuk dokumen PDF.",
+    guidance:
+      "Gunakan Bahasa Indonesia formal dan susun surat dengan subjek, salam pembuka, tujuan melamar, kualifikasi relevan, motivasi, dan penutup sopan. Gunakan hanya detail penerima dan lampiran yang diberikan; jangan mengarang alamat atau dokumen.",
+  },
+  {
+    id: "profesional_ringkas",
+    label: "Profesional Ringkas",
+    description: "Padat, langsung ke kecocokan posisi, idealnya satu halaman.",
+    guidance:
+      "Tulis singkat dan faktual, maksimal satu halaman. Hubungkan kebutuhan lowongan dengan satu atau dua bukti pengalaman atau keahlian yang paling relevan, jelaskan motivasi spesifik untuk perusahaan/posisi, dan hindari mengulang seluruh isi CV.",
+  },
+  {
+    id: "fresh_graduate",
+    label: "Fresh Graduate",
+    description: "Tonjolkan pendidikan, proyek, magang, organisasi, dan potensi.",
+    guidance:
+      "Untuk pelamar awal karier, prioritaskan pendidikan, proyek, magang, organisasi, dan keahlian yang relevan bila datanya tersedia. Jelaskan kaitannya dengan persyaratan posisi. Jangan mengarang pengalaman kerja, pencapaian, atau angka.",
+  },
+  {
+    id: "berpengalaman",
+    label: "Berpengalaman",
+    description: "Fokus pada kontribusi dan pencapaian kerja yang relevan.",
+    guidance:
+      "Prioritaskan pengalaman kerja yang paling relevan dan bukti kontribusi atau hasil yang memang diberikan pengguna. Hubungkan bukti tersebut dengan kebutuhan posisi; jangan mengulang seluruh CV atau mengarang angka pencapaian.",
+  },
+] as const
+type LetterTemplateId = (typeof LETTER_TEMPLATES)[number]["id"]
+function isLetterTemplateId(value: unknown): value is LetterTemplateId {
+  return LETTER_TEMPLATES.some((template) => template.id === value)
+}
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+function parseSavedLetterResult(value: unknown, fallbackName: string): LetterResult | null {
+  if (!isRecord(value)) return null
+  const body = Array.isArray(value.body)
+    ? value.body.filter((item): item is string => typeof item === "string")
+    : []
+  const opening = typeof value.opening === "string" ? value.opening : ""
+  if (!opening.trim() && !body.some((paragraph) => paragraph.trim())) return null
+  return {
+    subject: typeof value.subject === "string" ? value.subject : "Lamaran Pekerjaan",
+    greeting: typeof value.greeting === "string" ? value.greeting : "Yth. Bapak/Ibu HRD",
+    opening,
+    body,
+    closing: typeof value.closing === "string" ? value.closing : "",
+    signature: typeof value.signature === "string" ? value.signature : fallbackName,
+  }
+}
+function createIdempotencyKey(): string {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID()
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  bytes[6] = (bytes[6] & 0x0f) | 0x40
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
 export default function AISuratLamaran({
   onBack,
@@ -43,6 +107,8 @@ export default function AISuratLamaran({
   const [location, setLocation] = useState("")
   const [company, setCompany] = useState("")
   const [position, setPosition] = useState("")
+  const [letterTemplateId, setLetterTemplateId] =
+    useState<LetterTemplateId>("formal_resmi")
   const [jobSource, setJobSource] = useState("")
   const [jobDescription, setJobDescription] = useState("")
   const [institution, setInstitution] = useState("")
@@ -68,6 +134,7 @@ export default function AISuratLamaran({
     location.trim() !== "" &&
     company.trim() !== "" &&
     position.trim() !== ""
+  const isFormBusy = isLoadingSaved || aiLoading || isSaving || isDeleting
   function updateResultField(
     field: keyof Omit<LetterResult, "body">,
     value: string,
@@ -109,12 +176,27 @@ export default function AISuratLamaran({
       }
     })
   }
-    const buildDocumentContent = (result: LetterResult | null = letterResult) => ({
-    form: { name, email, phone, location, company, position, jobSource, jobDescription, institution, studyProgram, educationYear, experience, skills, motivation },
+  const buildDocumentContent = (result: LetterResult | null = letterResult) => ({
+    form: {
+      name,
+      email,
+      phone,
+      location,
+      company,
+      position,
+      letterTemplateId,
+      jobSource,
+      jobDescription,
+      institution,
+      studyProgram,
+      educationYear,
+      experience,
+      skills,
+      motivation,
+    },
     result,
   })
-  async function loadSavedDocument() {
-    setIsLoadingSaved(true)
+  const loadSavedDocument = useCallback(async () => {
     try {
       const { data: sessionData } = await supabase.auth.getSession()
       const userId = sessionData.session?.user?.id
@@ -123,7 +205,7 @@ export default function AISuratLamaran({
       if (error) throw error
       if (!data) return
       setSavedDocumentId(data.id)
-      const content = data.content as { form?: Record<string, unknown>; result?: LetterResult | null }
+      const content = data.content as { form?: Record<string, unknown>; result?: unknown } | null
       const form = content?.form
       if (form) {
         if (typeof form.name === "string") setName(form.name)
@@ -132,6 +214,9 @@ export default function AISuratLamaran({
         if (typeof form.location === "string") setLocation(form.location)
         if (typeof form.company === "string") setCompany(form.company)
         if (typeof form.position === "string") setPosition(form.position)
+        if (isLetterTemplateId(form.letterTemplateId)) {
+          setLetterTemplateId(form.letterTemplateId)
+        }
         if (typeof form.jobSource === "string") setJobSource(form.jobSource)
         if (typeof form.jobDescription === "string") setJobDescription(form.jobDescription)
         if (typeof form.institution === "string") setInstitution(form.institution)
@@ -141,13 +226,18 @@ export default function AISuratLamaran({
         if (typeof form.skills === "string") setSkills(form.skills)
         if (typeof form.motivation === "string") setMotivation(form.motivation)
       }
-      if (content?.result) setLetterResult(content.result)
+      const savedLetter = parseSavedLetterResult(content?.result, "")
+      if (savedLetter) {
+        setLetterResult(savedLetter)
+      } else if (content?.result) {
+        setMessage("Draf tersimpan tidak berisi surat yang bisa dipulihkan. Buat ulang untuk melanjutkan.")
+      }
     } catch (error) {
       console.error("Load saved letter error:", error)
     } finally {
       setIsLoadingSaved(false)
     }
-  }
+  }, [])
   async function saveDocument(resultToSave: LetterResult | null = letterResult): Promise<boolean> {
     if (!resultToSave) return false
     setIsSaving(true)
@@ -159,8 +249,25 @@ export default function AISuratLamaran({
       const title = `Surat Lamaran ${position || "Tanpa Posisi"}${company ? ` · ${company}` : ""}`
       const content = buildDocumentContent(resultToSave)
       if (savedDocumentId) {
-        const { error } = await supabase.from("ai_documents").update({ title, content }).eq("id", savedDocumentId).eq("user_id", userId)
+        const { data, error } = await supabase
+          .from("ai_documents")
+          .update({ title, content })
+          .eq("id", savedDocumentId)
+          .eq("user_id", userId)
+          .select("id")
+          .maybeSingle()
         if (error) throw error
+        if (data) {
+          setSavedDocumentId(data.id)
+        } else {
+          const { data: inserted, error: insertError } = await supabase
+            .from("ai_documents")
+            .insert({ user_id: userId, document_type: "surat_lamaran", title, content })
+            .select("id")
+            .single()
+          if (insertError) throw insertError
+          setSavedDocumentId(inserted.id)
+        }
       } else {
         const { data, error } = await supabase.from("ai_documents").insert({ user_id: userId, document_type: "surat_lamaran", title, content }).select("id").single()
         if (error) throw error
@@ -194,6 +301,7 @@ export default function AISuratLamaran({
       setLocation("")
       setCompany("")
       setPosition("")
+      setLetterTemplateId("formal_resmi")
       setJobSource("")
       setJobDescription("")
       setInstitution("")
@@ -215,18 +323,20 @@ export default function AISuratLamaran({
     }
   }
   useEffect(() => {
-  void loadSavedDocument()
-}, [])
-useEffect(() => {
-  if (!isLoadingSaved && letterResult) {
-    void saveDocument()
-  }
-}, [isLoadingSaved])
+    const loadTask = window.setTimeout(() => {
+      void loadSavedDocument()
+    }, 0)
+    return () => window.clearTimeout(loadTask)
+  }, [loadSavedDocument])
 async function handleGenerateAI() {
     if (!isBasicDataComplete) {
       setMessage(
         "Lengkapi nama, email, nomor HP, lokasi, nama perusahaan, dan posisi terlebih dahulu",
       )
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setMessage("Periksa format email sebelum membuat surat lamaran")
       return
     }
     if (generationInFlight.current) return
@@ -236,13 +346,22 @@ async function handleGenerateAI() {
     setMessage("")
     setIsEditingResult(false)
     try {
+      const selectedTemplate = LETTER_TEMPLATES.find(
+        (template) => template.id === letterTemplateId,
+      ) ?? LETTER_TEMPLATES[0]
       const data = await invokeDinoAI<LetterResponse>("dinoai-surat", {
+          idempotencyKey: createIdempotencyKey(),
           name,
           email,
           phone,
           location,
           company,
           position,
+          template: {
+            id: selectedTemplate.id,
+            name: selectedTemplate.label,
+            instructions: selectedTemplate.guidance,
+          },
           jobSource,
           jobDescription,
           education: {
@@ -293,9 +412,12 @@ async function handleGenerateAI() {
       }
       setLetterResult(nextLetterResult)
       const saved = await saveDocument(nextLetterResult)
-      setMessage(saved
+      const resultMessage = saved
         ? "Surat lamaran berhasil dibuat dan disimpan. Periksa dan edit hasilnya sebelum disimpan sebagai PDF"
-        : "Surat lamaran berhasil dibuat, tetapi belum tersimpan. Periksa koneksi lalu tekan Simpan.")
+        : "Surat lamaran berhasil dibuat, tetapi belum tersimpan. Periksa koneksi lalu tekan Simpan."
+      setMessage(data.quotaWarning
+        ? `${resultMessage} ${data.quotaWarning}`
+        : resultMessage)
     } catch (error) {
       console.error("AI Surat Lamaran error:", error)
       setAiError(
@@ -332,7 +454,7 @@ async function handleGenerateAI() {
       <style>{`
         @page {
           size: A4;
-          margin: 16mm;
+          margin: 3cm 3cm 4cm 4cm;
         }
         @media print {
           html,
@@ -459,6 +581,10 @@ async function handleGenerateAI() {
                     Informasi pribadi
                   </h2>
                 </div>
+                <fieldset
+                  disabled={isFormBusy}
+                  className="min-w-0 border-0 p-0"
+                >
                 <div className="space-y-5">
                   <div>
                     <label className="mb-2 block text-[14px] font-medium">
@@ -584,6 +710,85 @@ async function handleGenerateAI() {
                       className="modal-scrollbar-hidden w-full resize-none rounded-2xl border border-border/70 bg-white/40 px-4 py-3.5 text-[17px] leading-7 outline-none backdrop-blur-xl transition focus:border-[#EF629F]/50 dark:bg-white/5"
                     />
                   </div>
+                  <fieldset>
+                    <legend className="mb-3 text-[14px] font-medium">
+                      Gaya surat lamaran
+                    </legend>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {LETTER_TEMPLATES.map((template) => {
+                        const isSelected = letterTemplateId === template.id
+                        return (
+                          <label
+                            key={template.id}
+                            className={`cursor-pointer rounded-2xl border p-4 transition focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[#EF629F]/60 ${
+                              isSelected
+                                ? "border-[#EF629F]/70 bg-[#EF629F]/10 shadow-sm"
+                                : "border-border/70 bg-white/30 hover:border-[#EF629F]/40 dark:bg-white/5"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="letter-template"
+                              value={template.id}
+                              checked={isSelected}
+                              onChange={() => setLetterTemplateId(template.id)}
+                              className="sr-only"
+                            />
+                            <span className="flex items-center justify-between gap-3">
+                              <span className="text-[14px] font-semibold">
+                                {template.label}
+                              </span>
+                              <span
+                                aria-hidden="true"
+                                className={`h-4 w-4 rounded-full border ${
+                                  isSelected
+                                    ? "border-[#EF629F] bg-[#EF629F] shadow-[inset_0_0_0_3px_white]"
+                                    : "border-muted-foreground/40"
+                                }`}
+                              />
+                            </span>
+                            <span className="mt-2 block text-[12px] leading-5 text-muted-foreground">
+                              {template.description}
+                            </span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                    <div className="mt-4 rounded-2xl border border-border/60 bg-white/20 p-4 text-[12px] leading-5 text-muted-foreground dark:bg-white/5">
+                      <p className="font-semibold text-foreground">
+                        Panduan penyusunan
+                      </p>
+                      <p className="mt-1">
+                        Struktur surat formal merujuk materi Bahasa Indonesia Kemendikdasmen. Prinsip ringkas, relevan dengan lowongan, dan contoh untuk pelamar awal karier merujuk panduan Harvard FAS dan UC Berkeley.
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                        <a
+                          href="https://repositori.kemendikdasmen.go.id/21805/1/XII_Bahasa-Indonesia_KD-3.1_Final.pdf"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-medium text-[#EF629F] underline underline-offset-2"
+                        >
+                          Kemendikdasmen · Sistematika surat
+                        </a>
+                        <a
+                          href="https://careerservices.fas.harvard.edu/resources/hes-create-impactful-resumes-and-cover-letters/"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-medium text-[#EF629F] underline underline-offset-2"
+                        >
+                          Harvard FAS · Cover letter
+                        </a>
+                        <a
+                          href="https://career.berkeley.edu/prepare-for-success/cover-letters/"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-medium text-[#EF629F] underline underline-offset-2"
+                        >
+                          UC Berkeley · Cover letters
+                        </a>
+                      </div>
+                    </div>
+                  </fieldset>
                 </div>
                 <div className="my-10 border-t border-border/60" />
                 {/* PROFIL */}
@@ -674,13 +879,14 @@ async function handleGenerateAI() {
                     />
                   </div>
                 </div>
+                </fieldset>
                 {/* AI BUTTON */}
                 <button
                   type="button"
                   onClick={handleGenerateAI}
-                  disabled={!isBasicDataComplete || aiLoading}
+                  disabled={!isBasicDataComplete || isFormBusy}
                   className={`dino-gradient mt-10 flex w-full items-center justify-center rounded-2xl px-5 py-4 text-[15px] font-semibold text-white shadow-lg shadow-pink-500/10 transition-all duration-200 ${
-                    isBasicDataComplete && !aiLoading
+                    isBasicDataComplete && !isFormBusy
                       ? "dino-button"
                       : "cursor-not-allowed opacity-50"
                   }`}
@@ -721,6 +927,50 @@ async function handleGenerateAI() {
                     Pratinjau surat lamaran
                   </h2>
                 </div>
+                {letterResult && (
+                  <div className="dino-no-print mb-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void deleteLetter()}
+                      disabled={isDeleting || isSaving || aiLoading || isLoadingSaved}
+                      className="dino-button inline-flex items-center gap-2 rounded-xl border border-red-500/25 bg-red-500/5 px-4 py-2.5 text-[13px] font-semibold text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Hapus
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleEditToggle}
+                      disabled={isFormBusy}
+                      className="dino-button inline-flex items-center gap-2 rounded-xl border border-border/70 bg-white/40 px-4 py-2.5 text-[13px] font-semibold backdrop-blur-xl disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5"
+                    >
+                      {isEditingResult ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Pencil className="h-4 w-4" />
+                      )}
+                      {isEditingResult ? "Selesai edit" : "Edit hasil"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void saveDocument()}
+                      disabled={isFormBusy || isEditingResult || !letterResult}
+                      className="dino-button inline-flex items-center gap-2 rounded-xl border border-border/70 bg-white/40 px-4 py-2.5 text-[13px] font-semibold backdrop-blur-xl disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5"
+                    >
+                      <Save className="h-4 w-4" />
+                      {isSaving ? "Menyimpan..." : "Simpan"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handlePrintPDF}
+                      disabled={isFormBusy}
+                      className="dino-gradient dino-button inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white shadow-lg shadow-pink-500/10 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Download className="h-4 w-4" />
+                      Simpan PDF
+                    </button>
+                  </div>
+                )}
                 <div
                   id="dinoedu-surat-preview-shell"
                   className="dino-glass rounded-[32px] p-5 sm:p-7"
@@ -728,9 +978,13 @@ async function handleGenerateAI() {
                   <div
                     id="dinoedu-surat-print"
                     className="min-h-[760px] rounded-2xl bg-white p-8 text-black shadow-xl sm:p-10"
+                    style={{
+                      fontFamily: '"Times New Roman", Times, serif',
+                      fontSize: "12pt",
+                    }}
                   >
                     <div>
-                      <div className="text-right text-[13px] leading-6 text-zinc-700">
+                      <div className="text-right leading-6 text-zinc-700">
                         {new Date().toLocaleDateString("id-ID", {
                           day: "numeric",
                           month: "long",
@@ -755,14 +1009,6 @@ async function handleGenerateAI() {
                               <X className="h-4 w-4" />
                             </button>
                           </div>
-                          <input
-                            value={letterResult.subject}
-                            onChange={(event) =>
-                              updateResultField("subject", event.target.value)
-                            }
-                            className="w-full rounded-xl border border-border/70 bg-white px-3 py-2.5 text-[13px] outline-none focus:border-[#EF629F]/50"
-                            placeholder="Subjek surat"
-                          />
                           <input
                             value={letterResult.greeting}
                             onChange={(event) =>
@@ -827,17 +1073,27 @@ async function handleGenerateAI() {
                           />
                         </div>
                       ) : letterResult ? (
-                        <div className="mt-6 space-y-6 text-[13px] leading-7 text-zinc-800">
-                          <div>
-                            <p className="font-semibold">Subjek: {letterResult.subject}</p>
-                          </div>
+                        <div className="mt-6 space-y-6 leading-[1.5] text-zinc-800">
                           <p>{letterResult.greeting}</p>
-                          <p>{letterResult.opening}</p>
+                          <p
+                            className="text-justify"
+                            style={{ textIndent: "1cm" }}
+                          >
+                            {letterResult.opening}
+                          </p>
                           {letterResult.body.map((paragraph, index) => (
-                            <p key={index}>{paragraph}</p>
+                            <p
+                              key={index}
+                              className="text-justify"
+                              style={{ textIndent: "1cm" }}
+                            >
+                              {paragraph}
+                            </p>
                           ))}
-                          <p>{letterResult.closing}</p>
-                          <div className="pt-3">
+                          <p style={{ textIndent: "1cm" }}>
+                            {letterResult.closing}
+                          </p>
+                          <div className="pt-3 text-right">
                             <p>Hormat saya,</p>
                             <p className="mt-10 font-semibold">
                               {letterResult.signature || name}
@@ -863,42 +1119,6 @@ async function handleGenerateAI() {
                       )}
                     </div>
                   </div>
-                  {letterResult && (
-                    <div className="dino-no-print mt-4 flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        onClick={() => void deleteLetter()}
-                        disabled={isDeleting || isSaving || aiLoading || isLoadingSaved}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/25 bg-red-500/5 px-4 py-3 text-[13px] font-semibold text-red-600 transition disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Hapus
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleEditToggle}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-border/70 px-4 py-3 text-[13px] font-semibold transition hover:border-[#EF629F]/40 hover:text-[#EF629F]"
-                      >
-                        {isEditingResult ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <Pencil className="h-4 w-4" />
-                        )}
-                        {isEditingResult ? "Selesai edit" : "Edit hasil"}
-                      </button>                      <button type="button" onClick={() => void saveDocument()} disabled={isSaving || !letterResult} className="inline-flex items-center justify-center gap-2 rounded-xl border border-border/70 px-4 py-3 text-[13px] font-semibold transition hover:border-[#EF629F]/40 hover:text-[#EF629F] disabled:cursor-not-allowed disabled:opacity-50">
-                        <Save className="h-4 w-4" />
-                        {isSaving ? "Menyimpan..." : "Simpan"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handlePrintPDF}
-                        className="dino-gradient inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-[13px] font-semibold text-white shadow-lg shadow-pink-500/10 transition-all duration-200 dino-button"
-                      >
-                        <Download className="h-4 w-4" />
-                        Simpan PDF
-                      </button>
-                    </div>
-                  )}
                 </div>
                 <div className="dino-no-print mt-4 text-center text-[12px] text-muted-foreground">
                   Periksa isi surat sebelum dikirim ke perusahaan atau instansi
