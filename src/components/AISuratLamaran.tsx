@@ -985,6 +985,9 @@ async function handleGenerateAI() {
                   >
                     <div>
                       <div className="text-right leading-6 text-zinc-700">
+                        {location.split(",")[0]?.trim()
+                          ? `${location.split(",")[0].trim()}, `
+                          : ""}
                         {new Date().toLocaleDateString("id-ID", {
                           day: "numeric",
                           month: "long",

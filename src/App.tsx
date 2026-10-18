@@ -17,6 +17,7 @@ import AICVMaker from "./components/AICVMaker";
 import AISuratLamaran from "./components/AISuratLamaran";
 import AIPembuatSoal from "./components/AIPembuatSoal";
 import AIModulAjar from "./components/AIModulAjar";
+import AIGuruStudio from "./components/AIGuruStudio";
 import {
   ArrowRight,
   LayoutDashboard,
@@ -46,6 +47,8 @@ const APP_ROUTES = [
   "/app/soal",
   "/app/dinomath",
   "/app/modul-ajar",
+  "/app/lkpd",
+  "/app/ppt-pembelajaran",
   "/app/admin/saran-kritik",
 ] as const;
 type AppRoute = (typeof APP_ROUTES)[number];
@@ -83,6 +86,8 @@ function App() {
   const showAISurat = currentRoute === "/app/surat";
   const showAIPembuatSoal = currentRoute === "/app/soal";
   const showAIModulAjar = currentRoute === "/app/modul-ajar";
+  const showAILKPD = currentRoute === "/app/lkpd";
+  const showAIPPTPembelajaran = currentRoute === "/app/ppt-pembelajaran";
   const showDinoMath = currentRoute === "/app/dinomath";
   const showFeedbackAdmin = currentRoute === "/app/admin/saran-kritik";
   const navigateTo = (path: string, replace = false) => {
@@ -514,6 +519,21 @@ useEffect(() => {
     setMobileMenu(false);
     navigateTo("/app/modul-ajar");
   };
+  const openAILKPD = () => {
+    setMobileMenu(false);
+    navigateTo("/app/lkpd");
+  };
+  const openAIPPTPembelajaran = () => {
+    setMobileMenu(false);
+    navigateTo("/app/ppt-pembelajaran");
+  };
+  const openLearningToolOrAuth = (openTool: () => void) => {
+    if (user) {
+      openTool();
+      return;
+    }
+    setShowAuth(true);
+  };
   const closeAIModulAjar = returnToPreviousRoute;
   const closeDinoAI = returnToPreviousRoute;
   const closeAICV = returnToPreviousRoute;
@@ -560,7 +580,7 @@ useEffect(() => {
         <div className="dino-float-slow absolute right-[-120px] top-[180px] h-[360px] w-[360px] rounded-full bg-[#EF629F]/20 blur-3xl" />
         <div className="dino-pulse-soft absolute bottom-[-180px] left-[35%] h-[400px] w-[400px] rounded-full bg-[#EECDA3]/15 blur-3xl" />
       </div>
-      {!((showDashboard || showDinoAI || showAICV || showAISurat || showAIPembuatSoal || showAIModulAjar || showDinoMath || showFeedbackAdmin) && user) && (
+      {!((showDashboard || showDinoAI || showAICV || showAISurat || showAIPembuatSoal || showAIModulAjar || showAILKPD || showAIPPTPembelajaran || showDinoMath || showFeedbackAdmin) && user) && (
         <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
           <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
             <a
@@ -826,6 +846,10 @@ useEffect(() => {
       )}
       {showAIModulAjar && user ? (
         <AIModulAjar onBack={closeAIModulAjar} />
+      ) : showAILKPD && user ? (
+        <AIGuruStudio kind="lkpd" onBack={returnToPreviousRoute} />
+      ) : showAIPPTPembelajaran && user ? (
+        <AIGuruStudio kind="ppt" onBack={returnToPreviousRoute} />
       ) : showAIPembuatSoal && user ? (
         <AIPembuatSoal onBack={closeAIPembuatSoal} />
       ) : showAISurat && user ? (
@@ -871,6 +895,8 @@ useEffect(() => {
           onOpenAISurat={openAISurat}
           onOpenAISoal={openAIPembuatSoal}
           onOpenAIModulAjar={openAIModulAjar}
+          onOpenAILKPD={openAILKPD}
+          onOpenAIPPTPembelajaran={openAIPPTPembelajaran}
           onOpenDinoMath={openDinoMath}
           isAdmin={user.app_metadata?.role === "admin"}
           onOpenFeedbackAdmin={openFeedbackAdmin}
@@ -980,6 +1006,16 @@ useEffect(() => {
                     description: "Bantu menyusun modul ajar secara praktis dan terstruktur untuk mendukung pembelajaran.",
                     icon: BookOpen,
                   },
+                  {
+                    title: "AI LKPD",
+                    description: "Susun lembar kerja peserta didik yang sesuai tujuan dan materi pembelajaran.",
+                    icon: ClipboardList,
+                  },
+                  {
+                    title: "AI PPT Pembelajaran",
+                    description: "Ubah materi pembelajaran menjadi presentasi PowerPoint yang terstruktur.",
+                    icon: Layers3,
+                  },
                 ].map((feature, index) => {
                   const Icon = feature.icon;
                   return (
@@ -997,7 +1033,11 @@ useEffect(() => {
                       </p>
                       <button
                         type="button"
-                        onClick={openDashboardOrAuth}
+                        onClick={() => feature.title === "AI LKPD"
+                          ? openLearningToolOrAuth(openAILKPD)
+                          : feature.title === "AI PPT Pembelajaran"
+                            ? openLearningToolOrAuth(openAIPPTPembelajaran)
+                            : openDashboardOrAuth()}
                         className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#EF629F] transition-all duration-200 hover:gap-3"
                       >
                         Mulai gunakan

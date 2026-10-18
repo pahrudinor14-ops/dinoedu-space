@@ -3,6 +3,7 @@ import {
    ArrowRight,
    BookOpen,
    ClipboardList,
+   Layers3,
   CheckCircle2,
   Coins,
   Gift,
@@ -33,6 +34,8 @@ interface DashboardProps {
    onOpenAISurat: () => void;
    onOpenAISoal: () => void;
    onOpenAIModulAjar: () => void;
+   onOpenAILKPD: () => void;
+   onOpenAIPPTPembelajaran: () => void;
    onOpenDinoMath: () => void;
    isAdmin?: boolean;
    onOpenFeedbackAdmin?: () => void;
@@ -69,6 +72,16 @@ const tools = [
       description: "Bantu menyusun modul ajar secara praktis dan terstruktur",
       icon: BookOpen,
    },
+   {
+      title: "AI LKPD",
+      description: "Susun lembar kerja peserta didik sesuai tujuan pembelajaran",
+      icon: ClipboardList,
+   },
+   {
+      title: "AI PPT Pembelajaran",
+      description: "Ubah materi menjadi presentasi pembelajaran yang terstruktur",
+      icon: Layers3,
+   },
 ];
 export default function Dashboard({
    email,
@@ -82,6 +95,8 @@ export default function Dashboard({
    onOpenAISurat,
    onOpenAISoal,
    onOpenAIModulAjar,
+   onOpenAILKPD,
+   onOpenAIPPTPembelajaran,
    onOpenDinoMath,
    isAdmin = false,
    onOpenFeedbackAdmin,
@@ -224,7 +239,9 @@ export default function Dashboard({
                               tool.title === "AI CV Maker" ||
                               tool.title === "AI Surat Lamaran" ||
                                  tool.title === "AI Pembuat Soal" ||
-                                 tool.title === "AI Modul Ajar" ? (
+                                 tool.title === "AI Modul Ajar" ||
+                                 tool.title === "AI LKPD" ||
+                                 tool.title === "AI PPT Pembelajaran" ? (
                                  <button
                                     type="button"
                                     onClick={
@@ -236,7 +253,11 @@ export default function Dashboard({
                                                 ? onOpenAISurat
                                                 : tool.title === "AI Pembuat Soal"
                                                    ? onOpenAISoal
-                                                   : onOpenAIModulAjar
+                                                   : tool.title === "AI Modul Ajar"
+                                                      ? onOpenAIModulAjar
+                                                      : tool.title === "AI LKPD"
+                                                         ? onOpenAILKPD
+                                                         : onOpenAIPPTPembelajaran
                                     }
                                     className="mt-5 inline-flex items-center gap-2 text-[14px] font-semibold text-[#EF629F] transition-all duration-200 hover:gap-3"
                                  >

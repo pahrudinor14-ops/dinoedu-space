@@ -14,6 +14,9 @@ verify_jwt = true
 [functions.dinoai-soal]
 verify_jwt = true
 
+[functions.dinoai-lkpd]
+verify_jwt = true
+
 [functions.midtrans-create-payment]
 verify_jwt = true
 
