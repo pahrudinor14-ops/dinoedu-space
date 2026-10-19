@@ -180,7 +180,7 @@ function BoxModel({
   return (
     <group>
       <mesh
-        onClick={(event) => {
+        onClick={() => {
           onSelect({
             type: "Sisi",
             name: "Sisi bangun",
@@ -416,7 +416,7 @@ function Polyhedron({
     <group>
       <mesh
         geometry={geometry}
-        onClick={(event) => {
+        onClick={() => {
           onSelect({
             type: "Sisi",
             name: "Sisi bangun",
