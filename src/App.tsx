@@ -1256,13 +1256,13 @@ useEffect(() => {
                       </div>
                     </div>
                     <h3 className="mt-7 text-3xl font-bold tracking-tight sm:text-4xl">Laboratorium Dino</h3>
-                    <p className="mt-2 text-sm font-semibold text-emerald-600 dark:text-emerald-300">Ruang untuk mencoba hal baru</p>
+                    <p className="mt-2 text-sm font-semibold text-emerald-600 dark:text-emerald-300">Matematika interaktif untuk dijelajahi</p>
                     <p className="mt-5 text-[15px] leading-7 text-muted-foreground">
-                      Bersiap menjelajahi ide, eksperimen, dan karya seru di ruang Laboratorium Dino.
+                      Pilih dari enam kategori matematika dan mulai bereksperimen. Materi Bangun ruang sudah tersedia untuk dijelajahi.
                     </p>
                     <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
-                      <li className="flex items-start gap-2"><span className="mt-0.5 shrink-0 text-emerald-500">✦</span><span>Ruang eksplorasi untuk belajar dan berkreasi</span></li>
-                      <li className="flex items-start gap-2"><span className="mt-0.5 shrink-0 text-emerald-500">✦</span><span>Halaman Laboratorium Dino siap dikembangkan</span></li>
+                      <li className="flex items-start gap-2"><span className="mt-0.5 shrink-0 text-emerald-500">✦</span><span>Enam kategori eksplorasi matematika</span></li>
+                      <li className="flex items-start gap-2"><span className="mt-0.5 shrink-0 text-emerald-500">✦</span><span>Model 3D, eksperimen ukuran, dan latihan Bangun ruang</span></li>
                     </ul>
                     <div className="mt-auto pt-8">
                       <button
@@ -1270,10 +1270,10 @@ useEffect(() => {
                         onClick={openDashboardOrAuth}
                         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-500/30 sm:w-auto"
                       >
-                        Lanjut ke Dashboard
+                        Jelajahi Laboratorium
                         <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                       </button>
-                      <p className="mt-3 text-xs leading-5 text-muted-foreground">Masuk ke dashboard terlebih dahulu, lalu buka Laboratorium Dino dari sana.</p>
+                      <p className="mt-3 text-xs leading-5 text-muted-foreground">Masuk ke dashboard, lalu pilih Laboratorium Dino untuk mulai menjelajah.</p>
                     </div>
                   </div>
                 </article>

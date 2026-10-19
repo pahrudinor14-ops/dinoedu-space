@@ -2,10 +2,16 @@ import { useState, type CSSProperties } from "react"
 import Dino3DScene, { type DinoShape, type SelectedPart } from "./Dino3DScene"
 import {
   ArrowLeft,
+  ArrowRight,
+  BarChart3,
   BookOpen,
+  Calculator,
   CheckCircle2,
   CircleHelp,
   Cuboid,
+  Gamepad2,
+  LockKeyhole,
+  PieChart,
   RotateCcw,
   Ruler,
   Shapes,
@@ -30,6 +36,51 @@ const topics: { id: ShapeType; title: string; description: string; level: string
   { id: "squarePyramid", title: "Limas segi empat", description: "Alas persegi, sisi tegak, tinggi, dan volume.", level: "SD/SMP" },
   { id: "triangularPyramid", title: "Limas segitiga", description: "Alas segitiga dan tiga sisi tegak.", level: "SMP" },
 ]
+
+const learningCategories = [
+  {
+    id: "bilangan",
+    title: "Bilangan dan operasi hitung",
+    description: "Jelajahi bilangan, pola berhitung, serta penjumlahan, pengurangan, perkalian, dan pembagian.",
+    Icon: Calculator,
+    available: false,
+  },
+  {
+    id: "pecahan",
+    title: "Pecahan, rasio, dan pengukuran",
+    description: "Bandingkan pecahan dan rasio, lalu kenali satuan serta cara mengukur.",
+    Icon: PieChart,
+    available: false,
+  },
+  {
+    id: "geometri",
+    title: "Geometri dan bangun datar",
+    description: "Pelajari bentuk, sudut, keliling, dan luas pada bangun datar.",
+    Icon: Shapes,
+    available: false,
+  },
+  {
+    id: "bangun-ruang",
+    title: "Bangun ruang",
+    description: "Putar model 3D, ubah ukurannya, lalu pahami volume dan luas permukaan.",
+    Icon: Cuboid,
+    available: true,
+  },
+  {
+    id: "data",
+    title: "Data, pola, dan pemecahan masalah",
+    description: "Baca informasi, temukan pola, dan gunakan strategi untuk menyelesaikan tantangan.",
+    Icon: BarChart3,
+    available: false,
+  },
+  {
+    id: "simulasi",
+    title: "Simulasi, game, dan evaluasi",
+    description: "Latih pemahaman melalui kegiatan interaktif, permainan, dan evaluasi.",
+    Icon: Gamepad2,
+    available: false,
+  },
+] as const
 
 const lessons = [
   { title: "Kenali bentuknya", description: "Amati sisi, rusuk, titik sudut, dan ukuran bangun ruang. Putar objek 3D untuk melihat bentuknya dari berbagai arah." },
@@ -119,6 +170,7 @@ function getQuestion(shape: ShapeType, length: number, width: number, height: nu
 }
 
 export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [shape, setShape] = useState<ShapeType>("cube")
   const [mode, setMode] = useState<Mode>("lab")
   const [length, setLength] = useState(4)
@@ -173,8 +225,8 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
     <div className="min-h-dvh bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border/50 bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
-          <button type="button" onClick={onBack} className="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition hover:bg-muted" aria-label="Kembali ke dashboard">
-            <ArrowLeft className="h-4 w-4" /><span className="hidden sm:inline">Kembali</span>
+          <button type="button" onClick={activeCategory ? () => setActiveCategory(null) : onBack} className="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition hover:bg-muted" aria-label={activeCategory ? "Kembali ke pilihan materi" : "Kembali ke dashboard"}>
+            <ArrowLeft className="h-4 w-4" /><span className="hidden sm:inline">{activeCategory ? "Semua materi" : "Kembali"}</span>
           </button>
           <div className="flex min-w-0 items-center gap-2">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"><Cuboid className="h-5 w-5" /></div>
@@ -183,15 +235,76 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
               <p className="hidden text-xs text-muted-foreground sm:block">Laboratorium visual matematika</p>
             </div>
           </div>
-          <button type="button" onClick={reset} aria-label="Reset laboratorium" className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border px-3 py-2 text-xs font-semibold transition hover:bg-muted sm:text-sm">
-            <RotateCcw className="h-4 w-4" /><span className="hidden sm:inline">Reset</span>
-          </button>
+          {activeCategory === "bangun-ruang" && (
+            <button type="button" onClick={reset} aria-label="Reset laboratorium" className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border px-3 py-2 text-xs font-semibold transition hover:bg-muted sm:text-sm">
+              <RotateCcw className="h-4 w-4" /><span className="hidden sm:inline">Reset</span>
+            </button>
+          )}
         </div>
       </header>
 
       <main className="relative min-h-[calc(100dvh-4rem)] overflow-hidden bg-gradient-to-br from-emerald-50/70 via-background to-cyan-50/70 dark:from-emerald-950/10 dark:to-cyan-950/10">
         <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-emerald-300/10 blur-3xl" />
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-cyan-300/10 blur-3xl" />
+        {activeCategory === null ? (
+          <div className="relative mx-auto max-w-7xl space-y-8 px-4 py-7 sm:px-6 sm:py-10">
+            <section className="relative overflow-hidden rounded-[2rem] border border-emerald-200/70 bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 px-6 py-8 text-white shadow-xl shadow-emerald-950/10 sm:px-10 sm:py-11">
+              <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-16 h-64 w-64 rounded-full border-[28px] border-white/10" />
+              <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 right-1/3 h-48 w-48 rounded-full bg-cyan-200/15 blur-3xl" />
+              <div className="relative max-w-3xl">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-semibold text-emerald-50 backdrop-blur-sm">
+                  <Sparkles className="h-3.5 w-3.5" />Ruang eksplorasi matematika
+                </div>
+                <h2 className="mt-5 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">Pilih petualangan belajarmu</h2>
+                <p className="mt-4 max-w-2xl text-sm leading-6 text-emerald-50/95 sm:text-base sm:leading-7">
+                  Temukan berbagai topik matematika, lalu masuk ke materi untuk belajar dan bereksperimen. Saat ini, materi Bangun ruang sudah siap dijelajahi.
+                </p>
+                <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/15 px-3.5 py-2 text-xs font-semibold text-white sm:text-sm">
+                  <CheckCircle2 className="h-4 w-4 text-cyan-100" />1 dari {learningCategories.length} kategori tersedia
+                </div>
+              </div>
+            </section>
+
+            <section aria-labelledby="kategori-laboratorium" className="space-y-4">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h3 id="kategori-laboratorium" className="text-xl font-bold tracking-tight sm:text-2xl">Jelajahi kategori</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">Pilih kategori untuk melihat materi yang tersedia.</p>
+                </div>
+                <span className="rounded-full bg-background/80 px-3 py-1.5 text-xs font-medium text-muted-foreground">{learningCategories.length} kategori</span>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {learningCategories.map(({ id, title, description, Icon, available }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    disabled={!available}
+                    onClick={() => setActiveCategory(id)}
+                    className={"group relative flex min-h-52 flex-col items-start rounded-2xl border bg-background/80 p-5 text-left shadow-sm transition sm:p-6 " + (available
+                      ? "border-emerald-300/80 shadow-emerald-950/5 hover:-translate-y-1 hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-950/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                      : "cursor-not-allowed border-border/70 opacity-75")}
+                    aria-label={title + (available ? ", buka materi" : ", segera hadir")}
+                  >
+                    <div className="flex w-full items-start justify-between gap-3">
+                      <div className={"flex h-12 w-12 items-center justify-center rounded-2xl " + (available ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground")}>
+                        <Icon className="h-6 w-6" />
+                      </div>
+                      <span className={"inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold " + (available ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground")}>
+                        {available ? <><CheckCircle2 className="h-3.5 w-3.5" />Tersedia</> : <><LockKeyhole className="h-3 w-3" />Segera hadir</>}
+                      </span>
+                    </div>
+                    <h4 className="mt-5 text-base font-bold leading-6">{title}</h4>
+                    <p className="mt-2 flex-1 text-sm leading-6 text-muted-foreground">{description}</p>
+                    {available && <span className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-emerald-700 dark:text-emerald-300">Buka materi<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></span>}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <footer className="pt-2 text-center text-xs text-muted-foreground">Laboratorium Dino - Pilih kategori untuk mulai menjelajahi matematika.</footer>
+          </div>
+        ) : (
         <div className="relative mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
           <section className="space-y-3">
             <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300"><Sparkles className="h-3.5 w-3.5" />Belajar matematika dengan cara baru</div>
@@ -350,6 +463,7 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
 
           <footer className="py-5 text-center text-xs text-muted-foreground">Laboratorium Dino - Jelajahi, eksperimen, dan pahami matematika.</footer>
         </div>
+        )}
       </main>
     </div>
   )

@@ -404,10 +404,11 @@ export default function Dashboard({
                            Matematika Visual untuk SD
                         </div>
                         <h2 className="mt-4 max-w-2xl text-2xl font-bold tracking-normal sm:text-5xl">
-                           Matematika jadi terlihat dan terasa
+                           <span className="block">Matematika jadi terlihat</span>
+                           <span className="block">dan terasa seru</span>
                         </h2>
                         <p className="mt-4 max-w-xl text-base leading-7 text-emerald-50/95 sm:text-lg">
-                           Jelajahi bangun datar, bangun ruang, pecahan, dan numerasi lewat visual interaktif yang dekat dengan dunia anak sekolah dasar.
+                           Pilih dari enam kategori matematika dan mulai bereksperimen. Materi Bangun ruang tersedia sekarang; kategori lainnya akan menyusul.
                         </p>
                         <button
                            type="button"
@@ -415,7 +416,7 @@ export default function Dashboard({
                            className="mt-7 inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-emerald-800 shadow-lg shadow-emerald-950/15 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-emerald-600"
                         >
                            <Shapes className="h-5 w-5" />
-                           Buka Laboratorium
+                           Jelajahi Laboratorium
                            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                         </button>
                      </div>
