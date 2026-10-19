@@ -1,6 +1,6 @@
 
-import { useEffect, useMemo, useState } from "react"
-import { Canvas, useThree } from "@react-three/fiber"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { OrbitControls } from "@react-three/drei"
 import * as THREE from "three"
 
@@ -26,6 +26,8 @@ interface Dino3DSceneProps {
   width: number
   height: number
   radius: number
+  showHiddenEdges: boolean
+  onToggleHiddenEdges: () => void
   onSelectPart?: (part: SelectedPart | null) => void
 }
 
@@ -82,6 +84,9 @@ function Edge({
     <mesh
       position={midpoint}
       quaternion={quaternion}
+      renderOrder={2}
+      onPointerOver={() => { document.body.style.cursor = "pointer" }}
+      onPointerOut={() => { document.body.style.cursor = "" }}
       onClick={(event) => {
         event.stopPropagation()
         onSelect({
@@ -97,43 +102,85 @@ function Edge({
   )
 }
 
+function HiddenEdge({
+  start,
+  end,
+  onSelect,
+}: {
+  start: THREE.Vector3
+  end: THREE.Vector3
+  onSelect: (part: SelectedPart) => void
+}) {
+  const direction = new THREE.Vector3().subVectors(end, start)
+  const dashCount = Math.max(4, Math.floor(direction.length() * 1.2))
+  const dashLength = 0.52 / dashCount
+
+  return (
+    <group>
+      {Array.from({ length: dashCount }, (_, index) => {
+        const startT = index / dashCount
+        const endT = startT + dashLength
+        const dashStart = start.clone().lerp(end, startT)
+        const dashEnd = start.clone().lerp(end, endT)
+        const dashDirection = new THREE.Vector3().subVectors(dashEnd, dashStart)
+        const midpoint = new THREE.Vector3().addVectors(dashStart, dashEnd).multiplyScalar(0.5)
+        const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dashDirection.clone().normalize())
+
+        const selectEdge = (event: { stopPropagation: () => void }) => {
+          event.stopPropagation()
+          onSelect({
+            type: "Rusuk",
+            name: "Rusuk tersembunyi",
+            detail: `Rusuk ini berada di sisi belakang bangun. Garis putus-putus menandai rusuk tersembunyi; panjangnya sekitar ${direction.length().toFixed(2)} satuan.`,
+          })
+        }
+
+        return (
+          <group key={index} position={midpoint} quaternion={quaternion}>
+            <mesh
+              onPointerOver={() => { document.body.style.cursor = "pointer" }}
+              onPointerOut={() => { document.body.style.cursor = "" }}
+              onClick={selectEdge}
+            >
+              <cylinderGeometry args={[0.1, 0.1, dashDirection.length(), 8]} />
+              <meshBasicMaterial color="#64748b" transparent opacity={0} depthTest={false} depthWrite={false} />
+            </mesh>
+            <mesh renderOrder={1}>
+              <cylinderGeometry args={[0.026, 0.026, dashDirection.length(), 8]} />
+              <meshStandardMaterial color="#64748b" transparent opacity={0.94} depthTest={false} depthWrite={false} />
+            </mesh>
+          </group>
+        )
+      })}
+    </group>
+  )
+}
+
 function BoxModel({
   length,
   width,
   height,
+  showHiddenEdges,
   onSelect,
 }: {
   length: number
   width: number
   height: number
+  showHiddenEdges: boolean
   onSelect: (part: SelectedPart) => void
 }) {
-  const x = length / 2
-  const y = height / 2
-  const z = width / 2
-
-  const vertices = [
-    new THREE.Vector3(-x, -y, -z),
-    new THREE.Vector3(x, -y, -z),
-    new THREE.Vector3(x, y, -z),
-    new THREE.Vector3(-x, y, -z),
-    new THREE.Vector3(-x, -y, z),
-    new THREE.Vector3(x, -y, z),
-    new THREE.Vector3(x, y, z),
-    new THREE.Vector3(-x, y, z),
-  ]
-
-  const edges: [number, number][] = [
-    [0, 1], [1, 2], [2, 3], [3, 0],
-    [4, 5], [5, 6], [6, 7], [7, 4],
-    [0, 4], [1, 5], [2, 6], [3, 7],
-  ]
+  const geometry = useMemo(() => {
+    const indexedGeometry = new THREE.BoxGeometry(length, height, width)
+    const nonIndexedGeometry = indexedGeometry.toNonIndexed()
+    indexedGeometry.dispose()
+    return nonIndexedGeometry
+  }, [length, height, width])
+  useEffect(() => () => geometry.dispose(), [geometry])
 
   return (
     <group>
       <mesh
         onClick={(event) => {
-          event.stopPropagation()
           onSelect({
             type: "Sisi",
             name: "Sisi bangun",
@@ -142,23 +189,10 @@ function BoxModel({
         }}
       >
         <boxGeometry args={[length, height, width]} />
-        <meshStandardMaterial {...material} transparent opacity={0.78} />
+        <meshStandardMaterial {...material} transparent={!showHiddenEdges} opacity={showHiddenEdges ? 1 : 0.78} />
       </mesh>
 
-      {edges.map(([a, b], index) => (
-        <Edge key={index} start={vertices[a]} end={vertices[b]} onSelect={onSelect} />
-      ))}
-
-      {vertices.map((vertex, index) => (
-        <PartMarker
-          key={index}
-          position={[vertex.x, vertex.y, vertex.z]}
-          type="Titik sudut"
-          name={`Titik sudut ${index + 1}`}
-          detail="Titik sudut adalah pertemuan beberapa rusuk."
-          onSelect={onSelect}
-        />
-      ))}
+      <Edges geometry={geometry} onSelect={onSelect} showHiddenEdges={showHiddenEdges} />
     </group>
   )
 }
@@ -366,12 +400,14 @@ function Polyhedron({
   length,
   width,
   height,
+  showHiddenEdges,
   onSelect,
 }: {
   shape: "triangularPrism" | "squarePyramid" | "triangularPyramid"
   length: number
   width: number
   height: number
+  showHiddenEdges: boolean
   onSelect: (part: SelectedPart) => void
 }) {
   const geometry = useMemoGeometry(shape, length, width, height)
@@ -381,7 +417,6 @@ function Polyhedron({
       <mesh
         geometry={geometry}
         onClick={(event) => {
-          event.stopPropagation()
           onSelect({
             type: "Sisi",
             name: "Sisi bangun",
@@ -392,13 +427,13 @@ function Polyhedron({
         <meshStandardMaterial
           color="#22c5a5"
           roughness={0.4}
-          transparent
-          opacity={0.8}
+          transparent={!showHiddenEdges}
+          opacity={showHiddenEdges ? 1 : 0.8}
           side={THREE.DoubleSide}
           flatShading
         />
       </mesh>
-      <Edges geometry={geometry} onSelect={onSelect} />
+      <Edges geometry={geometry} onSelect={onSelect} showHiddenEdges={showHiddenEdges} />
     </group>
   )
 }
@@ -475,10 +510,15 @@ function useMemoGeometry(
 function Edges({
   geometry,
   onSelect,
+  showHiddenEdges,
 }: {
   geometry: THREE.BufferGeometry
   onSelect: (part: SelectedPart) => void
+  showHiddenEdges: boolean
 }) {
+  const solidEdgeRefs = useRef<(THREE.Group | null)[]>([])
+  const hiddenEdgeRefs = useRef<(THREE.Group | null)[]>([])
+  const { camera } = useThree()
   const points = geometry.getAttribute("position")
   const unique = new Map<string, THREE.Vector3>()
   const edgeFaces = new Map<string, { start: THREE.Vector3; end: THREE.Vector3; normals: THREE.Vector3[] }>()
@@ -493,7 +533,7 @@ function Edges({
   }
 
   const vertices = [...unique.values()]
-  const edges: [THREE.Vector3, THREE.Vector3][] = []
+  const edges: { start: THREE.Vector3; end: THREE.Vector3; normals: THREE.Vector3[] }[] = []
 
   for (let i = 0; i < points.count; i += 3) {
     const face = [0, 1, 2].map((offset) => new THREE.Vector3(
@@ -502,8 +542,10 @@ function Edges({
       points.getZ(i + offset),
     ))
     const normal = new THREE.Vector3()
-      .subVectors(face[1].clone().sub(face[0]), face[2].clone().sub(face[0]))
+      .crossVectors(face[1].clone().sub(face[0]), face[2].clone().sub(face[0]))
       .normalize()
+    const faceCenter = face[0].clone().add(face[1]).add(face[2]).multiplyScalar(1 / 3)
+    if (normal.dot(faceCenter) < 0) normal.negate()
 
     for (const [start, end] of [[face[0], face[1]], [face[1], face[2]], [face[2], face[0]]] as [THREE.Vector3, THREE.Vector3][]) {
       const startKey = `${start.x.toFixed(3)},${start.y.toFixed(3)},${start.z.toFixed(3)}`
@@ -517,13 +559,32 @@ function Edges({
 
   for (const edge of edgeFaces.values()) {
     const isVisibleEdge = edge.normals.length === 1 || edge.normals.some((normal) => edge.normals[0].angleTo(normal) > THREE.MathUtils.degToRad(1))
-    if (isVisibleEdge) edges.push([edge.start, edge.end])
+    if (isVisibleEdge) edges.push(edge)
   }
+
+  useFrame(() => {
+    edges.forEach((edge, index) => {
+      const midpoint = edge.start.clone().add(edge.end).multiplyScalar(0.5)
+      const directionToCamera = camera.position.clone().sub(midpoint).normalize()
+      const isFacingCamera = edge.normals.some((normal) => normal.dot(directionToCamera) > 0.001)
+      const solidGroup = solidEdgeRefs.current[index]
+      const hiddenGroup = hiddenEdgeRefs.current[index]
+      if (solidGroup) solidGroup.visible = !showHiddenEdges || isFacingCamera
+      if (hiddenGroup) hiddenGroup.visible = showHiddenEdges && !isFacingCamera
+    })
+  })
 
   return (
     <group>
-      {edges.map(([a, b], index) => (
-        <Edge key={index} start={a} end={b} onSelect={onSelect} />
+      {edges.map((edge, index) => (
+        <group key={index} ref={(element) => { solidEdgeRefs.current[index] = element }}>
+          <Edge start={edge.start} end={edge.end} onSelect={onSelect} />
+        </group>
+      ))}
+      {showHiddenEdges && edges.map((edge, index) => (
+        <group key={`hidden-${index}`} ref={(element) => { hiddenEdgeRefs.current[index] = element }}>
+          <HiddenEdge start={edge.start} end={edge.end} onSelect={onSelect} />
+        </group>
       ))}
       {vertices.map((v, index) => (
         <PartMarker
@@ -539,7 +600,7 @@ function Edges({
   )
 }
 
-function getShapeBounds({ shape, length, width, height, radius }: Dino3DSceneProps) {
+function getShapeBounds({ shape, length, width, height, radius }: Pick<Dino3DSceneProps, "shape" | "length" | "width" | "height" | "radius">) {
   if (shape === "cube") return [length, length, length] as const
   if (shape === "cuboid") return [length, height, width] as const
   if (shape === "cylinder" || shape === "cone") return [radius * 2, height, radius * 2] as const
@@ -574,6 +635,7 @@ function SceneContent({
   width,
   height,
   radius,
+  showHiddenEdges,
   dark,
   onSelect,
 }: Dino3DSceneProps & { dark: boolean; onSelect: (part: SelectedPart) => void }) {
@@ -597,10 +659,10 @@ function SceneContent({
       />
 
       {shape === "cube" && (
-        <BoxModel length={length} width={length} height={length} onSelect={onSelect} />
+        <BoxModel length={length} width={length} height={length} showHiddenEdges={showHiddenEdges} onSelect={onSelect} />
       )}
       {shape === "cuboid" && (
-        <BoxModel length={length} width={width} height={height} onSelect={onSelect} />
+        <BoxModel length={length} width={width} height={height} showHiddenEdges={showHiddenEdges} onSelect={onSelect} />
       )}
       {shape === "cylinder" && (
         <CylinderModel radius={radius} height={height} onSelect={onSelect} />
@@ -619,6 +681,7 @@ function SceneContent({
           length={length}
           width={width}
           height={height}
+          showHiddenEdges={showHiddenEdges}
           onSelect={onSelect}
         />
       )}
@@ -636,6 +699,11 @@ function SceneContent({
 
 export default function Dino3DScene(props: Dino3DSceneProps) {
   const [dark, setDark] = useState(false)
+  const supportsHiddenEdges = props.shape === "cube"
+    || props.shape === "cuboid"
+    || props.shape === "triangularPrism"
+    || props.shape === "squarePyramid"
+    || props.shape === "triangularPyramid"
 
   useEffect(() => {
     const root = document.documentElement
@@ -651,6 +719,20 @@ export default function Dino3DScene(props: Dino3DSceneProps) {
 
   return (
     <div className="relative w-full overflow-hidden">
+      <div className="pointer-events-none absolute right-3 top-3 z-10 flex max-w-[min(18rem,calc(100%-1.5rem))] flex-col items-end gap-1.5 sm:right-4 sm:top-4">
+        <button
+          type="button"
+          disabled={!supportsHiddenEdges}
+          onClick={props.onToggleHiddenEdges}
+          aria-pressed={supportsHiddenEdges && props.showHiddenEdges}
+          className="pointer-events-auto rounded-xl border border-border/70 bg-background/90 px-3 py-2 text-xs font-semibold text-foreground shadow-md backdrop-blur transition hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {supportsHiddenEdges
+            ? `Rusuk tersembunyi ${props.showHiddenEdges ? "aktif" : "nonaktif"}`
+            : "Tidak ada rusuk tersembunyi"}
+        </button>
+        {supportsHiddenEdges && props.showHiddenEdges && <span className="rounded-lg bg-background/85 px-2 py-1 text-[10px] text-muted-foreground shadow-sm">Klik garis putus-putus untuk detail</span>}
+      </div>
       <div className="h-[min(68vh,44rem)] min-h-[22rem] w-full sm:min-h-[26rem]">
         <Canvas
           dpr={[1, 1.75]}

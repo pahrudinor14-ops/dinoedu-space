@@ -1,5 +1,6 @@
-import { useState, type CSSProperties } from "react"
+import { useState } from "react"
 import Dino3DScene, { type DinoShape, type SelectedPart } from "./Dino3DScene"
+import BangunDatarInteraktif from "./BangunDatarInteraktif"
 import {
   ArrowLeft,
   ArrowRight,
@@ -55,9 +56,9 @@ const learningCategories = [
   {
     id: "geometri",
     title: "Geometri dan bangun datar",
-    description: "Pelajari bentuk, sudut, keliling, dan luas pada bangun datar.",
+    description: "Kenali 12 bangun datar, ubah ukurannya, lalu amati luas dan kelilingnya.",
     Icon: Shapes,
-    available: false,
+    available: true,
   },
   {
     id: "bangun-ruang",
@@ -81,6 +82,8 @@ const learningCategories = [
     available: false,
   },
 ] as const
+
+const availableLearningCategories = learningCategories.filter((category) => category.available).length
 
 const lessons = [
   { title: "Kenali bentuknya", description: "Amati sisi, rusuk, titik sudut, dan ukuran bangun ruang. Putar objek 3D untuk melihat bentuknya dari berbagai arah." },
@@ -172,7 +175,7 @@ function getQuestion(shape: ShapeType, length: number, width: number, height: nu
 export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [shape, setShape] = useState<ShapeType>("cube")
-  const [mode, setMode] = useState<Mode>("lab")
+  const [mode, setMode] = useState<Mode>("learn")
   const [length, setLength] = useState(4)
   const [width, setWidth] = useState(3)
   const [height, setHeight] = useState(5)
@@ -181,6 +184,7 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
   const [answer, setAnswer] = useState<number | null>(null)
   const [checked, setChecked] = useState(false)
   const [selectedPart, setSelectedPart] = useState<SelectedPart | null>(null)
+  const [showHiddenEdges, setShowHiddenEdges] = useState(true)
 
   const metrics = getMetrics(shape, length, width, height, radius)
   const currentTopic = topics.find((topic) => topic.id === shape)!
@@ -199,13 +203,14 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
 
   const reset = () => {
     setShape("cube")
-    setMode("lab")
+    setMode("learn")
     setLength(4)
     setWidth(3)
     setHeight(5)
     setRadius(3)
     setLessonStep(0)
     setSelectedPart(null)
+    setShowHiddenEdges(true)
     clearAnswer()
   }
 
@@ -257,10 +262,10 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
                 </div>
                 <h2 className="mt-5 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">Pilih petualangan belajarmu</h2>
                 <p className="mt-4 max-w-2xl text-sm leading-6 text-emerald-50/95 sm:text-base sm:leading-7">
-                  Temukan berbagai topik matematika, lalu masuk ke materi untuk belajar dan bereksperimen. Saat ini, materi Bangun ruang sudah siap dijelajahi.
+                  Temukan berbagai topik matematika, lalu masuk ke materi untuk belajar dan bereksperimen. Materi Bangun datar dan Bangun ruang sudah siap dijelajahi.
                 </p>
                 <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/15 px-3.5 py-2 text-xs font-semibold text-white sm:text-sm">
-                  <CheckCircle2 className="h-4 w-4 text-cyan-100" />1 dari {learningCategories.length} kategori tersedia
+                  <CheckCircle2 className="h-4 w-4 text-cyan-100" />{availableLearningCategories} dari {learningCategories.length} kategori tersedia
                 </div>
               </div>
             </section>
@@ -304,39 +309,73 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
 
             <footer className="pt-2 text-center text-xs text-muted-foreground">Laboratorium Dino - Pilih kategori untuk mulai menjelajahi matematika.</footer>
           </div>
+        ) : activeCategory === "geometri" ? (
+          <BangunDatarInteraktif />
         ) : (
         <div className="relative mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
-          <section className="space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300"><Sparkles className="h-3.5 w-3.5" />Belajar matematika dengan cara baru</div>
-            <h2 className="max-w-3xl text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
-              Jangan hanya <span className="text-emerald-600 dark:text-emerald-400">membayangkan.</span> Jelajahi!
-            </h2>
-            <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-              Eksplorasi bangun ruang, ubah ukurannya, pahami rumusnya, dan temukan bagaimana matematika bekerja melalui eksperimen.
-            </p>
+          <section className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Materi matematika</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Bangun ruang</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Pilih bentuk, pelajari bagian-bagiannya, lalu amati rumus dan ukurannya.</p>
+            </div>
+            <div aria-label="Pilih mode belajar" className="inline-flex rounded-xl bg-muted/70 p-1">
+              <button type="button" onClick={() => setMode("learn")} aria-pressed={mode === "learn"} className={"inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition sm:px-4 " + (mode === "learn" ? "bg-background text-emerald-700 shadow-sm dark:text-emerald-300" : "text-muted-foreground hover:text-foreground")}>
+                <BookOpen className="h-4 w-4" />Mode Belajar
+              </button>
+              <button type="button" onClick={() => setMode("lab")} aria-pressed={mode === "lab"} className={"inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition sm:px-4 " + (mode === "lab" ? "bg-background text-emerald-700 shadow-sm dark:text-emerald-300" : "text-muted-foreground hover:text-foreground")}>
+                <Shapes className="h-4 w-4" />Laboratorium
+              </button>
+            </div>
           </section>
 
-          <section aria-label="Pilih mode belajar" className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => setMode("lab")} aria-pressed={mode === "lab"} className={"inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition " + (mode === "lab" ? "bg-emerald-600 text-white shadow-sm" : "bg-background/80 hover:bg-muted")}>
-              <Shapes className="h-4 w-4" />Laboratorium
-            </button>
-            <button type="button" onClick={() => setMode("learn")} aria-pressed={mode === "learn"} className={"inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition " + (mode === "learn" ? "bg-emerald-600 text-white shadow-sm" : "bg-background/80 hover:bg-muted")}>
-              <BookOpen className="h-4 w-4" />Mode Belajar
-            </button>
+          <section aria-labelledby="pilih-bangun" className="space-y-3">
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 id="pilih-bangun" className="text-sm font-bold">Pilih bangun ruang</h3>
+              <span className="text-xs text-muted-foreground">{topics.length} bentuk</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {topics.map((topic) => {
+                const active = topic.id === shape
+                return (
+                  <button type="button" key={topic.id} onClick={() => updateShape(topic.id)} aria-pressed={active} className={"flex min-h-14 items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 " + (active ? "bg-emerald-500/10 text-emerald-800 ring-1 ring-emerald-500/30 dark:text-emerald-200" : "bg-background/70 hover:bg-muted")}>
+                    <span className={"flex h-8 w-8 shrink-0 items-center justify-center rounded-lg " + (active ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground")}>
+                      {topic.id === "cylinder" || topic.id === "cone" || topic.id === "sphere" ? <CircleHelp className="h-4 w-4" /> : <Cuboid className="h-4 w-4" />}
+                    </span>
+                    <span className="min-w-0 flex-1 text-xs font-semibold leading-4 sm:text-sm">{topic.title}</span>
+                    {active && <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />}
+                  </button>
+                )
+              })}
+            </div>
           </section>
 
           <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_350px]">
             <section className="min-w-0 space-y-5">
+              {mode === "learn" && (
+                <div className="rounded-2xl bg-emerald-500/5 p-4 sm:p-5">
+                  <div className="mb-4 flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"><BookOpen className="h-5 w-5" /></div>
+                    <div><h3 className="font-bold">Pembelajaran terpandu</h3><p className="text-xs text-muted-foreground">Langkah {lessonStep + 1} dari {lessons.length}</p></div>
+                  </div>
+                  <div className="mb-5 space-y-2"><h4 className="font-semibold">{lessons[lessonStep].title}</h4><p className="text-sm leading-6 text-muted-foreground">{lessons[lessonStep].description}</p></div>
+                  <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: String(((lessonStep + 1) / lessons.length) * 100) + "%" }} /></div>
+                  <div className="flex justify-between gap-3">
+                    <button type="button" disabled={lessonStep === 0} onClick={() => setLessonStep((current) => current - 1)} className="rounded-xl px-4 py-2 text-sm font-semibold transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40">Sebelumnya</button>
+                    <button type="button" disabled={lessonStep === lessons.length - 1} onClick={() => setLessonStep((current) => current + 1)} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">Berikutnya</button>
+                  </div>
+                </div>
+              )}
               <div className="overflow-hidden rounded-3xl bg-background/55 shadow-xl shadow-emerald-950/5 dark:bg-background/35 dark:shadow-black/10">
                 <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
                   <div>
                     <h3 className="text-lg font-bold">{currentTopic.title}</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">{currentTopic.level} - Bangun ruang</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">{currentTopic.description}</p>
                   </div>
-                  <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">Eksperimen aktif</span>
+                  <span className="shrink-0 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">{mode === "learn" ? "Mode belajar" : "Eksperimen aktif"}</span>
                 </div>
                 <div className="relative overflow-hidden bg-gradient-to-br from-emerald-100/65 via-emerald-50/45 to-cyan-100/60 dark:from-emerald-950/20 dark:via-[#0d1917] dark:to-cyan-950/20">
-                  <Dino3DScene shape={shape} length={length} width={width} height={height} radius={radius} onSelectPart={setSelectedPart} />
+                  <Dino3DScene shape={shape} length={length} width={width} height={height} radius={radius} showHiddenEdges={showHiddenEdges} onToggleHiddenEdges={() => setShowHiddenEdges((current) => !current)} onSelectPart={setSelectedPart} />
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs text-muted-foreground sm:px-6">
                   <span><Ruler className="mr-1 inline h-3.5 w-3.5" />Dimensi dalam satuan</span>
@@ -379,50 +418,9 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
                 </div>
               </div>
 
-              {mode === "learn" && (
-                <div className="rounded-2xl bg-emerald-500/5 p-4 sm:p-5">
-                  <div className="mb-4 flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"><BookOpen className="h-5 w-5" /></div>
-                    <div><h3 className="font-bold">Pembelajaran terpandu</h3><p className="text-xs text-muted-foreground">Langkah {lessonStep + 1} dari {lessons.length}</p></div>
-                  </div>
-                  <div className="mb-5 space-y-2"><h4 className="font-semibold">{lessons[lessonStep].title}</h4><p className="text-sm leading-6 text-muted-foreground">{lessons[lessonStep].description}</p></div>
-                  <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: String(((lessonStep + 1) / lessons.length) * 100) + "%" }} /></div>
-                  <div className="flex justify-between gap-3">
-                    <button type="button" disabled={lessonStep === 0} onClick={() => setLessonStep((current) => current - 1)} className="rounded-xl px-4 py-2 text-sm font-semibold transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40">Sebelumnya</button>
-                    <button type="button" disabled={lessonStep === lessons.length - 1} onClick={() => setLessonStep((current) => current + 1)} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">Berikutnya</button>
-                  </div>
-                </div>
-              )}
             </section>
 
             <aside className="min-w-0 space-y-5 lg:sticky lg:top-20 lg:self-start">
-              <section className="rounded-2xl bg-background/70 p-4 shadow-sm sm:p-5">
-                <h3 className="mb-4 font-bold">Pilih objek</h3>
-                <div
-                  className="max-h-[min(55dvh,30rem)] space-y-2 overflow-y-auto overscroll-y-contain pr-1 touch-pan-y [scrollbar-gutter:stable]"
-                  style={{
-                    "--scrollbar-thumb": "rgba(16, 185, 129, 0.48)",
-                    "--scrollbar-thumb-hover": "rgba(16, 185, 129, 0.78)",
-                  } as CSSProperties}
-                >
-                  {topics.map((topic) => {
-                    const active = topic.id === shape
-                    return (
-                      <button type="button" key={topic.id} onClick={() => updateShape(topic.id)} aria-pressed={active} className={"flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition " + (active ? "bg-emerald-500/10 ring-1 ring-emerald-500/20" : "hover:bg-muted/60")}>
-                        <div className={"flex h-10 w-10 shrink-0 items-center justify-center rounded-xl " + (active ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300" : "bg-muted text-muted-foreground")}>
-                          {topic.id === "cylinder" || topic.id === "cone" || topic.id === "sphere" ? <CircleHelp className="h-5 w-5" /> : <Cuboid className="h-5 w-5" />}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-semibold">{topic.title}</span>{active && <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}</div>
-                          <p className="mt-1 text-xs leading-5 text-muted-foreground">{topic.description}</p>
-                          <p className="mt-2 text-[11px] font-medium text-muted-foreground">{topic.level}</p>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              </section>
-
               <section className="rounded-2xl bg-background/70 p-4 shadow-sm sm:p-5">
                 <div className="mb-4 flex items-center gap-2"><Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" /><h3 className="font-bold">Hasil eksperimen</h3></div>
                 <div className="grid grid-cols-2 gap-3">
