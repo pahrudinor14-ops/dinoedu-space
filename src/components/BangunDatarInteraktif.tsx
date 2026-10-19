@@ -377,6 +377,7 @@ function fitDimensionsToShape(shape: PlaneShape, dimensions: Dimensions): Dimens
 }
 
 export default function BangunDatarInteraktif() {
+  const [mode, setMode] = useState<"learn" | "lab">("learn")
   const [selectedId, setSelectedId] = useState<ShapeId>("square")
   const [dimensions, setDimensions] = useState<Dimensions>(INITIAL_DIMENSIONS)
   const [showGrid, setShowGrid] = useState(true)
@@ -433,15 +434,37 @@ export default function BangunDatarInteraktif() {
   return (
     <div className="relative mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
       <section className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300"><Shapes className="h-3.5 w-3.5" />Geometri · 12 bentuk interaktif</div>
           <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">Bangun datar</h2>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">Bangun datar adalah bentuk dua dimensi dengan panjang dan lebar. Poligon memiliki sisi lurus; lingkaran memiliki garis tepi lengkung. Pilih bentuk lalu geser ukurannya untuk melihat perubahan luas dan keliling.</p>
         </div>
-        <button type="button" onClick={() => { setDimensions(fitDimensionsToShape(selectedShape, INITIAL_DIMENSIONS)); resetQuiz() }} className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/70 px-3.5 py-2.5 text-sm font-semibold transition hover:bg-muted">
-          <RotateCcw className="h-4 w-4" />Atur ulang ukuran
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <div role="group" aria-label="Pilih mode materi bangun datar" className="inline-flex rounded-full border border-border/70 bg-muted/70 p-1">
+            <button type="button" onClick={() => setMode("learn")} aria-pressed={mode === "learn"} className={"inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm " + (mode === "learn" ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700" : "text-muted-foreground hover:bg-background/80 hover:text-foreground")}>
+              <BookOpen className="h-4 w-4" />Mode Belajar
+            </button>
+            <button type="button" onClick={() => setMode("lab")} aria-pressed={mode === "lab"} className={"inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm " + (mode === "lab" ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700" : "text-muted-foreground hover:bg-background/80 hover:text-foreground")}>
+              <Shapes className="h-4 w-4" />Laboratorium
+            </button>
+          </div>
+          <button type="button" onClick={() => { setDimensions(fitDimensionsToShape(selectedShape, INITIAL_DIMENSIONS)); resetQuiz() }} className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/70 px-3.5 py-2.5 text-sm font-semibold transition hover:bg-muted">
+            <RotateCcw className="h-4 w-4" /><span className="hidden sm:inline">Atur ulang ukuran</span><span className="sm:hidden">Reset</span>
+          </button>
+        </div>
       </section>
+
+      {mode === "learn" && (
+        <section className="rounded-2xl bg-emerald-500/5 p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"><BookOpen className="h-5 w-5" /></div>
+            <div>
+              <h3 className="font-bold">Pembelajaran terpandu</h3>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">Mulai dengan mengamati sifat {selectedShape.name.toLowerCase()} dan garis simetrinya. Geser ukuran atau putar bentuk, lalu periksa bagaimana luas dan kelilingnya dihitung.</p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section aria-labelledby="pilih-bangun-datar" className="space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
