@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { BookOpen, CheckCircle2, RotateCcw, Ruler, Shapes, Sparkles } from "lucide-react"
+import { useEffect, useState } from "react"
+import { BookOpen, CheckCircle2, Ruler, Shapes, Sparkles } from "lucide-react"
 
 type ShapeId =
   | "square"
@@ -376,7 +376,7 @@ function fitDimensionsToShape(shape: PlaneShape, dimensions: Dimensions): Dimens
   return fitted
 }
 
-export default function BangunDatarInteraktif() {
+export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: number }) {
   const [mode, setMode] = useState<"learn" | "lab">("learn")
   const [selectedId, setSelectedId] = useState<ShapeId>("square")
   const [dimensions, setDimensions] = useState<Dimensions>(INITIAL_DIMENSIONS)
@@ -387,6 +387,13 @@ export default function BangunDatarInteraktif() {
   const [rotationAngle, setRotationAngle] = useState(0)
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null)
   const [quizChecked, setQuizChecked] = useState(false)
+
+  useEffect(() => {
+    if (resetSignal === 0) return
+    setDimensions(INITIAL_DIMENSIONS)
+    setQuizAnswer(null)
+    setQuizChecked(false)
+  }, [resetSignal])
 
   const selectedShape = planeShapes.find((shape) => shape.id === selectedId)!
   const stats = getStats(selectedId, dimensions)
@@ -448,9 +455,6 @@ export default function BangunDatarInteraktif() {
               <Shapes className="h-4 w-4" />Laboratorium
             </button>
           </div>
-          <button type="button" onClick={() => { setDimensions(fitDimensionsToShape(selectedShape, INITIAL_DIMENSIONS)); resetQuiz() }} className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/70 px-3.5 py-2.5 text-sm font-semibold transition hover:bg-muted">
-            <RotateCcw className="h-4 w-4" /><span className="hidden sm:inline">Atur ulang ukuran</span><span className="sm:hidden">Reset</span>
-          </button>
         </div>
       </section>
 
