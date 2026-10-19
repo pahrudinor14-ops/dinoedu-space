@@ -243,6 +243,35 @@ img[src="/numeaedu.PNG"] {
     font-family: var(--font-sans-family);
     font-size: 17px;
   }
+  .dino-themed-select {
+    color-scheme: light;
+  }
+  .dark .dino-themed-select,
+  html.dark .dino-themed-select {
+    color-scheme: dark;
+  }
+  .dino-themed-select option {
+    background-color: #ffffff !important;
+    color: #2b2729 !important;
+    -webkit-text-fill-color: #2b2729 !important;
+  }
+  .dino-themed-select option:checked {
+    background-color: #ef629f !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+  .dark .dino-themed-select option,
+  html.dark .dino-themed-select option {
+    background-color: #1d191f !important;
+    color: #f8f4f5 !important;
+    -webkit-text-fill-color: #f8f4f5 !important;
+  }
+  .dark .dino-themed-select option:checked,
+  html.dark .dino-themed-select option:checked {
+    background-color: #ef629f !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
   input[type="password"]::-ms-reveal {
     display: none;
   }

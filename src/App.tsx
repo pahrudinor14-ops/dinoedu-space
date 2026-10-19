@@ -16,8 +16,11 @@ import PublicLegalDialog, {
 import AICVMaker from "./components/AICVMaker";
 import AISuratLamaran from "./components/AISuratLamaran";
 import AIPembuatSoal from "./components/AIPembuatSoal";
+import AIPembuatRubrik from "./components/AIPembuatRubrik";
+import AIEvaluasiPembelajaran from "./components/AIEvaluasiPembelajaran";
 import AIModulAjar from "./components/AIModulAjar";
 import AIGuruStudio from "./components/AIGuruStudio";
+import LaboratoriumDino from "./components/LaboratoriumDino";
 import {
   ArrowRight,
   LayoutDashboard,
@@ -28,6 +31,8 @@ import {
   FileText,
   Mail,
   ClipboardList,
+  ClipboardCheck,
+  BarChart3,
   BookOpen,
   ChevronDown,
   Menu,
@@ -45,7 +50,10 @@ const APP_ROUTES = [
   "/app/cv",
   "/app/surat",
   "/app/soal",
+  "/app/rubrik",
+  "/app/evaluasi",
   "/app/dinomath",
+  "/app/laboratorium-dino",
   "/app/modul-ajar",
   "/app/lkpd",
   "/app/ppt-pembelajaran",
@@ -71,6 +79,7 @@ function App() {
   const productNavItems = [
     { label: "Fitur AI", href: "#fitur" },
     { label: "DinoMath", href: "#dinomath" },
+    { label: "Laboratorium Dino", href: "#laboratorium-dino" },
     { label: "NUMEA EDU", href: "#numea" },
   ];
   const [showAuth, setShowAuth] = useState(false);
@@ -85,10 +94,13 @@ function App() {
   const showAICV = currentRoute === "/app/cv";
   const showAISurat = currentRoute === "/app/surat";
   const showAIPembuatSoal = currentRoute === "/app/soal";
+  const showAIPembuatRubrik = currentRoute === "/app/rubrik";
+  const showAIEvaluasi = currentRoute === "/app/evaluasi";
   const showAIModulAjar = currentRoute === "/app/modul-ajar";
   const showAILKPD = currentRoute === "/app/lkpd";
   const showAIPPTPembelajaran = currentRoute === "/app/ppt-pembelajaran";
   const showDinoMath = currentRoute === "/app/dinomath";
+  const showLaboratoriumDino = currentRoute === "/app/laboratorium-dino";
   const showFeedbackAdmin = currentRoute === "/app/admin/saran-kritik";
   const navigateTo = (path: string, replace = false) => {
     const nextRoute = normalizeAppRoute(path);
@@ -515,6 +527,14 @@ useEffect(() => {
     setMobileMenu(false);
     navigateTo("/app/soal");
   };
+  const openAIPembuatRubrik = () => {
+    setMobileMenu(false);
+    navigateTo("/app/rubrik");
+  };
+  const openAIEvaluasi = () => {
+    setMobileMenu(false);
+    navigateTo("/app/evaluasi");
+  };
   const openAIModulAjar = () => {
     setMobileMenu(false);
     navigateTo("/app/modul-ajar");
@@ -542,6 +562,10 @@ useEffect(() => {
   const openDinoMath = () => {
     setMobileMenu(false);
     navigateTo("/app/dinomath");
+  };
+  const openLaboratoriumDino = () => {
+    setMobileMenu(false);
+    navigateTo("/app/laboratorium-dino");
   };
   const closeDinoMath = returnToPreviousRoute;
   const openFeedbackAdmin = () => {
@@ -580,7 +604,7 @@ useEffect(() => {
         <div className="dino-float-slow absolute right-[-120px] top-[180px] h-[360px] w-[360px] rounded-full bg-[#EF629F]/20 blur-3xl" />
         <div className="dino-pulse-soft absolute bottom-[-180px] left-[35%] h-[400px] w-[400px] rounded-full bg-[#EECDA3]/15 blur-3xl" />
       </div>
-      {!((showDashboard || showDinoAI || showAICV || showAISurat || showAIPembuatSoal || showAIModulAjar || showAILKPD || showAIPPTPembelajaran || showDinoMath || showFeedbackAdmin) && user) && (
+      {!((showDashboard || showDinoAI || showAICV || showAISurat || showAIPembuatSoal || showAIPembuatRubrik || showAIEvaluasi || showAIModulAjar || showAILKPD || showAIPPTPembelajaran || showDinoMath || showLaboratoriumDino || showFeedbackAdmin) && user) && (
         <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
           <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
             <a
@@ -846,6 +870,10 @@ useEffect(() => {
       )}
       {showAIModulAjar && user ? (
         <AIModulAjar onBack={closeAIModulAjar} />
+      ) : showAIPembuatRubrik && user ? (
+        <AIPembuatRubrik onBack={returnToPreviousRoute} />
+      ) : showAIEvaluasi && user ? (
+        <AIEvaluasiPembelajaran onBack={returnToPreviousRoute} />
       ) : showAILKPD && user ? (
         <AIGuruStudio kind="lkpd" onBack={returnToPreviousRoute} />
       ) : showAIPPTPembelajaran && user ? (
@@ -864,6 +892,8 @@ useEffect(() => {
         />
       ) : showDinoMath && user ? (
         <DinoMathFlipbook onBack={closeDinoMath} />
+      ) : showLaboratoriumDino && user ? (
+        <LaboratoriumDino onBack={returnToPreviousRoute} />
       ) : showFeedbackAdmin && user ? (
         user.app_metadata?.role === "admin" ? (
           <FeedbackAdmin onBack={closeFeedbackAdmin} />
@@ -894,10 +924,13 @@ useEffect(() => {
           onOpenAICV={openAICV}
           onOpenAISurat={openAISurat}
           onOpenAISoal={openAIPembuatSoal}
+          onOpenAIRubrik={openAIPembuatRubrik}
+          onOpenAIEvaluasi={openAIEvaluasi}
           onOpenAIModulAjar={openAIModulAjar}
           onOpenAILKPD={openAILKPD}
           onOpenAIPPTPembelajaran={openAIPPTPembelajaran}
           onOpenDinoMath={openDinoMath}
+          onOpenLaboratoriumDino={openLaboratoriumDino}
           isAdmin={user.app_metadata?.role === "admin"}
           onOpenFeedbackAdmin={openFeedbackAdmin}
           onStartFree={handleStartFree}
@@ -1002,6 +1035,16 @@ useEffect(() => {
                     icon: ClipboardList,
                   },
                   {
+                    title: "AI Rubrik Penilaian",
+                    description: "Susun kriteria, deskriptor performa, bobot, dan lembar penskoran yang selaras dengan tujuan belajar.",
+                    icon: ClipboardCheck,
+                  },
+                  {
+                    title: "AI Evaluasi Pembelajaran",
+                    description: "Analisis capaian kelas dari hasil asesmen dan siapkan tindak lanjut pembelajaran.",
+                    icon: BarChart3,
+                  },
+                  {
                     title: "AI Modul Ajar",
                     description: "Bantu menyusun modul ajar secara praktis dan terstruktur untuk mendukung pembelajaran.",
                     icon: BookOpen,
@@ -1037,6 +1080,10 @@ useEffect(() => {
                           ? openLearningToolOrAuth(openAILKPD)
                           : feature.title === "AI PPT Pembelajaran"
                             ? openLearningToolOrAuth(openAIPPTPembelajaran)
+                            : feature.title === "AI Rubrik Penilaian"
+                              ? openLearningToolOrAuth(openAIPembuatRubrik)
+                            : feature.title === "AI Evaluasi Pembelajaran"
+                              ? openLearningToolOrAuth(openAIEvaluasi)
                             : openDashboardOrAuth()}
                         className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#EF629F] transition-all duration-200 hover:gap-3"
                       >
@@ -1063,10 +1110,10 @@ useEffect(() => {
                 </h2>
                 <p className="mt-5 text-[20px] leading-relaxed text-muted-foreground">
                   Belajar dengan cara yang menyenangkan dan tumbuh bersama
-                  komunitas pendidikan dalam satu ruang digital.
+                  komunitas pendidikan dalam satu ruang digital, termasuk ruang eksplorasi Laboratorium Dino.
                 </p>
               </div>
-              <div className="grid items-stretch gap-6 lg:grid-cols-2">
+              <div className="grid items-stretch gap-6 lg:grid-cols-3">
                 {/* PROMOSI DINOMATH */}
                 <article
                   id="dinomath"
@@ -1188,6 +1235,42 @@ useEffect(() => {
                       <p className="mt-3 text-xs leading-5 text-muted-foreground">
                         Bergabunglah dengan membuat akun atau masuk ke DinoEdu Space.
                       </p>
+                    </div>
+                  </div>
+                </article>
+                <article
+                  id="laboratorium-dino"
+                  className="dino-glass dino-interactive dino-enter group relative isolate flex h-full scroll-mt-28 flex-col overflow-hidden rounded-[32px] border border-emerald-400/25 p-7 sm:p-9"
+                  style={{ animationDelay: "340ms" }}
+                >
+                  <div className="absolute -right-16 -top-16 -z-10 h-56 w-56 rounded-full bg-emerald-400/15 blur-3xl transition-transform duration-500 group-hover:scale-125" />
+                  <div className="absolute -bottom-16 -left-12 -z-10 h-48 w-48 rounded-full bg-cyan-300/15 blur-3xl" />
+                  <div className="relative flex flex-1 flex-col">
+                    <div className="flex h-16 shrink-0 items-center justify-between gap-3">
+                      <span className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-300">
+                        Eksplorasi &amp; Kreasi
+                      </span>
+                      <img src="/dino.PNG" alt="Maskot Laboratorium Dino" className="h-16 w-16 shrink-0 object-contain animate-pulse" />
+                    </div>
+                    <h3 className="mt-7 text-3xl font-bold tracking-tight sm:text-4xl">Laboratorium Dino</h3>
+                    <p className="mt-2 text-sm font-semibold text-emerald-600 dark:text-emerald-300">Ruang untuk mencoba hal baru</p>
+                    <p className="mt-5 text-[15px] leading-7 text-muted-foreground">
+                      Bersiap menjelajahi ide, eksperimen, dan karya seru di ruang Laboratorium Dino.
+                    </p>
+                    <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
+                      <li className="flex items-start gap-2"><span className="mt-0.5 shrink-0 text-emerald-500">✦</span><span>Ruang eksplorasi untuk belajar dan berkreasi</span></li>
+                      <li className="flex items-start gap-2"><span className="mt-0.5 shrink-0 text-emerald-500">✦</span><span>Halaman Laboratorium Dino siap dikembangkan</span></li>
+                    </ul>
+                    <div className="mt-auto pt-8">
+                      <button
+                        type="button"
+                        onClick={() => openLearningToolOrAuth(openLaboratoriumDino)}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-500/30 sm:w-auto"
+                      >
+                        Masuk Laboratorium
+                        <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                      </button>
+                      <p className="mt-3 text-xs leading-5 text-muted-foreground">Buat akun atau masuk untuk membuka Laboratorium Dino.</p>
                     </div>
                   </div>
                 </article>

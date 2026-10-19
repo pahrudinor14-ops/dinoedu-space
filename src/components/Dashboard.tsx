@@ -3,7 +3,10 @@ import {
    ArrowRight,
    BookOpen,
    ClipboardList,
+   ClipboardCheck,
+   BarChart3,
    Layers3,
+   Shapes,
   CheckCircle2,
   Coins,
   Gift,
@@ -33,10 +36,13 @@ interface DashboardProps {
    onOpenAICV: () => void;
    onOpenAISurat: () => void;
    onOpenAISoal: () => void;
+   onOpenAIRubrik: () => void;
+   onOpenAIEvaluasi: () => void;
    onOpenAIModulAjar: () => void;
    onOpenAILKPD: () => void;
    onOpenAIPPTPembelajaran: () => void;
    onOpenDinoMath: () => void;
+   onOpenLaboratoriumDino: () => void;
    isAdmin?: boolean;
    onOpenFeedbackAdmin?: () => void;
   // Callback paket DinoAI; akan dihubungkan dari App.tsx.
@@ -68,6 +74,16 @@ const tools = [
       icon: ClipboardList,
    },
    {
+      title: "AI Rubrik Penilaian",
+      description: "Buat rubrik analitik lengkap dengan deskriptor, bobot, dan penskoran",
+      icon: ClipboardCheck,
+   },
+   {
+      title: "AI Evaluasi Pembelajaran",
+      description: "Analisis capaian belajar dan tentukan tindak lanjut yang sesuai",
+      icon: BarChart3,
+   },
+   {
       title: "AI Modul Ajar",
       description: "Bantu menyusun modul ajar secara praktis dan terstruktur",
       icon: BookOpen,
@@ -94,10 +110,13 @@ export default function Dashboard({
    onOpenAICV,
    onOpenAISurat,
    onOpenAISoal,
+   onOpenAIRubrik,
+   onOpenAIEvaluasi,
    onOpenAIModulAjar,
    onOpenAILKPD,
    onOpenAIPPTPembelajaran,
    onOpenDinoMath,
+   onOpenLaboratoriumDino,
    isAdmin = false,
    onOpenFeedbackAdmin,
    onStartFree,
@@ -239,6 +258,8 @@ export default function Dashboard({
                               tool.title === "AI CV Maker" ||
                               tool.title === "AI Surat Lamaran" ||
                                  tool.title === "AI Pembuat Soal" ||
+                                 tool.title === "AI Rubrik Penilaian" ||
+                                 tool.title === "AI Evaluasi Pembelajaran" ||
                                  tool.title === "AI Modul Ajar" ||
                                  tool.title === "AI LKPD" ||
                                  tool.title === "AI PPT Pembelajaran" ? (
@@ -253,6 +274,10 @@ export default function Dashboard({
                                                 ? onOpenAISurat
                                                 : tool.title === "AI Pembuat Soal"
                                                    ? onOpenAISoal
+                                                   : tool.title === "AI Rubrik Penilaian"
+                                                      ? onOpenAIRubrik
+                                                   : tool.title === "AI Evaluasi Pembelajaran"
+                                                      ? onOpenAIEvaluasi
                                                    : tool.title === "AI Modul Ajar"
                                                       ? onOpenAIModulAjar
                                                       : tool.title === "AI LKPD"
@@ -355,6 +380,55 @@ export default function Dashboard({
                            alt="Logo DinoMath"
                            className="aspect-[4/3] max-h-[190px] w-full object-contain sm:max-h-[220px]"
                         />
+                     </div>
+                  </div>
+               </div>
+            </section>
+            {/* LABORATORIUM DINO PROMO */}
+            <section className="mt-10">
+               <div className="group relative isolate overflow-hidden rounded-[32px] border border-blue-300/30 bg-gradient-to-br from-blue-700 via-indigo-600 to-cyan-600 p-6 text-white shadow-xl shadow-blue-900/15 sm:p-9 lg:p-10">
+                  <img
+                     src="/dino.PNG"
+                     alt=""
+                     aria-hidden="true"
+                     className="pointer-events-none absolute right-[18%] top-1/2 z-0 h-44 w-44 -translate-y-1/2 object-contain opacity-[0.12] transition-transform duration-700 group-hover:scale-[1.03] sm:right-[22%] sm:h-60 sm:w-60 lg:right-[25%] lg:h-72 lg:w-72"
+                  />
+                  <div className="pointer-events-none absolute -bottom-28 -right-20 z-0 h-72 w-72 rounded-full bg-cyan-200/20 blur-3xl" />
+                  <div className="pointer-events-none absolute -left-20 -top-24 z-0 h-64 w-64 rounded-full bg-blue-200/15 blur-3xl" />
+                  <svg aria-hidden="true" viewBox="0 0 280 220" className="pointer-events-none absolute right-8 top-4 z-0 h-40 w-52 text-white/15 sm:right-16 sm:h-52 sm:w-64 lg:right-24">
+                     <circle cx="218" cy="48" r="28" fill="none" stroke="currentColor" strokeWidth="4" />
+                     <rect x="165" y="112" width="48" height="48" rx="4" fill="none" stroke="currentColor" strokeWidth="4" />
+                     <path d="M90 38 120 82H60z" fill="none" stroke="currentColor" strokeWidth="4" strokeLinejoin="round" />
+                     <path d="M31 154h64m-32-32v64" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+                  </svg>
+                  <div className="pointer-events-none absolute bottom-6 right-[34%] z-0 hidden rounded-2xl border border-white/20 bg-white/10 px-4 py-2 font-mono text-sm font-bold tracking-widest text-white/45 backdrop-blur-sm sm:block">½ + ¼ = ?</div>
+                  <div className="relative z-10 flex min-w-0 flex-col gap-7 sm:gap-8 lg:flex-row lg:items-center lg:justify-between">
+                     <div className="min-w-0 max-w-2xl">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-blue-50 backdrop-blur-sm">
+                           <span className="h-2 w-2 rounded-full bg-cyan-200" />
+                           Matematika Visual untuk SD
+                        </div>
+                        <h2 className="mt-4 max-w-2xl text-2xl font-bold tracking-normal sm:text-5xl">
+                           Matematika jadi terlihat dan terasa
+                        </h2>
+                        <p className="mt-4 max-w-xl text-base leading-7 text-blue-50/95 sm:text-lg">
+                           Jelajahi bangun datar, bangun ruang, pecahan, dan numerasi lewat visual interaktif yang dekat dengan dunia anak sekolah dasar.
+                        </p>
+                        <button
+                           type="button"
+                           onClick={onOpenLaboratoriumDino}
+                           className="mt-7 inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-indigo-800 shadow-lg shadow-blue-950/15 transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-50 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-600"
+                        >
+                           <Shapes className="h-5 w-5" />
+                           Buka Laboratorium
+                           <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                        </button>
+                     </div>
+                     <div className="relative mx-auto flex w-full max-w-[180px] shrink-0 items-center justify-center rounded-[28px] border border-white/30 bg-white/15 p-3 shadow-2xl shadow-blue-950/15 backdrop-blur-md sm:max-w-[210px] sm:p-4 lg:mr-2 lg:max-w-[230px]">
+                        <div className="absolute -right-3 -top-3 rounded-full bg-cyan-200 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-blue-950 shadow-md">
+                           Yuk, eksplorasi!
+                        </div>
+                        <img src="/dino.PNG" alt="Maskot Laboratorium Dino" className="aspect-[4/3] max-h-[190px] w-full object-contain sm:max-h-[220px]" />
                      </div>
                   </div>
                </div>

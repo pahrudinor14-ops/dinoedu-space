@@ -17,6 +17,12 @@ verify_jwt = true
 [functions.dinoai-lkpd]
 verify_jwt = true
 
+[functions.dinoai-rubrik]
+verify_jwt = true
+
+[functions.dinoai-evaluasi]
+verify_jwt = true
+
 [functions.midtrans-create-payment]
 verify_jwt = true
 

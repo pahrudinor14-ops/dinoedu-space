@@ -1,0 +1,116 @@
+.rubric-print-document {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .rubric-print-document,
+  .rubric-print-document * {
+    visibility: visible !important;
+  }
+
+  .rubric-print-document {
+    position: absolute;
+    inset: 0 auto auto 0;
+    display: block !important;
+    width: 100%;
+    color: #18181b !important;
+    background: #fff !important;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+    line-height: 1.4;
+  }
+
+  .rubric-print-header {
+    margin-bottom: 10pt;
+  }
+
+  .rubric-print-brand {
+    margin: 0 0 4pt;
+    color: #a83c69 !important;
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .rubric-print-document h1 {
+    margin: 0 0 4pt;
+    font-size: 20pt;
+  }
+
+  .rubric-print-document h2 {
+    margin: 9pt 0 3pt;
+    font-size: 11pt;
+  }
+
+  .rubric-print-document p {
+    margin: 3pt 0;
+  }
+
+  .rubric-print-document ul {
+    margin: 3pt 0 6pt;
+    padding-left: 16pt;
+  }
+
+  .rubric-print-table,
+  .rubric-print-scoring table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .rubric-print-table th,
+  .rubric-print-table td,
+  .rubric-print-scoring th,
+  .rubric-print-scoring td {
+    border: 1px solid #a1a1aa;
+    padding: 5pt;
+    text-align: left;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+    font-size: 7.5pt;
+  }
+
+  .rubric-print-table thead th,
+  .rubric-print-scoring thead th {
+    background: #f4f4f5 !important;
+    font-weight: 700;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .rubric-print-table tbody th {
+    width: 17%;
+  }
+
+  .rubric-print-table tbody th span {
+    display: inline-block;
+    margin-top: 3pt;
+    color: #52525b !important;
+    font-weight: 400;
+  }
+
+  .rubric-print-instructions {
+    margin: 8pt 0 !important;
+  }
+
+  .rubric-print-scoring {
+    break-inside: avoid;
+    margin-top: 12pt;
+  }
+
+  .rubric-print-document footer {
+    margin-top: 9pt;
+    color: #52525b !important;
+    font-size: 7pt;
+  }
+}
