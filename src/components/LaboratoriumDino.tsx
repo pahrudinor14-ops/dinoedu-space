@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Dino3DScene, { type DinoShape, type SelectedPart } from "./Dino3DScene"
 import BangunDatarInteraktif from "./BangunDatarInteraktif"
 import {
@@ -174,6 +174,7 @@ function getQuestion(shape: ShapeType, length: number, width: number, height: nu
 
 export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [geometryResetSignal, setGeometryResetSignal] = useState(0)
   const [shape, setShape] = useState<ShapeType>("cube")
   const [mode, setMode] = useState<Mode>("learn")
   const [length, setLength] = useState(4)
@@ -185,6 +186,10 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
   const [checked, setChecked] = useState(false)
   const [selectedPart, setSelectedPart] = useState<SelectedPart | null>(null)
   const [showHiddenEdges, setShowHiddenEdges] = useState(true)
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [activeCategory])
 
   const metrics = getMetrics(shape, length, width, height, radius)
   const currentTopic = topics.find((topic) => topic.id === shape)!
@@ -240,8 +245,13 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
               <p className="hidden text-xs text-muted-foreground sm:block">Laboratorium visual matematika</p>
             </div>
           </div>
-          {activeCategory === "bangun-ruang" && (
-            <button type="button" onClick={reset} aria-label="Reset laboratorium" className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border px-3 py-2 text-xs font-semibold transition hover:bg-muted sm:text-sm">
+          {(activeCategory === "bangun-ruang" || activeCategory === "geometri") && (
+            <button
+              type="button"
+              onClick={activeCategory === "bangun-ruang" ? reset : () => setGeometryResetSignal((current) => current + 1)}
+              aria-label={activeCategory === "bangun-ruang" ? "Reset laboratorium" : "Atur ulang ukuran bangun datar"}
+              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border px-3 py-2 text-xs font-semibold transition hover:bg-muted sm:text-sm"
+            >
               <RotateCcw className="h-4 w-4" /><span className="hidden sm:inline">Reset</span>
             </button>
           )}
@@ -310,7 +320,7 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
             <footer className="pt-2 text-center text-xs text-muted-foreground">Laboratorium Dino - Pilih kategori untuk mulai menjelajahi matematika.</footer>
           </div>
         ) : activeCategory === "geometri" ? (
-          <BangunDatarInteraktif />
+          <BangunDatarInteraktif resetSignal={geometryResetSignal} />
         ) : (
         <div className="relative mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
           <section className="flex flex-wrap items-end justify-between gap-4">
@@ -319,11 +329,11 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
               <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Bangun ruang</h2>
               <p className="mt-1 text-sm text-muted-foreground">Pilih bentuk, pelajari bagian-bagiannya, lalu amati rumus dan ukurannya.</p>
             </div>
-            <div aria-label="Pilih mode belajar" className="inline-flex rounded-xl bg-muted/70 p-1">
-              <button type="button" onClick={() => setMode("learn")} aria-pressed={mode === "learn"} className={"inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition sm:px-4 " + (mode === "learn" ? "bg-background text-emerald-700 shadow-sm dark:text-emerald-300" : "text-muted-foreground hover:text-foreground")}>
+            <div role="group" aria-label="Pilih mode belajar" className="inline-flex rounded-full border border-border/70 bg-muted/70 p-1">
+              <button type="button" onClick={() => setMode("learn")} aria-pressed={mode === "learn"} className={"inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm " + (mode === "learn" ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700" : "text-muted-foreground hover:bg-background/80 hover:text-foreground")}>
                 <BookOpen className="h-4 w-4" />Mode Belajar
               </button>
-              <button type="button" onClick={() => setMode("lab")} aria-pressed={mode === "lab"} className={"inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition sm:px-4 " + (mode === "lab" ? "bg-background text-emerald-700 shadow-sm dark:text-emerald-300" : "text-muted-foreground hover:text-foreground")}>
+              <button type="button" onClick={() => setMode("lab")} aria-pressed={mode === "lab"} className={"inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm " + (mode === "lab" ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700" : "text-muted-foreground hover:bg-background/80 hover:text-foreground")}>
                 <Shapes className="h-4 w-4" />Laboratorium
               </button>
             </div>
