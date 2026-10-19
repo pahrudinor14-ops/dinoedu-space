@@ -411,28 +411,11 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-background/70 p-4 shadow-sm sm:p-5">
-                <div className="mb-5 flex items-start justify-between gap-3">
-                  <div><h3 className="font-bold">Eksperimen dimensi</h3><p className="mt-1 text-sm text-muted-foreground">Geser nilai dan amati perubahan hasilnya.</p></div>
-                  <Ruler className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div className="grid gap-5 sm:grid-cols-2">
-                  {shape === "cube" && <NumberControl label="Panjang sisi (s)" value={length} onChange={(value) => updateDimension(setLength, value)} />}
-                  {(shape === "cuboid" || shape === "triangularPrism") && <NumberControl label={shape === "cuboid" ? "Panjang (p)" : "Alas segitiga"} value={length} onChange={(value) => updateDimension(setLength, value)} />}
-                  {(shape === "cuboid" || shape === "triangularPrism") && <NumberControl label={shape === "cuboid" ? "Lebar (l)" : "Panjang prisma"} value={width} onChange={(value) => updateDimension(setWidth, value)} />}
-                  {(shape === "cuboid" || shape === "triangularPrism") && <NumberControl label={shape === "cuboid" ? "Tinggi (t)" : "Tinggi segitiga"} value={height} onChange={(value) => updateDimension(setHeight, value)} />}
-                  {(shape === "cylinder" || shape === "cone" || shape === "sphere") && <NumberControl label="Jari-jari (r)" value={radius} max={MAX_DIMENSION} onChange={(value) => updateDimension(setRadius, value)} />}
-                  {(shape === "cylinder" || shape === "cone") && <NumberControl label="Tinggi (t)" value={height} onChange={(value) => updateDimension(setHeight, value)} />}
-                  {(shape === "squarePyramid" || shape === "triangularPyramid") && <NumberControl label={shape === "squarePyramid" ? "Sisi alas persegi" : "Sisi alas segitiga"} value={width} onChange={(value) => updateDimension(setWidth, value)} />}
-                  {(shape === "squarePyramid" || shape === "triangularPyramid") && <NumberControl label="Tinggi limas" value={height} onChange={(value) => updateDimension(setHeight, value)} />}
-                </div>
-              </div>
-
             </section>
 
             <aside className="min-w-0 space-y-5 lg:sticky lg:top-20 lg:self-start">
               <section className="rounded-2xl bg-background/70 p-4 shadow-sm sm:p-5">
-                <div className="mb-4 flex items-center gap-2"><Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" /><h3 className="font-bold">Hasil eksperimen</h3></div>
+                <div className="mb-4 flex items-center gap-2"><Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" /><h3 className="font-bold">Hasil perhitungan</h3></div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-xl bg-emerald-500/10 p-3"><p className="text-xs text-muted-foreground">Volume</p><p className="mt-1 break-words text-xl font-black tabular-nums">{fmt(metrics.volume)}</p><p className="mt-1 text-[11px] text-muted-foreground">satuan^3</p></div>
                   <div className="rounded-xl bg-cyan-500/10 p-3"><p className="text-xs text-muted-foreground">Luas permukaan</p><p className="mt-1 break-words text-xl font-black tabular-nums">{fmt(metrics.area)}</p><p className="mt-1 text-[11px] text-muted-foreground">satuan^2</p></div>
@@ -441,6 +424,23 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
                   <div><p className="text-xs text-muted-foreground">Rumus volume</p><p className="mt-1 font-mono text-sm font-semibold">{metrics.volumeFormula}</p><p className="mt-1 break-words text-xs text-muted-foreground">{metrics.calculation}</p></div>
                   <div className="pt-3"><p className="text-xs text-muted-foreground">Rumus luas permukaan</p><p className="mt-1 break-words font-mono text-sm font-semibold">{metrics.areaFormula}</p><p className="mt-1 text-xs text-muted-foreground">Hasil: {fmt(metrics.area)} satuan^2</p></div>
                   {(shape === "cylinder" || shape === "cone" || shape === "sphere") && <p className="text-[11px] leading-5 text-muted-foreground">Perhitungan memakai pi = 3,14.</p>}
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-border/70 bg-background/75 p-4 shadow-sm sm:p-5">
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <div><h3 className="font-bold">Ubah ukuran</h3><p className="mt-1 text-xs text-muted-foreground">Visual dan hasil hitung berubah langsung.</p></div>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-700 dark:text-cyan-300"><Ruler className="h-4 w-4" /></div>
+                </div>
+                <div className={"grid gap-5 " + (shape === "cube" || shape === "sphere" ? "grid-cols-1" : "sm:grid-cols-2")}>
+                  {shape === "cube" && <NumberControl label="Panjang sisi (s)" value={length} onChange={(value) => updateDimension(setLength, value)} />}
+                  {(shape === "cuboid" || shape === "triangularPrism") && <NumberControl label={shape === "cuboid" ? "Panjang (p)" : "Alas segitiga"} value={length} onChange={(value) => updateDimension(setLength, value)} />}
+                  {(shape === "cuboid" || shape === "triangularPrism") && <NumberControl label={shape === "cuboid" ? "Lebar (l)" : "Panjang prisma"} value={width} onChange={(value) => updateDimension(setWidth, value)} />}
+                  {(shape === "cuboid" || shape === "triangularPrism") && <NumberControl label={shape === "cuboid" ? "Tinggi (t)" : "Tinggi segitiga"} value={height} onChange={(value) => updateDimension(setHeight, value)} />}
+                  {(shape === "cylinder" || shape === "cone" || shape === "sphere") && <NumberControl label="Jari-jari (r)" value={radius} max={MAX_DIMENSION} onChange={(value) => updateDimension(setRadius, value)} />}
+                  {(shape === "cylinder" || shape === "cone") && <NumberControl label="Tinggi (t)" value={height} onChange={(value) => updateDimension(setHeight, value)} />}
+                  {(shape === "squarePyramid" || shape === "triangularPyramid") && <NumberControl label={shape === "squarePyramid" ? "Sisi alas persegi" : "Sisi alas segitiga"} value={width} onChange={(value) => updateDimension(setWidth, value)} />}
+                  {(shape === "squarePyramid" || shape === "triangularPyramid") && <NumberControl label="Tinggi limas" value={height} onChange={(value) => updateDimension(setHeight, value)} />}
                 </div>
               </section>
 

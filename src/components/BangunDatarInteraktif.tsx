@@ -466,21 +466,6 @@ export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: nu
         </div>
       </section>
 
-      {mode === "learn" && (
-        <section className="rounded-2xl bg-emerald-500/5 p-4 sm:p-5">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"><BookOpen className="h-5 w-5" /></div>
-            <div><h3 className="font-bold">Pembelajaran terpandu</h3><p className="text-xs text-muted-foreground">Langkah {lessonStep + 1} dari {guidedLessons.length}</p></div>
-          </div>
-          <div className="mb-5 space-y-2"><h4 className="font-semibold">{guidedLessons[lessonStep].title}</h4><p className="text-sm leading-6 text-muted-foreground">{guidedLessons[lessonStep].description}</p></div>
-          <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: String(((lessonStep + 1) / guidedLessons.length) * 100) + "%" }} /></div>
-          <div className="flex justify-between gap-3">
-            <button type="button" disabled={lessonStep === 0} onClick={() => setLessonStep((current) => current - 1)} className="rounded-xl px-4 py-2 text-sm font-semibold transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40">Sebelumnya</button>
-            <button type="button" disabled={lessonStep === guidedLessons.length - 1} onClick={() => setLessonStep((current) => current + 1)} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">Berikutnya</button>
-          </div>
-        </section>
-      )}
-
       <section aria-labelledby="pilih-bangun-datar" className="space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h3 id="pilih-bangun-datar" className="font-bold">Pilih bentuk</h3>
@@ -512,7 +497,22 @@ export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: nu
       </section>
 
       <section className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="min-w-0 overflow-hidden rounded-3xl border border-border/70 bg-background/75 shadow-lg shadow-emerald-950/5">
+        <div className="min-w-0 space-y-5">
+          {mode === "learn" && (
+            <section className="rounded-2xl bg-emerald-500/5 p-4 sm:p-5">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"><BookOpen className="h-5 w-5" /></div>
+                <div><h3 className="font-bold">Pembelajaran terpandu</h3><p className="text-xs text-muted-foreground">Langkah {lessonStep + 1} dari {guidedLessons.length}</p></div>
+              </div>
+              <div className="mb-5 space-y-2"><h4 className="font-semibold">{guidedLessons[lessonStep].title}</h4><p className="text-sm leading-6 text-muted-foreground">{guidedLessons[lessonStep].description}</p></div>
+              <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: String(((lessonStep + 1) / guidedLessons.length) * 100) + "%" }} /></div>
+              <div className="flex justify-between gap-3">
+                <button type="button" disabled={lessonStep === 0} onClick={() => setLessonStep((current) => current - 1)} className="rounded-xl px-4 py-2 text-sm font-semibold transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40">Sebelumnya</button>
+                <button type="button" disabled={lessonStep === guidedLessons.length - 1} onClick={() => setLessonStep((current) => current + 1)} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">Berikutnya</button>
+              </div>
+            </section>
+          )}
+          <div className="min-w-0 overflow-hidden rounded-3xl border border-border/70 bg-background/75 shadow-lg shadow-emerald-950/5">
           <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/60 px-4 py-4 sm:px-6">
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"><Shapes className="h-5 w-5" /></div>
@@ -605,21 +605,10 @@ export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: nu
               </div>
             )}
           </div>
+          </div>
         </div>
 
         <aside className="space-y-5 lg:sticky lg:top-20">
-          <section className="rounded-2xl border border-border/70 bg-background/75 p-4 shadow-sm sm:p-5">
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <div><h3 className="font-bold">Ubah ukuran</h3><p className="mt-1 text-xs text-muted-foreground">Visual dan hasil hitung berubah langsung.</p></div>
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-700 dark:text-cyan-300"><Ruler className="h-4 w-4" /></div>
-            </div>
-            <div className="space-y-5">
-              {selectedShape.controls.map((control) => (
-                <RangeControl key={control.key} control={control} value={dimensions[control.key]} onChange={(value) => updateDimension(control.key, value)} />
-              ))}
-            </div>
-          </section>
-
           <section className="rounded-2xl border border-emerald-500/20 bg-background/80 p-4 shadow-sm sm:p-5" aria-live="polite">
             <div className="mb-4 flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" /><h3 className="font-bold">Hasil perhitungan</h3></div>
             <div className="grid grid-cols-2 gap-3">
@@ -631,6 +620,18 @@ export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: nu
               <div className="border-t border-border/60 pt-3"><p className="text-[11px] font-medium text-muted-foreground">Rumus keliling</p><p className="mt-1 font-mono text-sm font-bold">{stats.perimeterFormula}</p></div>
               <p className="border-t border-border/60 pt-3 text-xs leading-5 text-muted-foreground">{stats.note}</p>
               {selectedId === "circle" && <p className="text-[11px] text-muted-foreground">Perhitungan menggunakan nilai π penuh; hasil ditampilkan sampai dua angka desimal.</p>}
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-border/70 bg-background/75 p-4 shadow-sm sm:p-5">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <div><h3 className="font-bold">Ubah ukuran</h3><p className="mt-1 text-xs text-muted-foreground">Visual dan hasil hitung berubah langsung.</p></div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-700 dark:text-cyan-300"><Ruler className="h-4 w-4" /></div>
+            </div>
+            <div className="space-y-5">
+              {selectedShape.controls.map((control) => (
+                <RangeControl key={control.key} control={control} value={dimensions[control.key]} onChange={(value) => updateDimension(control.key, value)} />
+              ))}
             </div>
           </section>
 
