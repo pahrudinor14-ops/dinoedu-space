@@ -38,6 +38,7 @@ const lessons = [
 ]
 
 const PI = 3.14
+const MAX_DIMENSION = 20
 
 function fmt(value: number) {
   return new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(value)
@@ -74,7 +75,7 @@ function NumberControl({
   label,
   value,
   min = 1,
-  max = 8,
+  max = MAX_DIMENSION,
   onChange,
 }: {
   label: string
@@ -258,7 +259,7 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
                   {(shape === "cuboid" || shape === "triangularPrism") && <NumberControl label={shape === "cuboid" ? "Panjang (p)" : "Alas segitiga"} value={length} onChange={(value) => updateDimension(setLength, value)} />}
                   {(shape === "cuboid" || shape === "triangularPrism") && <NumberControl label={shape === "cuboid" ? "Lebar (l)" : "Panjang prisma"} value={width} onChange={(value) => updateDimension(setWidth, value)} />}
                   {(shape === "cuboid" || shape === "triangularPrism") && <NumberControl label={shape === "cuboid" ? "Tinggi (t)" : "Tinggi segitiga"} value={height} onChange={(value) => updateDimension(setHeight, value)} />}
-                  {(shape === "cylinder" || shape === "cone" || shape === "sphere") && <NumberControl label="Jari-jari (r)" value={radius} max={6} onChange={(value) => updateDimension(setRadius, value)} />}
+                  {(shape === "cylinder" || shape === "cone" || shape === "sphere") && <NumberControl label="Jari-jari (r)" value={radius} max={MAX_DIMENSION} onChange={(value) => updateDimension(setRadius, value)} />}
                   {(shape === "cylinder" || shape === "cone") && <NumberControl label="Tinggi (t)" value={height} onChange={(value) => updateDimension(setHeight, value)} />}
                   {(shape === "squarePyramid" || shape === "triangularPyramid") && <NumberControl label={shape === "squarePyramid" ? "Sisi alas persegi" : "Sisi alas segitiga"} value={width} onChange={(value) => updateDimension(setWidth, value)} />}
                   {(shape === "squarePyramid" || shape === "triangularPyramid") && <NumberControl label="Tinggi limas" value={height} onChange={(value) => updateDimension(setHeight, value)} />}
