@@ -378,6 +378,7 @@ function fitDimensionsToShape(shape: PlaneShape, dimensions: Dimensions): Dimens
 
 export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: number }) {
   const [mode, setMode] = useState<"learn" | "lab">("learn")
+  const [lessonStep, setLessonStep] = useState(0)
   const [selectedId, setSelectedId] = useState<ShapeId>("square")
   const [dimensions, setDimensions] = useState<Dimensions>(INITIAL_DIMENSIONS)
   const [showGrid, setShowGrid] = useState(true)
@@ -393,10 +394,16 @@ export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: nu
     setDimensions(INITIAL_DIMENSIONS)
     setQuizAnswer(null)
     setQuizChecked(false)
+    setLessonStep(0)
   }, [resetSignal])
 
   const selectedShape = planeShapes.find((shape) => shape.id === selectedId)!
   const stats = getStats(selectedId, dimensions)
+  const guidedLessons = [
+    { title: "Kenali bentuknya", description: `${selectedShape.description} Amati juga garis putus-putus untuk mengenali simetri lipatnya.` },
+    { title: "Pahami rumusnya", description: `Luas ${selectedShape.name.toLowerCase()} dihitung dengan ${stats.areaFormula}; kelilingnya dihitung dengan ${stats.perimeterFormula}.` },
+    { title: "Lakukan eksperimen", description: "Ubah ukuran dan putar bentuknya. Amati perubahan luas serta keliling, lalu jawab uji pemahaman." },
+  ]
   const correctQuizAnswer = Number(stats.area.toFixed(2))
   const quizAnswers = [...new Set([
     Number((correctQuizAnswer * 0.5).toFixed(2)),
@@ -434,6 +441,7 @@ export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: nu
     setSelectedId(shape.id)
     setSelectedAxis(null)
     setRotationAngle(0)
+    setLessonStep(0)
     setDimensions((current) => fitDimensionsToShape(shape, current))
     resetQuiz()
   }
@@ -460,12 +468,15 @@ export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: nu
 
       {mode === "learn" && (
         <section className="rounded-2xl bg-emerald-500/5 p-4 sm:p-5">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"><BookOpen className="h-5 w-5" /></div>
-            <div>
-              <h3 className="font-bold">Pembelajaran terpandu</h3>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">Mulai dengan mengamati sifat {selectedShape.name.toLowerCase()} dan garis simetrinya. Geser ukuran atau putar bentuk, lalu periksa bagaimana luas dan kelilingnya dihitung.</p>
-            </div>
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"><BookOpen className="h-5 w-5" /></div>
+            <div><h3 className="font-bold">Pembelajaran terpandu</h3><p className="text-xs text-muted-foreground">Langkah {lessonStep + 1} dari {guidedLessons.length}</p></div>
+          </div>
+          <div className="mb-5 space-y-2"><h4 className="font-semibold">{guidedLessons[lessonStep].title}</h4><p className="text-sm leading-6 text-muted-foreground">{guidedLessons[lessonStep].description}</p></div>
+          <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: String(((lessonStep + 1) / guidedLessons.length) * 100) + "%" }} /></div>
+          <div className="flex justify-between gap-3">
+            <button type="button" disabled={lessonStep === 0} onClick={() => setLessonStep((current) => current - 1)} className="rounded-xl px-4 py-2 text-sm font-semibold transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40">Sebelumnya</button>
+            <button type="button" disabled={lessonStep === guidedLessons.length - 1} onClick={() => setLessonStep((current) => current + 1)} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">Berikutnya</button>
           </div>
         </section>
       )}
