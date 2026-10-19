@@ -33,6 +33,7 @@ import {
   ClipboardList,
   ClipboardCheck,
   BarChart3,
+  Box,
   BookOpen,
   ChevronDown,
   Menu,
@@ -1250,7 +1251,9 @@ useEffect(() => {
                       <span className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-300">
                         Eksplorasi &amp; Kreasi
                       </span>
-                      <img src="/dino.PNG" alt="Maskot Laboratorium Dino" className="h-16 w-16 shrink-0 object-contain animate-pulse" />
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-emerald-400/30 bg-emerald-400/10 text-emerald-600 dark:text-emerald-300">
+                        <Box aria-hidden="true" className="h-9 w-9" strokeWidth={1.5} />
+                      </div>
                     </div>
                     <h3 className="mt-7 text-3xl font-bold tracking-tight sm:text-4xl">Laboratorium Dino</h3>
                     <p className="mt-2 text-sm font-semibold text-emerald-600 dark:text-emerald-300">Ruang untuk mencoba hal baru</p>
@@ -1264,13 +1267,13 @@ useEffect(() => {
                     <div className="mt-auto pt-8">
                       <button
                         type="button"
-                        onClick={() => openLearningToolOrAuth(openLaboratoriumDino)}
+                        onClick={openDashboardOrAuth}
                         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-500/30 sm:w-auto"
                       >
-                        Masuk Laboratorium
+                        Lanjut ke Dashboard
                         <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                       </button>
-                      <p className="mt-3 text-xs leading-5 text-muted-foreground">Buat akun atau masuk untuk membuka Laboratorium Dino.</p>
+                      <p className="mt-3 text-xs leading-5 text-muted-foreground">Masuk ke dashboard terlebih dahulu, lalu buka Laboratorium Dino dari sana.</p>
                     </div>
                   </div>
                 </article>
