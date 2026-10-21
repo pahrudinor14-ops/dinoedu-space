@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { BookOpen, CheckCircle2, Ruler, Shapes, Sparkles } from "lucide-react"
+import RujukanPenyusunan from "./laboratorium/RujukanPenyusunan"
 
 type ShapeId =
   | "square"
@@ -391,7 +392,14 @@ export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: nu
 
   useEffect(() => {
     if (resetSignal === 0) return
+    setMode("learn")
+    setSelectedId("square")
     setDimensions(INITIAL_DIMENSIONS)
+    setShowGrid(true)
+    setShowMeasures(true)
+    setShowSymmetry(true)
+    setSelectedAxis(null)
+    setRotationAngle(0)
     setQuizAnswer(null)
     setQuizChecked(false)
     setLessonStep(0)
@@ -666,6 +674,7 @@ export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: nu
         </aside>
       </section>
 
+      <RujukanPenyusunan material="geometri" />
     </div>
   )
 }

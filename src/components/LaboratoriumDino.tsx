@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react"
 import Dino3DScene, { type DinoShape, type SelectedPart } from "./Dino3DScene"
 import BangunDatarInteraktif from "./BangunDatarInteraktif"
+import BilanganOperasiHitung from "./laboratorium/BilanganOperasiHitung"
+import DataPolaPemecahanMasalah from "./laboratorium/DataPolaPemecahanMasalah"
+import PecahanRasioPengukuran from "./laboratorium/PecahanRasioPengukuran"
+import RujukanPenyusunan from "./laboratorium/RujukanPenyusunan"
 import {
   ArrowLeft,
   ArrowRight,
@@ -42,16 +46,16 @@ const learningCategories = [
   {
     id: "bilangan",
     title: "Bilangan dan operasi hitung",
-    description: "Jelajahi bilangan, pola berhitung, serta penjumlahan, pengurangan, perkalian, dan pembagian.",
+    description: "Pahami nilai tempat, empat operasi, bilangan bulat, faktor, kelipatan, dan hitung campuran lewat model visual.",
     Icon: Calculator,
-    available: false,
+    available: true,
   },
   {
     id: "pecahan",
     title: "Pecahan, rasio, dan pengukuran",
-    description: "Bandingkan pecahan dan rasio, lalu kenali satuan serta cara mengukur.",
+    description: "Lihat pecahan sebagai bilangan, bandingkan rasio, dan praktikkan pengukuran dengan visual interaktif.",
     Icon: PieChart,
-    available: false,
+    available: true,
   },
   {
     id: "geometri",
@@ -70,9 +74,9 @@ const learningCategories = [
   {
     id: "data",
     title: "Data, pola, dan pemecahan masalah",
-    description: "Baca informasi, temukan pola, dan gunakan strategi untuk menyelesaikan tantangan.",
+    description: "Baca diagram, ungkap aturan pola, dan pilih strategi untuk menyelesaikan masalah.",
     Icon: BarChart3,
-    available: false,
+    available: true,
   },
   {
     id: "simulasi",
@@ -175,6 +179,9 @@ function getQuestion(shape: ShapeType, length: number, width: number, height: nu
 export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [geometryResetSignal, setGeometryResetSignal] = useState(0)
+  const [fractionResetSignal, setFractionResetSignal] = useState(0)
+  const [numberResetSignal, setNumberResetSignal] = useState(0)
+  const [dataResetSignal, setDataResetSignal] = useState(0)
   const [shape, setShape] = useState<ShapeType>("cube")
   const [mode, setMode] = useState<Mode>("learn")
   const [length, setLength] = useState(4)
@@ -219,6 +226,14 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
     clearAnswer()
   }
 
+  const resetActiveCategory = () => {
+    if (activeCategory === "bangun-ruang") reset()
+    if (activeCategory === "geometri") setGeometryResetSignal((current) => current + 1)
+    if (activeCategory === "pecahan") setFractionResetSignal((current) => current + 1)
+    if (activeCategory === "bilangan") setNumberResetSignal((current) => current + 1)
+    if (activeCategory === "data") setDataResetSignal((current) => current + 1)
+  }
+
   const updateShape = (nextShape: ShapeType) => {
     setShape(nextShape)
     setLessonStep(0)
@@ -234,22 +249,22 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border/50 bg-background/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
+        <div className="relative mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
           <button type="button" onClick={activeCategory ? () => setActiveCategory(null) : onBack} className="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition hover:bg-muted" aria-label={activeCategory ? "Kembali ke pilihan materi" : "Kembali ke dashboard"}>
             <ArrowLeft className="h-4 w-4" /><span className="hidden sm:inline">{activeCategory ? "Semua materi" : "Kembali"}</span>
           </button>
-          <div className="flex min-w-0 items-center gap-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"><Cuboid className="h-5 w-5" /></div>
+          <div className={"flex min-w-0 items-center gap-2 " + (activeCategory ? "absolute left-1/2 -translate-x-1/2" : "")}>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"><Shapes className="h-5 w-5" /></div>
             <div className="min-w-0">
               <h1 className="truncate text-sm font-bold sm:text-base">Laboratorium Dino</h1>
               <p className="hidden text-xs text-muted-foreground sm:block">Laboratorium visual matematika</p>
             </div>
           </div>
-          {(activeCategory === "bangun-ruang" || activeCategory === "geometri") && (
+          {activeCategory && (
             <button
               type="button"
-              onClick={activeCategory === "bangun-ruang" ? reset : () => setGeometryResetSignal((current) => current + 1)}
-              aria-label={activeCategory === "bangun-ruang" ? "Reset laboratorium" : "Atur ulang ukuran bangun datar"}
+              onClick={resetActiveCategory}
+              aria-label="Reset materi saat ini"
               className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border px-3 py-2 text-xs font-semibold transition hover:bg-muted sm:text-sm"
             >
               <RotateCcw className="h-4 w-4" /><span className="hidden sm:inline">Reset</span>
@@ -272,7 +287,7 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
                 </div>
                 <h2 className="mt-5 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">Pilih petualangan belajarmu</h2>
                 <p className="mt-4 max-w-2xl text-sm leading-6 text-emerald-50/95 sm:text-base sm:leading-7">
-                  Temukan berbagai topik matematika, lalu masuk ke materi untuk belajar dan bereksperimen. Materi Bangun datar dan Bangun ruang sudah siap dijelajahi.
+                  Temukan berbagai topik matematika, lalu masuk ke materi untuk belajar dan bereksperimen. Bilangan dan operasi hitung, Pecahan, rasio dan pengukuran, Geometri, Bangun ruang, serta Data, pola, dan pemecahan masalah siap dijelajahi.
                 </p>
                 <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/15 px-3.5 py-2 text-xs font-semibold text-white sm:text-sm">
                   <CheckCircle2 className="h-4 w-4 text-cyan-100" />{availableLearningCategories} dari {learningCategories.length} kategori tersedia
@@ -321,6 +336,12 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
           </div>
         ) : activeCategory === "geometri" ? (
           <BangunDatarInteraktif resetSignal={geometryResetSignal} />
+        ) : activeCategory === "pecahan" ? (
+          <PecahanRasioPengukuran resetSignal={fractionResetSignal} />
+        ) : activeCategory === "bilangan" ? (
+          <BilanganOperasiHitung resetSignal={numberResetSignal} />
+        ) : activeCategory === "data" ? (
+          <DataPolaPemecahanMasalah resetSignal={dataResetSignal} />
         ) : (
         <div className="relative mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
           <section className="flex flex-wrap items-end justify-between gap-4">
@@ -469,6 +490,7 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
             </aside>
           </div>
 
+          <RujukanPenyusunan material="bangun-ruang" />
           <footer className="py-5 text-center text-xs text-muted-foreground">Laboratorium Dino - Jelajahi, eksperimen, dan pahami matematika.</footer>
         </div>
         )}
