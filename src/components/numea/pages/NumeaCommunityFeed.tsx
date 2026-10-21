@@ -35,10 +35,6 @@ type FeedReport = { id: string; post_id: string; reporter_id: string; reason: st
 const dateLabel = (value: string) => new Intl.DateTimeFormat("id-ID", {
   dateStyle: "medium", timeStyle: "short",
 }).format(new Date(value))
-const isExpertRole = (role: string | null | undefined) => {
-  const normalized = (role ?? "").trim().toLowerCase()
-  return normalized.includes("ahli") || normalized.includes("pakar") || normalized.includes("expert")
-}
 const statusLabel: Record<PostStatus, string> = {
   draft: "Draf",
   pending_review: "Menunggu tinjauan",
@@ -94,25 +90,26 @@ export default function NumeaCommunityFeed() {
     const { data, error: loadError } = await query
     if (loadError) throw loadError
     const rows = (data ?? []) as FeedPost[]
-    // Periksa peran penulis melalui RPC agar anggota tidak perlu membaca tabel admin langsung.
+    // Resolve badges from server-managed lists instead of reading private profile rows.
     const authorIds = [...new Set(rows.map((post) => post.author_id))]
     if (authorIds.length > 0) {
       const [
         { data: adminAuthors, error: adminAuthorsError },
-        { data: authorProfiles, error: profilesError },
+        { data: consultants, error: consultantsError },
       ] = await Promise.all([
         supabase.rpc("numea_get_admin_user_ids", { p_user_ids: authorIds }),
-        supabase.from("numea_profiles").select("user_id,role").in("user_id", authorIds),
+        supabase.rpc("numea_list_consultants"),
       ])
       setAdminAuthorIds(
         adminAuthorsError ? null : (adminAuthors ?? []).map((row: { user_id: string }) => row.user_id),
       )
+      const consultantIds = new Set(
+        (consultants ?? []).map((row: { user_id: string }) => row.user_id),
+      )
       setExpertAuthorIds(
-        profilesError
+        consultantsError
           ? null
-          : (authorProfiles ?? [])
-              .filter((row: { user_id: string; role: string | null }) => isExpertRole(row.role))
-              .map((row: { user_id: string; role: string | null }) => row.user_id),
+          : authorIds.filter((authorId) => consultantIds.has(authorId)),
       )
     } else {
       setAdminAuthorIds([])

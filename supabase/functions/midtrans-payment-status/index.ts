@@ -14,6 +14,29 @@ function env(name: string): string | null {
   const value = Deno.env.get(name)?.trim()
   return value ? value : null
 }
+async function readBoundedBody(req: Request, maxBytes: number): Promise<string | null> {
+  const reader = req.body?.getReader()
+  if (!reader) return ""
+  const chunks: Uint8Array[] = []
+  let totalBytes = 0
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    totalBytes += value.byteLength
+    if (totalBytes > maxBytes) {
+      await reader.cancel()
+      return null
+    }
+    chunks.push(value)
+  }
+  const bytes = new Uint8Array(totalBytes)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return new TextDecoder().decode(bytes)
+}
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405)
@@ -31,9 +54,20 @@ Deno.serve(async (req) => {
     })
     const { data: { user }, error: authError } = await authClient.auth.getUser(token)
     if (authError || !user) return jsonResponse({ error: "Sesi pengguna tidak valid." }, 401)
+    const contentLength = Number(req.headers.get("content-length") ?? "0")
+    if (Number.isFinite(contentLength) && contentLength > 4_096) {
+      return jsonResponse({ error: "Request terlalu besar." }, 413)
+    }
+    let rawBody: string | null
+    try {
+      rawBody = await readBoundedBody(req, 4_096)
+    } catch {
+      return jsonResponse({ error: "Request tidak dapat dibaca." }, 400)
+    }
+    if (rawBody === null) return jsonResponse({ error: "Request terlalu besar." }, 413)
     let body: unknown
     try {
-      body = await req.json()
+      body = JSON.parse(rawBody)
     } catch {
       return jsonResponse({ error: "Request harus berupa JSON yang valid." }, 400)
     }

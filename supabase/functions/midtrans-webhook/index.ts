@@ -43,6 +43,29 @@ function isValidDinoSupporterOrderId(value: string): boolean {
   const match = /^DINO-SUP-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.exec(value)
   return Boolean(match)
 }
+async function readBoundedBody(req: Request, maxBytes: number): Promise<string | null> {
+  const reader = req.body?.getReader()
+  if (!reader) return ""
+  const chunks: Uint8Array[] = []
+  let totalBytes = 0
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    totalBytes += value.byteLength
+    if (totalBytes > maxBytes) {
+      await reader.cancel()
+      return null
+    }
+    chunks.push(value)
+  }
+  const bytes = new Uint8Array(totalBytes)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return new TextDecoder().decode(bytes)
+}
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405)
@@ -62,7 +85,23 @@ Deno.serve(async (req) => {
         503,
       )
     }
-    const notification: unknown = await req.json().catch(() => null)
+    const contentLength = Number(req.headers.get("content-length") ?? "0")
+    if (Number.isFinite(contentLength) && contentLength > 32_000) {
+      return jsonResponse({ error: "Payload terlalu besar." }, 413)
+    }
+    let rawBody: string | null
+    try {
+      rawBody = await readBoundedBody(req, 32_000)
+    } catch {
+      return jsonResponse({ error: "Payload tidak dapat dibaca." }, 400)
+    }
+    if (rawBody === null) return jsonResponse({ error: "Payload terlalu besar." }, 413)
+    let notification: unknown
+    try {
+      notification = JSON.parse(rawBody)
+    } catch {
+      notification = null
+    }
     if (!isRecord(notification)) {
       console.warn("Rejected Midtrans webhook: invalid JSON payload")
       return jsonResponse({ error: "Payload tidak valid." }, 400)

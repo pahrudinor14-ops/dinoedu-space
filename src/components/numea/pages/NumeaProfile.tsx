@@ -126,13 +126,14 @@ export default function NumeaProfile({
         .eq("user_id", user.id)
         .select("user_id")
       if (updateError) throw updateError
-      // Create a row only when this account does not have one yet.
+      // Create a row only when this account does not have one yet. Roles are
+      // authorization data and must never come from user-editable metadata.
       if (!updatedRows?.length) {
         const { error: insertError } = await supabase
           .from("numea_profiles")
           .insert({
             user_id: user.id,
-            role: user.user_metadata?.role ?? "user",
+            role: "user",
             ...payload,
           })
         if (insertError) throw insertError
@@ -190,7 +191,7 @@ export default function NumeaProfile({
           .from("numea_profiles")
           .insert({
             user_id: user.id,
-            role: user.user_metadata?.role ?? "user",
+            role: "user",
             ...profilePayload,
           })
         if (insertError) {

@@ -18,9 +18,36 @@ export function useNumeaProfileCards(userIds: (string | null | undefined)[]) {
   const loadedIds = useRef(new Set<string>())
   useEffect(() => {
     let active = true
+    let profileOwnerId: string | null = null
     const requestedIdSet = new Set(requestedIds)
     const loadProfiles = async (ids = requestedIds, force = false, refreshSignedUrls = false) => {
-      const idsToLoad = force ? ids : ids.filter((userId) => !loadedIds.current.has(userId))
+      // Profile rows and photos are private by default. Community content has
+      // its own display-name snapshot, so only fetch the signed-in user's row
+      // here; admin member-management uses its separately authorized flow.
+      const { data: authData, error: authError } = await supabase.auth.getUser()
+      if (!active) return
+      if (authError || !authData.user) {
+        profileOwnerId = null
+        loadedIds.current.clear()
+        if (Object.keys(profileCardsRef.current).length > 0) {
+          profileCardsRef.current = {}
+          setProfileCards({})
+        }
+        return
+      }
+      const ownUserId = authData.user.id
+      if (profileOwnerId !== ownUserId) {
+        profileOwnerId = ownUserId
+        loadedIds.current.clear()
+        const ownCard = profileCardsRef.current[ownUserId]
+        const nextCards = ownCard && requestedIdSet.has(ownUserId)
+          ? { [ownUserId]: ownCard }
+          : {}
+        profileCardsRef.current = nextCards
+        setProfileCards(nextCards)
+      }
+      const ownIds = ids.filter((userId) => userId === ownUserId)
+      const idsToLoad = force ? ownIds : ownIds.filter((userId) => !loadedIds.current.has(userId))
       if (idsToLoad.length === 0) return
       const { data, error } = await supabase
         .from("numea_profiles")
@@ -99,7 +126,7 @@ export function useNumeaProfileCards(userIds: (string | null | undefined)[]) {
       }, (payload) => {
         const changedProfile = (payload.eventType === "DELETE" ? payload.old : payload.new) as { user_id?: string }
         const changedUserId = changedProfile.user_id
-        if (!changedUserId || !requestedIdSet.has(changedUserId)) return
+        if (!changedUserId || changedUserId !== profileOwnerId || !requestedIdSet.has(changedUserId)) return
         if (payload.eventType === "DELETE") {
           loadedIds.current.delete(changedUserId)
           setProfileCards((current) => {
@@ -122,11 +149,24 @@ export function useNumeaProfileCards(userIds: (string | null | undefined)[]) {
     window.addEventListener("focus", refreshProfiles)
     document.addEventListener("visibilitychange", refreshProfiles)
     const refreshInterval = window.setInterval(refreshProfileData, 30_000)
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        profileOwnerId = null
+        loadedIds.current.clear()
+        profileCardsRef.current = {}
+        setProfileCards({})
+      } else if (["SIGNED_IN", "TOKEN_REFRESHED", "USER_UPDATED"].includes(event)) {
+        window.setTimeout(() => {
+          if (active) void loadProfiles(requestedIds, true, true)
+        }, 0)
+      }
+    })
     return () => {
       active = false
       window.removeEventListener("focus", refreshProfiles)
       document.removeEventListener("visibilitychange", refreshProfiles)
       window.clearInterval(refreshInterval)
+      authSubscription.unsubscribe()
       void supabase.removeChannel(channel)
     }
   }, [idsKey])

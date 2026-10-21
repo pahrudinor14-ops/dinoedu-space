@@ -47,10 +47,6 @@ const roomColors = [
 const formatTime = (value: string) => new Intl.DateTimeFormat("id-ID", {
   hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short",
 }).format(new Date(value))
-const isExpertRole = (role: string | null | undefined) => {
-  const normalized = (role ?? "").trim().toLowerCase()
-  return normalized.includes("ahli") || normalized.includes("pakar") || normalized.includes("expert")
-}
 export default function NumeaCommunity({ onBack, darkMode = false, onToggleTheme }: NumeaCommunityProps) {
   const [userId, setUserId] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -139,20 +135,21 @@ export default function NumeaCommunity({ onBack, darkMode = false, onToggleTheme
     }
     const [
       { data: adminRows, error: adminLookupError },
-      { data: profileRows, error: profileLookupError },
+      { data: consultants, error: consultantsError },
     ] = await Promise.all([
       supabase.rpc("numea_get_admin_user_ids", { p_user_ids: senderIds }),
-      supabase.from("numea_profiles").select("user_id,role").in("user_id", senderIds),
+      supabase.rpc("numea_list_consultants"),
     ])
     setAdminSenderIds(
       adminLookupError ? null : (adminRows ?? []).map((row: { user_id: string }) => row.user_id),
     )
+    const consultantIds = new Set(
+      (consultants ?? []).map((row: { user_id: string }) => row.user_id),
+    )
     setExpertSenderIds(
-      profileLookupError
+      consultantsError
         ? null
-        : (profileRows ?? [])
-            .filter((row: { user_id: string; role: string | null }) => isExpertRole(row.role))
-            .map((row: { user_id: string; role: string | null }) => row.user_id),
+        : senderIds.filter((senderId) => consultantIds.has(senderId)),
     )
   }, [])
   const initialize = useCallback(async () => {

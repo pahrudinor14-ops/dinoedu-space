@@ -170,6 +170,9 @@ export default function NumeaPage(props: NumeaPageProps) {
     navigateTab("Beranda", true)
   }
   const [isAdmin, setIsAdmin] = useState(false)
+  const [adminCheckComplete, setAdminCheckComplete] = useState(false)
+  const [adminCheckError, setAdminCheckError] = useState(false)
+  const [adminCheckAttempt, setAdminCheckAttempt] = useState(0)
   const [showAdmin, setShowAdmin] = useState(
     () => window.location.hash === "#admin" || window.history.state?.numeaAdmin === true,
   )
@@ -216,11 +219,36 @@ export default function NumeaPage(props: NumeaPageProps) {
     navigateTab("Beranda", true)
   }
   useEffect(() => {
+    let cancelled = false
     const checkAdmin = async () => {
-      const { data } = await supabase.rpc("is_numea_admin")
-      setIsAdmin(Boolean(data))
+      try {
+        const { data, error } = await supabase.rpc("is_numea_admin")
+        if (cancelled) return
+        setIsAdmin(!error && Boolean(data))
+        setAdminCheckError(Boolean(error))
+      } catch {
+        if (cancelled) return
+        setIsAdmin(false)
+        setAdminCheckError(true)
+      } finally {
+        if (!cancelled) setAdminCheckComplete(true)
+      }
     }
     void checkAdmin()
+    return () => { cancelled = true }
+  }, [adminCheckAttempt])
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        setIsAdmin(false)
+        setAdminCheckError(false)
+        setAdminCheckComplete(true)
+      } else if (["SIGNED_IN", "TOKEN_REFRESHED", "USER_UPDATED"].includes(event)) {
+        setAdminCheckComplete(false)
+        setAdminCheckAttempt((attempt) => attempt + 1)
+      }
+    })
+    return () => subscription.unsubscribe()
   }, [])
   useEffect(() => {
     let cancelled = false
@@ -363,6 +391,49 @@ export default function NumeaPage(props: NumeaPageProps) {
     setNotificationsError("")
   }
   if (showAdmin) {
+    if (!adminCheckComplete) {
+      return (
+        <main role="status" aria-live="polite" aria-busy="true" className="flex min-h-dvh items-center justify-center bg-background px-5 text-center text-sm text-muted-foreground">
+          Memverifikasi akses admin NUMEA…
+        </main>
+      )
+    }
+    if (!isAdmin) {
+      return (
+        <main className="flex min-h-dvh items-center justify-center bg-background px-5 py-10">
+          <section role="alert" className="w-full max-w-md rounded-3xl border border-border/60 bg-card p-7 text-center shadow-sm">
+            <h1 className="text-xl font-bold">Akses admin tidak tersedia</h1>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              {adminCheckError
+                ? "Hak akses tidak dapat diverifikasi. Coba muat ulang atau kembali ke NUMEA."
+                : "Akun ini tidak memiliki hak admin NUMEA."}
+            </p>
+            <div className="mt-5 flex flex-wrap justify-center gap-2">
+              {adminCheckError && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdminCheckComplete(false)
+                    setAdminCheckError(false)
+                    setAdminCheckAttempt((attempt) => attempt + 1)
+                  }}
+                  className="rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-background"
+                >
+                  Coba verifikasi lagi
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={closeAdmin}
+                className="rounded-full border border-border/70 px-5 py-2.5 text-sm font-semibold"
+              >
+                Kembali ke NUMEA
+              </button>
+            </div>
+          </section>
+        </main>
+      )
+    }
     return (
       <NumeaAdmin
         onBack={closeAdmin}
