@@ -1,4 +1,4 @@
-import { useEffect, useState, type LucideIcon, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import {
   BarChart3,
   BookOpen,
@@ -10,6 +10,7 @@ import {
   Sparkles,
   Target,
   TrendingUp,
+  type LucideIcon,
 } from "lucide-react"
 import RujukanPenyusunan from "./RujukanPenyusunan"
 import GuidedLearning, { type GuidedStep } from "./GuidedLearning"
@@ -204,7 +205,6 @@ function StatisticsLesson() {
   const highestFrequency = Math.max(...frequencies.values())
   const modes = highestFrequency < 2 ? [] : [...frequencies.entries()].filter(([, frequency]) => frequency === highestFrequency).map(([value]) => value).sort((a, b) => a - b)
   const counts = Array.from({ length: 11 }, (_, value) => values.filter((item) => item === value).length)
-  const largestCount = Math.max(1, ...counts)
   const updateValue = (index: number, value: number) => setValues((current) => current.map((item, itemIndex) => itemIndex === index ? value : item))
 
   return (
