@@ -3,6 +3,7 @@ import Dino3DScene, { type DinoShape, type SelectedPart } from "./Dino3DScene"
 import BangunDatarInteraktif from "./BangunDatarInteraktif"
 import BilanganOperasiHitung from "./laboratorium/BilanganOperasiHitung"
 import DataPolaPemecahanMasalah from "./laboratorium/DataPolaPemecahanMasalah"
+import ModeSelector, { type LearningMode } from "./laboratorium/ModeSelector"
 import PecahanRasioPengukuran from "./laboratorium/PecahanRasioPengukuran"
 import RujukanPenyusunan from "./laboratorium/RujukanPenyusunan"
 import {
@@ -29,7 +30,6 @@ interface LaboratoriumDinoProps {
 }
 
 type ShapeType = DinoShape
-type Mode = "lab" | "learn"
 
 const topics: { id: ShapeType; title: string; description: string; level: string }[] = [
   { id: "cube", title: "Kubus", description: "Sisi, rusuk, titik sudut, luas permukaan, dan volume.", level: "SD/SMP" },
@@ -183,7 +183,7 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
   const [numberResetSignal, setNumberResetSignal] = useState(0)
   const [dataResetSignal, setDataResetSignal] = useState(0)
   const [shape, setShape] = useState<ShapeType>("cube")
-  const [mode, setMode] = useState<Mode>("learn")
+  const [mode, setMode] = useState<LearningMode>("learn")
   const [length, setLength] = useState(4)
   const [width, setWidth] = useState(3)
   const [height, setHeight] = useState(5)
@@ -350,14 +350,7 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
               <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Bangun ruang</h2>
               <p className="mt-1 text-sm text-muted-foreground">Pilih bentuk, pelajari bagian-bagiannya, lalu amati rumus dan ukurannya.</p>
             </div>
-            <div role="group" aria-label="Pilih mode belajar" className="inline-flex rounded-full border border-border/70 bg-muted/70 p-1">
-              <button type="button" onClick={() => setMode("learn")} aria-pressed={mode === "learn"} className={"inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm " + (mode === "learn" ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700" : "text-muted-foreground hover:bg-background/80 hover:text-foreground")}>
-                <BookOpen className="h-4 w-4" />Mode Belajar
-              </button>
-              <button type="button" onClick={() => setMode("lab")} aria-pressed={mode === "lab"} className={"inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm " + (mode === "lab" ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700" : "text-muted-foreground hover:bg-background/80 hover:text-foreground")}>
-                <Shapes className="h-4 w-4" />Laboratorium
-              </button>
-            </div>
+            <ModeSelector mode={mode} onChange={setMode} />
           </section>
 
           <section aria-labelledby="pilih-bangun" className="space-y-3">

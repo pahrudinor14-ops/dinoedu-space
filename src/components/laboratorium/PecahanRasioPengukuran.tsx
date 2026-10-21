@@ -13,6 +13,8 @@ import {
   Target,
 } from "lucide-react"
 import RujukanPenyusunan from "./RujukanPenyusunan"
+import GuidedLearning, { type GuidedStep } from "./GuidedLearning"
+import ModeSelector, { type LearningMode } from "./ModeSelector"
 
 type Topic = "pecahan" | "rasio" | "pengukuran"
 type MeasurementKind = "panjang" | "massa" | "kapasitas" | "waktu" | "luas" | "volume" | "suhu" | "kecepatan" | "sudut"
@@ -23,6 +25,24 @@ const topics: { id: Topic; title: string; summary: string; Icon: typeof PieChart
   { id: "rasio", title: "Rasio", summary: "Hubungan antara dua banyak", Icon: Scale },
   { id: "pengukuran", title: "Pengukuran", summary: "Besaran, alat, dan satuannya", Icon: Ruler },
 ]
+
+const guidedSteps: Record<Topic, GuidedStep[]> = {
+  pecahan: [
+    { title: "Tentukan satu utuh", description: "Sebutkan benda atau panjang yang dianggap satu utuh. Pecahan hanya bermakna jika ukuran utuhnya jelas." },
+    { title: "Baca pembilang dan penyebut", description: "Penyebut membagi satu utuh menjadi bagian sama besar; pembilang menyatakan banyak bagian yang diambil atau diperhatikan." },
+    { title: "Hubungkan gambar dengan nilai", description: "Bandingkan pecahan dengan ukuran satu utuh yang sama. Bagian lebih banyak belum tentu berarti nilai lebih besar jika penyebutnya berbeda." },
+  ],
+  rasio: [
+    { title: "Tentukan dua hal yang dibandingkan", description: "Sebutkan urutannya, misalnya 2 bagian jus untuk setiap 3 bagian air. Membalik urutan mengubah makna rasio." },
+    { title: "Samakan faktor pengali", description: "Rasio senilai diperoleh dengan mengalikan atau membagi kedua bagian dengan faktor yang sama." },
+    { title: "Periksa konteks dan satuan", description: "Pastikan rasio membandingkan jenis banyak yang tepat dan jawaban tetap mengikuti urutan pada soal." },
+  ],
+  pengukuran: [
+    { title: "Kenali besar yang diukur", description: "Tentukan apakah yang diukur panjang, massa, kapasitas, waktu, luas, volume, suhu, kecepatan, atau sudut." },
+    { title: "Pilih alat dan satuan", description: "Gunakan alat yang sesuai dan tuliskan satuan. Jangan mencampur satuan berbeda saat menghitung." },
+    { title: "Konversi dengan hubungan yang benar", description: "Ubah nilai melalui kesetaraan satuan. Luas dan volume memakai faktor konversi yang dikuadratkan atau dipangkatkan tiga." },
+  ],
+}
 
 const format = (value: number, digits = 3) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: digits }).format(value)
 
@@ -581,6 +601,8 @@ function FactCard({ title, text }: { title: string; text: string }) {
 
 export default function PecahanRasioPengukuran({ resetSignal }: { resetSignal: number }) {
   const [activeTopic, setActiveTopic] = useState<Topic>("pecahan")
+  const [mode, setMode] = useState<LearningMode>("learn")
+  const [guidedStep, setGuidedStep] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [checked, setChecked] = useState(false)
   const [resetKey, setResetKey] = useState(0)
@@ -589,6 +611,7 @@ export default function PecahanRasioPengukuran({ resetSignal }: { resetSignal: n
 
   const switchTopic = (topic: Topic) => {
     setActiveTopic(topic)
+    setGuidedStep(0)
     setSelectedAnswer(null)
     setChecked(false)
   }
@@ -596,6 +619,8 @@ export default function PecahanRasioPengukuran({ resetSignal }: { resetSignal: n
   useEffect(() => {
     if (resetSignal === 0) return
     setActiveTopic("pecahan")
+    setMode("learn")
+    setGuidedStep(0)
     setSelectedAnswer(null)
     setChecked(false)
     setResetKey((current) => current + 1)
@@ -604,12 +629,13 @@ export default function PecahanRasioPengukuran({ resetSignal }: { resetSignal: n
 
   return (
     <div className="relative mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
-      <section className="flex flex-wrap items-start justify-between gap-4">
+      <section className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300"><Sparkles className="h-3.5 w-3.5" />Laboratorium konsep | SD dan SMP</div>
           <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">Pecahan, rasio, dan pengukuran</h2>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">Geser, amati, lalu jelaskan apa yang berubah. Setiap topik menghubungkan gambar, kata-kata, dan hitungan agar rumus punya makna.</p>
         </div>
+        <ModeSelector mode={mode} onChange={setMode} />
       </section>
       <section aria-labelledby="pilih-materi" className="space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -620,6 +646,7 @@ export default function PecahanRasioPengukuran({ resetSignal }: { resetSignal: n
           {topics.map(({ id, title, summary, Icon }) => <button key={id} type="button" onClick={() => switchTopic(id)} aria-current={activeTopic === id ? "page" : undefined} className={"flex min-h-[4.25rem] items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 " + (activeTopic === id ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-800 shadow-sm dark:text-emerald-200" : "border-border/70 bg-background/75 hover:border-emerald-400/50 hover:bg-emerald-500/5")}><span className={"flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " + (activeTopic === id ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground")}><Icon className="h-4 w-4" /></span><span className="min-w-0 flex-1"><strong className="block text-xs leading-4 sm:text-sm">{title}</strong><span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">{summary}</span></span>{activeTopic === id && <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />}</button>)}
         </nav>
       </section>
+      {mode === "learn" && <GuidedLearning steps={guidedSteps[activeTopic]} step={guidedStep} onStepChange={setGuidedStep} />}
       <main>
         {activeTopic === "pecahan" && <FractionLesson key={`pecahan-${resetKey}`} />}
         {activeTopic === "rasio" && <RatioLesson key={`rasio-${resetKey}`} />}

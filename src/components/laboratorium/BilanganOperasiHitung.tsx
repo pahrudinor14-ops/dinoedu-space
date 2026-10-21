@@ -17,6 +17,8 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import RujukanPenyusunan from "./RujukanPenyusunan"
+import GuidedLearning, { type GuidedStep } from "./GuidedLearning"
+import ModeSelector, { type LearningMode } from "./ModeSelector"
 
 type LessonId = "nilai-tempat" | "operasi" | "bilangan-bulat" | "faktor-kelipatan" | "urutan-operasi"
 type Operation = "tambah" | "kurang" | "kali" | "bagi"
@@ -33,6 +35,34 @@ const lessons: { id: LessonId; title: string; summary: string; Icon: LucideIcon 
   { id: "faktor-kelipatan", title: "Faktor dan kelipatan", summary: "FPB dan KPK", Icon: Scale },
   { id: "urutan-operasi", title: "Urutan operasi", summary: "Langkah hitung yang tepat", Icon: CheckCircle2 },
 ]
+
+const guidedSteps: Record<LessonId, GuidedStep[]> = {
+  "nilai-tempat": [
+    { title: "Baca posisi digit", description: "Mulai dari kanan: satuan, puluhan, ratusan, dan seterusnya. Posisi menentukan nilai sebuah digit." },
+    { title: "Uraikan bilangannya", description: "Tuliskan setiap digit sebagai hasil kali digit dan nilai tempatnya, lalu jumlahkan kembali." },
+    { title: "Periksa susunannya", description: "Pastikan hasil uraian sama dengan bilangan awal. Nol tetap menjadi penanda tempat meskipun nilainya nol." },
+  ],
+  operasi: [
+    { title: "Pahami tindakannya", description: "Tambah menggabungkan, kurang mencari selisih atau sisa, kali membentuk kelompok sama banyak, dan bagi membagi rata atau mengelompokkan." },
+    { title: "Pilih model yang cocok", description: "Gunakan garis bilangan, kelompok benda, atau susunan titik untuk menggambarkan operasi sebelum menghitung." },
+    { title: "Hubungkan operasi", description: "Cek hasil dengan operasi kebalikannya, misalnya 24 ÷ 6 = 4 dapat diperiksa dengan 4 × 6 = 24." },
+  ],
+  "bilangan-bulat": [
+    { title: "Tempatkan bilangan", description: "Pada garis bilangan, nol menjadi titik acuan; bilangan negatif di kiri dan positif di kanan." },
+    { title: "Ikuti arah gerak", description: "Untuk tambah dan kurang, lihat titik awal serta arah dan banyak langkah, bukan hanya menghafal tanda." },
+    { title: "Periksa tanda dan hasil", description: "Nol bukan positif atau negatif. Pembagian dengan nol tidak terdefinisi; periksa kembali tanda hasil kali dan bagi." },
+  ],
+  "faktor-kelipatan": [
+    { title: "Bedakan faktor dan kelipatan", description: "Faktor membagi habis suatu bilangan. Kelipatan diperoleh dari bilangan itu dikali 1, 2, 3, dan seterusnya." },
+    { title: "Temukan yang sama", description: "Daftar faktor bersama untuk mencari FPB, atau daftar kelipatan bersama untuk mencari KPK." },
+    { title: "Pilih sesuai cerita", description: "FPB cocok untuk membagi menjadi kelompok terbesar yang sama. KPK cocok untuk mencari waktu pertemuan berulang paling awal." },
+  ],
+  "urutan-operasi": [
+    { title: "Selesaikan bagian yang terikat", description: "Kerjakan yang berada di dalam tanda kurung lebih dahulu, kemudian pangkat jika ada." },
+    { title: "Lanjutkan operasi setingkat", description: "Perkalian dan pembagian setingkat; penjumlahan dan pengurangan juga setingkat. Kerjakan dari kiri ke kanan." },
+    { title: "Cek langkahnya", description: "Tulis satu langkah pada satu waktu agar urutan jelas dan hasil dapat diperiksa kembali." },
+  ],
+}
 
 const placeValues = [
   { name: "Ratus ribu", value: 100000, color: "bg-fuchsia-500" },
@@ -475,28 +505,37 @@ function LearningPath() {
 export default function BilanganOperasiHitung({ resetSignal }: { resetSignal: number }) {
   const [activeLesson, setActiveLesson] = useState<LessonId>("nilai-tempat")
   const [resetKey, setResetKey] = useState(0)
+  const [mode, setMode] = useState<LearningMode>("learn")
+  const [guidedStep, setGuidedStep] = useState(0)
 
   useEffect(() => {
     if (resetSignal === 0) return
     setActiveLesson("nilai-tempat")
+    setMode("learn")
+    setGuidedStep(0)
     setResetKey((current) => current + 1)
     window.scrollTo({ top: 0, behavior: "smooth" })
   }, [resetSignal])
 
   return (
     <div className="relative mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
-      <section>
-        <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300"><Sparkles className="h-3.5 w-3.5" />Laboratorium konsep | SD dan SMP</div>
-        <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">Bilangan dan operasi hitung</h2>
-        <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">Amati nilai digit, gerakkan bilangan, dan susun kelompok. Setiap langkah hitung ditautkan ke model yang menunjukkan mengapa jawabannya masuk akal.</p>
+      <section className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300"><Sparkles className="h-3.5 w-3.5" />Laboratorium konsep | SD dan SMP</div>
+          <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">Bilangan dan operasi hitung</h2>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">Amati nilai digit, gerakkan bilangan, dan susun kelompok. Setiap langkah hitung ditautkan ke model yang menunjukkan mengapa jawabannya masuk akal.</p>
+        </div>
+        <ModeSelector mode={mode} onChange={setMode} />
       </section>
 
       <section aria-labelledby="pilih-topik-bilangan" className="space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2"><h3 id="pilih-topik-bilangan" className="font-bold">Pilih jalur belajar</h3><p className="text-xs text-muted-foreground">5 laboratorium interaktif | SD dan SMP</p></div>
         <nav aria-label="Pilih topik bilangan" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-          {lessons.map(({ id, title, summary, Icon }) => <button key={id} type="button" onClick={() => setActiveLesson(id)} aria-current={activeLesson === id ? "page" : undefined} className={"flex min-h-[4.25rem] items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 " + (activeLesson === id ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-800 shadow-sm dark:text-emerald-200" : "border-border/70 bg-background/75 hover:border-emerald-400/50 hover:bg-emerald-500/5")}><span className={"flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " + (activeLesson === id ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground")}><Icon className="h-4 w-4" /></span><span className="min-w-0 flex-1"><strong className="block text-xs leading-4 sm:text-sm">{title}</strong><span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">{summary}</span></span></button>)}
+          {lessons.map(({ id, title, summary, Icon }) => <button key={id} type="button" onClick={() => { setActiveLesson(id); setGuidedStep(0) }} aria-current={activeLesson === id ? "page" : undefined} className={"flex min-h-[4.25rem] items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 " + (activeLesson === id ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-800 shadow-sm dark:text-emerald-200" : "border-border/70 bg-background/75 hover:border-emerald-400/50 hover:bg-emerald-500/5")}><span className={"flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " + (activeLesson === id ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground")}><Icon className="h-4 w-4" /></span><span className="min-w-0 flex-1"><strong className="block text-xs leading-4 sm:text-sm">{title}</strong><span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">{summary}</span></span></button>)}
         </nav>
       </section>
+
+      {mode === "learn" && <GuidedLearning steps={guidedSteps[activeLesson]} step={guidedStep} onStepChange={setGuidedStep} />}
 
       <main key={activeLesson + "-" + resetKey}>
         {activeLesson === "nilai-tempat" && <PlaceValueLesson />}
