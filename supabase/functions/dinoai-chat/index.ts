@@ -1,4 +1,9 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  callGeminiWithFallback,
+  extractGeminiContent,
+  getGeminiFailureReason,
+} from "../_shared/gemini.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -12,7 +17,6 @@ const MAX_HISTORY_ITEM_CHARACTERS = 1_000;
 const MAX_OUTPUT_TOKENS = 2_048;
 const MAX_CONTINUATION_OUTPUT_TOKENS = 1_536;
 const MAX_CONTINUATION_ROUNDS = 1;
-const RETRYABLE_GEMINI_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 interface HistoryItem {
   role: "user" | "model";
   text: string;
@@ -242,55 +246,6 @@ Deno.serve(async (request) => {
     contents,
     generationConfig: { maxOutputTokens },
   });
-  const callGemini = async (modelName: string, requestBody: string) => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 35_000);
-    try {
-      return await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": apiKey,
-          },
-          body: requestBody,
-          signal: controller.signal,
-        },
-      );
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  };
-  const callGeminiWithFallback = async (requestBody: string) => {
-    if (model === fallbackModel) return callGemini(model, requestBody);
-    let primaryResponse: Response | null = null;
-    try {
-      primaryResponse = await callGemini(model, requestBody);
-    } catch (error) {
-      console.warn(
-        "DinoAI Chat: model utama gagal dihubungi; mencoba model cadangan.",
-        error instanceof Error ? error.name : "unknown",
-      );
-    }
-    if (
-      primaryResponse &&
-      !RETRYABLE_GEMINI_STATUSES.has(primaryResponse.status)
-    ) {
-      return primaryResponse;
-    }
-    if (primaryResponse) {
-      console.warn("DinoAI Chat: model utama sedang sibuk; mencoba model cadangan.", {
-        httpStatus: primaryResponse.status,
-      });
-      try {
-        await primaryResponse.body?.cancel();
-      } catch {
-        // The primary response is discarded before the single fallback attempt.
-      }
-    }
-    return callGemini(fallbackModel, requestBody);
-  };
   try {
     let contents = initialContents;
     let reply = "";
@@ -300,14 +255,19 @@ Deno.serve(async (request) => {
       continuationRound <= MAX_CONTINUATION_ROUNDS;
       continuationRound += 1
     ) {
-      const response = await callGeminiWithFallback(
-        makeRequestBody(
+      const response = await callGeminiWithFallback({
+        apiKey,
+        model,
+        fallbackModel,
+        operation: "DinoAI Chat",
+        requestBody: makeRequestBody(
           contents,
           continuationRound === 0
             ? MAX_OUTPUT_TOKENS
             : MAX_CONTINUATION_OUTPUT_TOKENS,
         ),
-      );
+        timeoutMs: 35_000,
+      });
       const result: unknown = await response.json().catch(() => null);
       if (!response.ok) {
         console.error("Gemini request failed:", response.status);
@@ -319,21 +279,7 @@ Deno.serve(async (request) => {
           creditsRestored,
         }, response.status === 429 ? 429 : 502);
       }
-      const candidates = isRecord(result) && Array.isArray(result.candidates)
-        ? result.candidates
-        : [];
-      const candidate = isRecord(candidates[0]) ? candidates[0] : null;
-      const content = candidate && isRecord(candidate.content)
-        ? candidate.content
-        : null;
-      const parts = content && Array.isArray(content.parts) ? content.parts : [];
-      const continuation = parts
-        .filter(isRecord)
-        .map((part) => typeof part.text === "string" ? part.text : "")
-        .join("");
-      const finishReason = candidate && typeof candidate.finishReason === "string"
-        ? candidate.finishReason
-        : "";
+      const { text: continuation, finishReason } = extractGeminiContent(result);
       if (!continuation.trim()) {
         if (reply) {
           incomplete = true;
@@ -390,7 +336,7 @@ Deno.serve(async (request) => {
     return jsonResponse({ reply, incomplete });
   } catch (error) {
     console.error("DinoAI Chat request gagal:", error instanceof Error ? error.name : "unknown");
-    const creditsRestored = await releaseReservation("gemini_network_error");
+    const creditsRestored = await releaseReservation(getGeminiFailureReason(error));
     return jsonResponse({
       error: "DinoAI tidak dapat terhubung. Periksa koneksi lalu coba lagi.",
       creditsRestored,

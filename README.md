@@ -61,6 +61,12 @@ Deploy Edge Functions setelah perubahan fungsi atau saat menyiapkan proyek baru:
 ```bash
 supabase functions deploy dinoai-chat
 supabase functions deploy dinoai-cv
+supabase functions deploy dinoai-surat
+supabase functions deploy dinoai-soal
+supabase functions deploy dinoai-modul-ajar
+supabase functions deploy dinoai-lkpd
+supabase functions deploy dinoai-rubrik
+supabase functions deploy dinoai-evaluasi
 supabase functions deploy midtrans-create-payment
 supabase functions deploy midtrans-create-token-payment
 supabase functions deploy midtrans-payment-status

@@ -1,4 +1,9 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  callGeminiWithFallback as requestGeminiWithFallback,
+  extractGeminiContent,
+  getGeminiFailureReason,
+} from "../_shared/gemini.ts";
 
 const MAX_REQUEST_BYTES = 24_000;
 const corsHeaders = {
@@ -343,34 +348,22 @@ Deno.serve(async (request) => {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: { maxOutputTokens: 8_000, responseMimeType: "application/json" },
   });
-  const callGemini = async (modelName: string): Promise<Response> => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 50_000);
-    try {
-      return await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": geminiApiKey },
-        body: requestBody,
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  };
-  const callGeminiWithFallback = async (): Promise<Response> => {
-    if (model === fallbackModel) return callGemini(model);
-    let primary: Response | null = null;
-    try {
-      primary = await callGemini(model);
-    } catch (error) {
-      console.warn("AI Rubrik: model utama gagal dihubungi; mencoba cadangan.", error instanceof Error ? error.name : "unknown");
-    }
-    if (primary && ![429, 500, 502, 503, 504].includes(primary.status)) return primary;
-    if (primary) {
-      try { await primary.body?.cancel(); } catch { /* Discard the primary response before fallback. */ }
-    }
-    return callGemini(fallbackModel);
-  };
+  const callGeminiWithFallback = () => requestGeminiWithFallback({
+    apiKey: geminiApiKey,
+    model,
+    fallbackModel,
+    operation: "AI Rubrik",
+    requestBody,
+    timeoutMs: 50_000,
+    validateOutput: (text) => {
+      try {
+        parseGeneratedRubric(text, input);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+  });
 
   try {
     const response = await callGeminiWithFallback();
@@ -387,11 +380,7 @@ Deno.serve(async (request) => {
       return jsonResponse({ error: creditsRestored ? message : `${message} Status pengembalian kredit belum dapat dipastikan; jangan kirim ulang dulu.`, creditsRestored }, response.status === 429 ? 429 : 502);
     }
 
-    const candidates = isRecord(responseBody) && Array.isArray(responseBody.candidates) ? responseBody.candidates : [];
-    const candidate = isRecord(candidates[0]) ? candidates[0] : null;
-    const content = candidate && isRecord(candidate.content) ? candidate.content : null;
-    const parts = content && Array.isArray(content.parts) ? content.parts : [];
-    const generatedText = parts.filter(isRecord).map((part) => typeof part.text === "string" ? part.text : "").join("").trim();
+    const { text: generatedText } = extractGeminiContent(responseBody);
     if (!generatedText) {
       const creditsRestored = await releaseReservation("empty_gemini_response");
       return jsonResponse({ error: creditsRestored ? "AI belum menghasilkan rubrik. Coba lagi sebentar." : "AI belum menghasilkan rubrik dan status pengembalian kredit belum dapat dipastikan; jangan kirim ulang dulu.", creditsRestored }, 502);
@@ -415,7 +404,7 @@ Deno.serve(async (request) => {
     });
   } catch (error) {
     console.error("AI Rubrik: layanan Gemini gagal.", error instanceof Error ? error.name : "unknown");
-    const creditsRestored = await releaseReservation("gemini_network_error");
+    const creditsRestored = await releaseReservation(getGeminiFailureReason(error));
     return jsonResponse({ error: creditsRestored ? "Layanan AI tidak dapat dihubungi. Periksa koneksi lalu coba lagi." : "Layanan AI tidak dapat dihubungi dan status pengembalian kredit belum dapat dipastikan; jangan kirim ulang dulu.", creditsRestored }, 502);
   }
 });

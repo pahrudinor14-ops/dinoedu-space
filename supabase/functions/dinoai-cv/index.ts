@@ -1,4 +1,9 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  callGeminiModel,
+  extractGeminiContent,
+  getGeminiFailureReason,
+} from "../_shared/gemini.ts";
 const MAX_REQUEST_BYTES = 48_000;
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -179,12 +184,17 @@ function quotaFailureStatus(reason: string): number {
   return 429;
 }
 function parseGeneratedCV(text: string, input: CVInput): GeneratedCV {
-  const firstBrace = text.indexOf("{");
-  const lastBrace = text.lastIndexOf("}");
+  // Bersihkan code fence jika model tidak mengembalikan JSON murni.
+  const cleaned = text.trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+  const firstBrace = cleaned.indexOf("{");
+  const lastBrace = cleaned.lastIndexOf("}");
   if (firstBrace < 0 || lastBrace <= firstBrace) {
     throw new Error("Respons AI bukan JSON.");
   }
-  const parsed: unknown = JSON.parse(text.slice(firstBrace, lastBrace + 1));
+  const parsed: unknown = JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
   if (!isRecord(parsed)) throw new Error("Format hasil AI tidak valid.");
   const professionalSummary = readText(
     parsed.professionalSummary,
@@ -406,109 +416,103 @@ Deno.serve(async (request) => {
     },
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
-      maxOutputTokens: 1800,
+      maxOutputTokens: 2400,
       responseMimeType: "application/json",
     },
   });
-  const callGemini = async (modelName: string) => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 35_000);
-    try {
-      return await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": geminiApiKey,
-          },
-          body: requestBody,
-          signal: controller.signal,
-        },
-      );
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  };
   try {
-    let response = await callGemini(model);
-    if (
-      model !== fallbackModel &&
-      [429, 500, 502, 503, 504].includes(response.status)
-    ) {
-      await response.body?.cancel();
-      console.warn("AI CV Maker: model utama sedang sibuk; mencoba model cadangan.", {
-        httpStatus: response.status,
-      });
-      response = await callGemini(fallbackModel);
-    }
-    const result: unknown = await response.json().catch(() => null);
-    if (!response.ok) {
-      const providerError = isRecord(result) && isRecord(result.error)
-        ? result.error
-        : null;
-      const providerStatus = providerError && typeof providerError.status === "string"
-        ? providerError.status
-        : "";
-      const providerMessage = providerError && typeof providerError.message === "string"
-        ? providerError.message
-            .replace(/AIza[0-9A-Za-z_-]{20,}/g, "[redacted]")
-            .slice(0, 500)
-        : "";
-      const providerHint = response.status === 401 || response.status === 403
-        ? "Periksa kunci API dan akses Gemini pada konfigurasi server."
-        : response.status === 404
-        ? "Model Gemini yang dikonfigurasi tidak ditemukan. Periksa GEMINI_MODEL."
-        : response.status === 400
-        ? "Gemini menolak format permintaan atau konfigurasi model."
-        : "Gemini menolak permintaan.";
-      console.error("AI CV Maker: Gemini menolak permintaan.", JSON.stringify({
-        httpStatus: response.status,
-        providerStatus,
-        providerMessage,
-      }));
-      const creditsRestored = await releaseReservation(`gemini_http_${response.status}`);
-      return jsonResponse(
-        {
+    // Jika model utama gagal, timeout, atau menghasilkan JSON yang tidak valid,
+    // coba model cadangan satu kali. Reservasi kredit tetap hanya dilakukan sekali.
+    const modelsToTry = model === fallbackModel ? [model] : [model, fallbackModel];
+    let cv: GeneratedCV | null = null;
+    let lastFailureReason = "invalid_generated_cv";
+
+    for (let attempt = 0; attempt < modelsToTry.length; attempt++) {
+      const modelName = modelsToTry[attempt];
+      let response: Response;
+      try {
+        response = await callGeminiModel({
+          apiKey: geminiApiKey,
+          model: modelName,
+          requestBody,
+          timeoutMs: 45_000,
+        });
+      } catch (error) {
+        lastFailureReason = error instanceof Error && error.name === "AbortError"
+          ? "gemini_timeout"
+          : "gemini_network_error";
+        console.warn("AI CV Maker: pemanggilan model gagal.", {
+          model: modelName, reason: lastFailureReason, attempt: attempt + 1,
+        });
+        if (attempt < modelsToTry.length - 1) continue;
+        throw error;
+      }
+
+      if (!response.ok) {
+        const result: unknown = await response.json().catch(() => null);
+        const providerError = isRecord(result) && isRecord(result.error) ? result.error : null;
+        const providerStatus = providerError && typeof providerError.status === "string"
+          ? providerError.status : "";
+        const providerMessage = providerError && typeof providerError.message === "string"
+          ? providerError.message.replace(/AIza[0-9A-Za-z_-]{20,}/g, "[redacted]").slice(0, 500)
+          : "";
+        console.warn("AI CV Maker: Gemini menolak permintaan.", JSON.stringify({
+          model: modelName, httpStatus: response.status, providerStatus, providerMessage,
+          attempt: attempt + 1,
+        }));
+        lastFailureReason = `gemini_http_${response.status}`;
+        if ([404, 408, 429, 500, 502, 503, 504].includes(response.status) && attempt < modelsToTry.length - 1) {
+          continue;
+        }
+        const providerHint = response.status === 401 || response.status === 403
+          ? "Periksa kunci API dan akses Gemini pada konfigurasi server."
+          : response.status === 404
+          ? "Model Gemini yang dikonfigurasi tidak ditemukan. Periksa GEMINI_MODEL."
+          : response.status === 400
+          ? "Gemini menolak format permintaan atau konfigurasi model."
+          : "Gemini menolak permintaan.";
+        const creditsRestored = await releaseReservation(lastFailureReason);
+        return jsonResponse({
           error: response.status === 429
             ? "Layanan AI sedang sibuk. Tunggu sebentar sebelum mencoba lagi."
             : `${providerHint}${providerMessage ? ` Detail Gemini: ${providerMessage}` : ` (HTTP ${response.status})`}`,
           creditsRestored,
-        },
-        response.status === 429 ? 429 : 502,
-      );
+        }, response.status === 429 ? 429 : 502);
+      }
+
+      const result: unknown = await response.json().catch(() => null);
+      const { text: generatedText, finishReason } = extractGeminiContent(result);
+
+      if (!generatedText) {
+        lastFailureReason = "empty_gemini_response";
+        console.warn("AI CV Maker: Gemini mengembalikan hasil kosong.", {
+          model: modelName, attempt: attempt + 1,
+          finishReason: finishReason ?? "unknown",
+        });
+        if (attempt < modelsToTry.length - 1) continue;
+        break;
+      }
+
+      try {
+        cv = parseGeneratedCV(generatedText, input);
+        break;
+      } catch (error) {
+        lastFailureReason = "invalid_generated_cv";
+        console.warn("AI CV Maker: hasil Gemini tidak dapat divalidasi.", {
+          model: modelName, attempt: attempt + 1,
+          reason: error instanceof Error ? error.message : "unknown",
+          finishReason: finishReason ?? "unknown",
+        });
+        if (attempt < modelsToTry.length - 1) continue;
+      }
     }
-    if (!isRecord(result) || !Array.isArray(result.candidates)) {
-      console.error("AI CV Maker: format respons Gemini tidak valid.");
-      const creditsRestored = await releaseReservation("invalid_gemini_response");
-      return jsonResponse({ error: "AI belum menghasilkan CV yang valid. Coba lagi.", creditsRestored }, 502);
-    }
-    const candidate = result.candidates[0];
-    const candidateRecord = isRecord(candidate) ? candidate : null;
-    const content = candidateRecord && isRecord(candidateRecord.content)
-      ? candidateRecord.content
-      : null;
-    const parts = content && Array.isArray(content.parts) ? content.parts : [];
-    const generatedText = parts
-      .filter(isRecord)
-      .map((part) => typeof part.text === "string" ? part.text : "")
-      .join("")
-      .trim();
-    if (!generatedText) {
-      console.error("AI CV Maker: Gemini mengembalikan hasil kosong.");
-      const creditsRestored = await releaseReservation("empty_gemini_response");
-      return jsonResponse({ error: "AI belum menghasilkan CV. Coba lagi.", creditsRestored }, 502);
-    }
-    let cv: GeneratedCV;
-    try {
-      cv = parseGeneratedCV(generatedText, input);
-    } catch (error) {
-      console.error(
-        "AI CV Maker: hasil Gemini tidak dapat divalidasi.",
-        error instanceof Error ? error.message : "unknown",
-      );
-      const creditsRestored = await releaseReservation("invalid_generated_cv");
-      return jsonResponse({ error: "Hasil AI belum dapat digunakan. Coba buat ulang.", creditsRestored }, 502);
+
+    if (!cv) {
+      const creditsRestored = await releaseReservation(lastFailureReason);
+      return jsonResponse({
+        error: "Hasil AI belum dapat digunakan. Silakan coba lagi.",
+        creditsRestored,
+      }, 502);
     }
     const completionRecorded = await completeReservation();
     if (!completionRecorded) {
@@ -529,7 +533,7 @@ Deno.serve(async (request) => {
       "AI CV Maker: layanan Gemini gagal.",
       error instanceof Error ? error.name : "unknown",
     );
-    const creditsRestored = await releaseReservation("gemini_network_error");
+    const creditsRestored = await releaseReservation(getGeminiFailureReason(error));
     return jsonResponse(
       {
         error: "Layanan AI tidak dapat dihubungi. Periksa koneksi lalu coba lagi.",
