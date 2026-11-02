@@ -400,12 +400,12 @@ export default function ScreenScribble({
               type="button"
               onClick={() => void analyzeStrokes()}
               disabled={strokes.length === 0 || analyzing}
-              aria-label={analyzing ? "Analisis sedang berjalan" : "Minta petunjuk AI, menggunakan 1 kredit"}
+              aria-label={analyzing ? "Analisis sedang berjalan" : "Minta petunjuk AI, menggunakan 2 kredit"}
               className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-700 text-xs font-bold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:gap-2 sm:px-3"
             >
               {analyzing ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               <span className="sr-only sm:not-sr-only">
-                {analyzing ? "Menganalisis..." : "Analisis · 1 kredit"}
+                {analyzing ? "Menganalisis..." : "Analisis · 2 kredit"}
               </span>
             </button>
           </div>
@@ -447,7 +447,7 @@ export default function ScreenScribble({
       </div>
       <div aria-live="polite" className="border-t border-border/60 bg-muted/20 px-4 py-3 sm:px-6">
         <p className="text-[11px] leading-5 text-muted-foreground">
-          Analisis menggunakan 1 kredit. Coretan hanya diproses setelah Anda memilih tombol analisis. Hindari menyertakan informasi pribadi.
+          Analisis menggunakan 2 kredit. Coretan hanya diproses setelah Anda memilih tombol analisis. Hindari menyertakan informasi pribadi.
         </p>
         {storageWarning && (
           <p role="status" className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">

@@ -282,7 +282,7 @@ Deno.serve(async (request) => {
   const reservation = Array.isArray(reservationData)
     ? reservationData[0]
     : reservationData;
-  const expectedCreditCost = image ? 1 : 2;
+  const expectedCreditCost = image ? 2 : 1;
   if (
     !isRecord(reservation) ||
     typeof reservation.allowed !== "boolean" ||

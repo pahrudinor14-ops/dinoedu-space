@@ -551,7 +551,7 @@ export default function DinoAIChat({
       return;
     }
     /* FRONTEND CREDIT CHECK */
-    if (quota && quota.creditsRemaining + walletCredits < 2) {
+    if (quota && quota.creditsRemaining + walletCredits < 1) {
       return;
     }
     const conversationId = activeConversation.id;
@@ -670,7 +670,7 @@ export default function DinoAIChat({
           ),
         )
       : 0;
-  const quotaEmpty = !!quota && quota.creditsRemaining + walletCredits < 2;
+  const quotaEmpty = !!quota && quota.creditsRemaining + walletCredits < 1;
   const quotaResetLabel = quota?.resetAt
     ? formatResetTime(quota.resetAt)
     : "Waktu reset belum tersedia";
@@ -721,7 +721,7 @@ export default function DinoAIChat({
             <span className="font-semibold text-foreground">{walletCredits}</span>
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            Setiap permintaan DinoAI menggunakan 2 kredit.
+            Setiap pesan DinoAI menggunakan 1 kredit.
           </p>
           <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-1.5 text-[10px] text-muted-foreground">
             <Clock3 className="h-3 w-3 shrink-0" />
@@ -737,7 +737,7 @@ export default function DinoAIChat({
           </div>
           {quotaEmpty && (
             <div className="mt-2 text-[11px] font-medium text-[#EF629F]">
-              Kredit belum cukup untuk satu permintaan AI (2 kredit)
+              Kredit belum cukup untuk mengirim pesan (1 kredit)
             </div>
           )}
         </>
@@ -759,7 +759,7 @@ export default function DinoAIChat({
           Kuota harian dan token pembelianmu sudah habis
         </h3>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Satu permintaan DinoAI menggunakan 2 kredit. Kredit harian kembali
+          Satu pesan DinoAI menggunakan 1 kredit. Kredit harian kembali
           setelah reset atau kamu dapat melihat paket kredit pembelian.
         </p>
         <p className="mt-2 text-xs font-medium text-muted-foreground">

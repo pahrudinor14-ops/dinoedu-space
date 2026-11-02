@@ -20,6 +20,7 @@ import {
    Moon,
    ShieldCheck,
    Sun,
+   UsersRound,
 } from "lucide-react";
 import DinoLabLogo from "./DinoLabLogo";
 import {
@@ -470,6 +471,7 @@ export default function Dashboard({
                            }}
                            className="mt-7 inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-pink-700 shadow-lg shadow-pink-950/15 transition-all duration-200 hover:-translate-y-0.5 hover:bg-pink-50 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-pink-500"
                         >
+                           <UsersRound aria-hidden="true" className="h-4 w-4" />
                            Jelajahi NUMEA EDU
                            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                         </button>

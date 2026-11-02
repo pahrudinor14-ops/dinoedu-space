@@ -92,6 +92,9 @@ function App() {
   );
   const showDashboard = currentRoute.startsWith("/app");
   const showDinoAI = currentRoute === "/app/dinoai";
+  const [dinoAIInitialized, setDinoAIInitialized] = useState(
+    () => normalizeAppRoute(window.location.pathname) === "/app/dinoai",
+  );
   const showAICV = currentRoute === "/app/cv";
   const showAISurat = currentRoute === "/app/surat";
   const showAIPembuatSoal = currentRoute === "/app/soal";
@@ -514,6 +517,7 @@ useEffect(() => {
   };
   const openDinoAI = () => {
     setMobileMenu(false);
+    setDinoAIInitialized(true);
     navigateTo("/app/dinoai");
   };
   const openAICV = () => {
@@ -585,8 +589,10 @@ useEffect(() => {
       </main>
     );
   }
-  return currentRoute === "/numea" ? (
-    <NumeaAccessGate
+  return (
+    <>
+      {currentRoute === "/numea" ? (
+        <NumeaAccessGate
       darkMode={darkMode}
       onToggleTheme={() => setDarkMode((value) => !value)}
       onBack={() => {
@@ -597,9 +603,9 @@ useEffect(() => {
       onOpenAISurat={openAISurat}
       onOpenAISoal={openAIPembuatSoal}
       onOpenAIModulAjar={openAIModulAjar}
-    />
-  ) : (
-    <div className="min-h-dvh overflow-x-clip bg-background text-foreground">
+        />
+      ) : (
+        <div className="min-h-dvh overflow-x-clip bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="dino-float absolute left-[-140px] top-[80px] h-[320px] w-[320px] rounded-full bg-[#EECDA3]/35 blur-3xl" />
         <div className="dino-float-slow absolute right-[-120px] top-[180px] h-[360px] w-[360px] rounded-full bg-[#EF629F]/20 blur-3xl" />
@@ -886,11 +892,7 @@ useEffect(() => {
       ) : showAICV && user ? (
         <AICVMaker onBack={closeAICV} />
       ) : showDinoAI && user ? (
-        <DinoAIChat
-          email={user.email}
-          userId={user.id}
-          onClose={closeDinoAI}
-        />
+        null
       ) : showDinoMath && user ? (
         <DinoMathFlipbook onBack={closeDinoMath} />
       ) : showLaboratoriumDino && user ? (
@@ -1720,7 +1722,18 @@ useEffect(() => {
     </div>
   </div>
 )}
-    </div>
+        </div>
+      )}
+      {dinoAIInitialized && user && (
+        <div className={showDinoAI ? "fixed inset-0 z-[60]" : "hidden"}>
+          <DinoAIChat
+            email={user.email}
+            userId={user.id}
+            onClose={closeDinoAI}
+          />
+        </div>
+      )}
+    </>
   );
 }
 export default App;
