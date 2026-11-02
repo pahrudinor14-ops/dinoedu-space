@@ -9,12 +9,13 @@ import {
   PieChart,
   Ruler,
   Scale,
-  Sparkles,
   Target,
 } from "lucide-react"
 import RujukanPenyusunan from "./RujukanPenyusunan"
 import GuidedLearning, { type GuidedStep } from "./GuidedLearning"
 import ModeSelector, { type LearningMode } from "./ModeSelector"
+import DinoLabLogo from "../DinoLabLogo"
+import ScreenScribble from "./ScreenScribble"
 
 type Topic = "pecahan" | "rasio" | "pengukuran"
 type MeasurementKind = "panjang" | "massa" | "kapasitas" | "waktu" | "luas" | "volume" | "suhu" | "kecepatan" | "sudut"
@@ -28,19 +29,25 @@ const topics: { id: Topic; title: string; summary: string; Icon: typeof PieChart
 
 const guidedSteps: Record<Topic, GuidedStep[]> = {
   pecahan: [
-    { title: "Tentukan satu utuh", description: "Sebutkan benda atau panjang yang dianggap satu utuh. Pecahan hanya bermakna jika ukuran utuhnya jelas." },
-    { title: "Baca pembilang dan penyebut", description: "Penyebut membagi satu utuh menjadi bagian sama besar; pembilang menyatakan banyak bagian yang diambil atau diperhatikan." },
-    { title: "Hubungkan gambar dengan nilai", description: "Bandingkan pecahan dengan ukuran satu utuh yang sama. Bagian lebih banyak belum tentu berarti nilai lebih besar jika penyebutnya berbeda." },
+    { title: "Masalah: berbagi makanan secara adil", description: "Dua orang berbagi satu roti. Bagaimana membagi dan membandingkan bagian agar keduanya mendapat jumlah yang sama?" },
+    { title: "Bangun bagian dengan benda", description: "Bayangkan atau susun benda konkret sebagai satu utuh, lalu bagi menjadi beberapa bagian dengan ukuran yang sama." },
+    { title: "Gambar dan coret bagiannya", description: "Coret layar untuk menggambar satu utuh, membaginya sama besar, lalu arsir bagian yang diambil." },
+    { title: "Hubungkan gambar ke pecahan", description: "Penyebut menunjukkan banyak bagian sama besar; pembilang menunjukkan bagian yang dipilih. Bandingkan dengan satu utuh yang sama." },
+    { title: "Terapkan dan periksa", description: "Gambarkan pecahan lain dan jelaskan nilainya. Banyak bagian yang diarsir saja tidak cukup jika ukuran satu utuh berbeda." },
   ],
   rasio: [
-    { title: "Tentukan dua hal yang dibandingkan", description: "Sebutkan urutannya, misalnya 2 bagian jus untuk setiap 3 bagian air. Membalik urutan mengubah makna rasio." },
-    { title: "Samakan faktor pengali", description: "Rasio senilai diperoleh dengan mengalikan atau membagi kedua bagian dengan faktor yang sama." },
-    { title: "Periksa konteks dan satuan", description: "Pastikan rasio membandingkan jenis banyak yang tepat dan jawaban tetap mengikuti urutan pada soal." },
+    { title: "Masalah: campur minuman dengan rasa yang sama", description: "Resep memakai 2 takar konsentrat untuk 3 takar air. Bagaimana membuat porsi lebih banyak tanpa mengubah rasanya?" },
+    { title: "Bangun campuran dengan benda", description: "Gunakan benda/takaran untuk membentuk dua kelompok dengan rasio yang sama, lalu gandakan keduanya." },
+    { title: "Gambar pasangan rasio", description: "Coret layar untuk menggambar tabel atau batang yang menunjukkan pasangan konsentrat dan air." },
+    { title: "Hubungkan model ke rasio senilai", description: "Rasio senilai diperoleh dengan mengalikan atau membagi kedua bagian dengan faktor yang sama. Urutan membandingkan tetap penting." },
+    { title: "Terapkan dan periksa", description: "Buat porsi baru dan cek bahwa kedua jumlah memakai faktor pengali yang sama serta urutannya tetap benar." },
   ],
   pengukuran: [
-    { title: "Kenali besar yang diukur", description: "Tentukan apakah yang diukur panjang, massa, kapasitas, waktu, luas, volume, suhu, kecepatan, atau sudut." },
-    { title: "Pilih alat dan satuan", description: "Gunakan alat yang sesuai dan tuliskan satuan. Jangan mencampur satuan berbeda saat menghitung." },
-    { title: "Konversi dengan hubungan yang benar", description: "Ubah nilai melalui kesetaraan satuan. Luas dan volume memakai faktor konversi yang dikuadratkan atau dipangkatkan tiga." },
+    { title: "Masalah: ukur untuk memilih wadah", description: "Sebuah benda harus masuk ke kotak. Besaran apa yang perlu diukur dan bagaimana memastikan ukurannya cukup?" },
+    { title: "Ukur secara konkret", description: "Bayangkan memakai penggaris, timbangan, gelas ukur, atau alat yang cocok. Pilih besaran dan satuan yang tepat." },
+    { title: "Gambar ukuran dan satuannya", description: "Coret layar untuk menggambar benda/wadah, menandai ukuran, dan menuliskan satuan pada tiap sisi atau besaran." },
+    { title: "Hubungkan pengukuran ke konversi", description: "Gunakan kesetaraan satuan saat mengubah nilai. Luas mengkuadratkan faktor konversi dan volume memangkatkan tiga." },
+    { title: "Terapkan dan periksa", description: "Bandingkan ukuran benda dengan kapasitas wadah, pastikan satuan seragam, lalu jelaskan apakah benda akan muat." },
   ],
 }
 
@@ -601,7 +608,7 @@ function FactCard({ title, text }: { title: string; text: string }) {
 
 export default function PecahanRasioPengukuran({ resetSignal }: { resetSignal: number }) {
   const [activeTopic, setActiveTopic] = useState<Topic>("pecahan")
-  const [mode, setMode] = useState<LearningMode>("learn")
+  const [mode, setMode] = useState<LearningMode>("lab")
   const [guidedStep, setGuidedStep] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [checked, setChecked] = useState(false)
@@ -619,7 +626,7 @@ export default function PecahanRasioPengukuran({ resetSignal }: { resetSignal: n
   useEffect(() => {
     if (resetSignal === 0) return
     setActiveTopic("pecahan")
-    setMode("learn")
+    setMode("lab")
     setGuidedStep(0)
     setSelectedAnswer(null)
     setChecked(false)
@@ -631,7 +638,7 @@ export default function PecahanRasioPengukuran({ resetSignal }: { resetSignal: n
     <div className="relative mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
       <section className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300"><Sparkles className="h-3.5 w-3.5" />Laboratorium konsep | SD dan SMP</div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300"><DinoLabLogo className="h-4 w-4 object-contain" />DinoLab · SD dan SMP</div>
           <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">Pecahan, rasio, dan pengukuran</h2>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">Geser, amati, lalu jelaskan apa yang berubah. Setiap topik menghubungkan gambar, kata-kata, dan hitungan agar rumus punya makna.</p>
         </div>
@@ -664,6 +671,13 @@ export default function PecahanRasioPengukuran({ resetSignal }: { resetSignal: n
         <aside className="rounded-3xl bg-emerald-500/5 p-5 sm:p-6"><div className="flex items-center gap-2"><CircleHelp className="h-5 w-5 text-emerald-700 dark:text-emerald-300" /><h3 className="font-bold">Pegangan konsep</h3></div><p className="mt-3 text-sm leading-6 text-muted-foreground">Ucapkan satuan dan konteksnya. Pecahan butuh satu utuh yang jelas; rasio butuh urutan yang jelas; hasil ukur butuh besaran dan satuan yang jelas.</p><p className="mt-3 text-xs leading-5 text-muted-foreground">Materi diringkas untuk pembelajaran SD (Fase B–C) dan SMP (Fase D), dengan istilah sederhana serta contoh sehari-hari.</p></aside>
       </section>
 
+      {mode === "learn" && (
+        <ScreenScribble
+          key={activeTopic}
+          visible
+          context={`${topics.find((topic) => topic.id === activeTopic)?.title ?? "Materi pengukuran"}. Tahap ${guidedStep + 1}: ${guidedSteps[activeTopic][guidedStep].title}. ${guidedSteps[activeTopic][guidedStep].description}`}
+        />
+      )}
       <RujukanPenyusunan material="pecahan" />
     </div>
   )

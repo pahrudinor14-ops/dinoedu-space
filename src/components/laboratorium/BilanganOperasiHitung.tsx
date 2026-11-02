@@ -11,14 +11,15 @@ import {
   MoveRight,
   Plus,
   Scale,
-  Sparkles,
   Target,
   X,
   type LucideIcon,
 } from "lucide-react"
 import RujukanPenyusunan from "./RujukanPenyusunan"
+import DinoLabLogo from "../DinoLabLogo"
 import GuidedLearning, { type GuidedStep } from "./GuidedLearning"
 import ModeSelector, { type LearningMode } from "./ModeSelector"
+import ScreenScribble from "./ScreenScribble"
 
 type LessonId = "nilai-tempat" | "operasi" | "bilangan-bulat" | "faktor-kelipatan" | "urutan-operasi"
 type Operation = "tambah" | "kurang" | "kali" | "bagi"
@@ -38,29 +39,39 @@ const lessons: { id: LessonId; title: string; summary: string; Icon: LucideIcon 
 
 const guidedSteps: Record<LessonId, GuidedStep[]> = {
   "nilai-tempat": [
-    { title: "Baca posisi digit", description: "Mulai dari kanan: satuan, puluhan, ratusan, dan seterusnya. Posisi menentukan nilai sebuah digit." },
-    { title: "Uraikan bilangannya", description: "Tuliskan setiap digit sebagai hasil kali digit dan nilai tempatnya, lalu jumlahkan kembali." },
-    { title: "Periksa susunannya", description: "Pastikan hasil uraian sama dengan bilangan awal. Nol tetap menjadi penanda tempat meskipun nilainya nol." },
+    { title: "Masalah: apakah digit yang sama selalu bernilai sama?", description: "Bayangkan angka 3 pada harga Rp3.000 dan Rp30.000. Apa yang membuat nilainya berbeda?" },
+    { title: "Bangun bilangan dengan model", description: "Amati blok nilai tempat dan geser digit ke kolom satuan, puluhan, ratusan, atau ribuan. Perhatikan nilai yang berubah." },
+    { title: "Gambar pengelompokanmu", description: "Coret layar untuk menggambar kolom atau blok, lalu tulis posisi digit yang ingin kamu bandingkan." },
+    { title: "Hubungkan model ke notasi", description: "Uraikan bilangan sebagai hasil kali setiap digit dengan nilai tempatnya, lalu jumlahkan kembali." },
+    { title: "Terapkan dan periksa", description: "Buat satu bilangan sendiri, uraikan nilainya, dan pastikan hasil uraian sama dengan bilangan awal. Nol tetap menjadi penanda tempat." },
   ],
   operasi: [
-    { title: "Pahami tindakannya", description: "Tambah menggabungkan, kurang mencari selisih atau sisa, kali membentuk kelompok sama banyak, dan bagi membagi rata atau mengelompokkan." },
-    { title: "Pilih model yang cocok", description: "Gunakan garis bilangan, kelompok benda, atau susunan titik untuk menggambarkan operasi sebelum menghitung." },
-    { title: "Hubungkan operasi", description: "Cek hasil dengan operasi kebalikannya, misalnya 24 ÷ 6 = 4 dapat diperiksa dengan 4 × 6 = 24." },
+    { title: "Masalah: bagaimana membagi benda secara adil?", description: "Ada 24 benda untuk dibagikan sama rata kepada 6 orang. Bagaimana kamu tahu setiap orang mendapat bagian yang sama?" },
+    { title: "Bangun kelompoknya", description: "Gunakan model kelompok atau susunan titik pada materi. Coba gabungkan, ambil, atau susun ulang kelompok sebelum menghitung." },
+    { title: "Gambar strategimu", description: "Coret layar untuk menggambar kelompok, lompatan garis bilangan, atau susunan titik yang membantu menjelaskan operasi." },
+    { title: "Hubungkan gambar ke simbol", description: "Tulis operasi yang mewakili model. Tambah menggabungkan, kurang mencari selisih/sisa, kali membentuk kelompok sama banyak, dan bagi membagi rata." },
+    { title: "Terapkan dan periksa", description: "Hitung hasilnya lalu periksa dengan operasi kebalikan, misalnya 24 ÷ 6 = 4 dapat dicek dengan 4 × 6 = 24." },
   ],
   "bilangan-bulat": [
-    { title: "Tempatkan bilangan", description: "Pada garis bilangan, nol menjadi titik acuan; bilangan negatif di kiri dan positif di kanan." },
-    { title: "Ikuti arah gerak", description: "Untuk tambah dan kurang, lihat titik awal serta arah dan banyak langkah, bukan hanya menghafal tanda." },
-    { title: "Periksa tanda dan hasil", description: "Nol bukan positif atau negatif. Pembagian dengan nol tidak terdefinisi; periksa kembali tanda hasil kali dan bagi." },
+    { title: "Masalah: suhu turun lalu naik", description: "Suhu pagi 2°C, kemudian turun 5°C. Di angka berapa suhu sekarang, dan bagaimana kamu akan menggambarkan perubahannya?" },
+    { title: "Jelajahi garis bilangan", description: "Mulai dari nol sebagai titik acuan. Bergerak ke kiri untuk bilangan negatif dan ke kanan untuk bilangan positif." },
+    { title: "Gambar arah dan langkah", description: "Coret layar untuk menandai titik awal, arah gerak, dan banyak langkah pada garis bilangan." },
+    { title: "Hubungkan gerak ke operasi", description: "Tulis perubahan sebagai operasi bilangan bulat. Perhatikan arah serta titik awal, bukan hanya menghafal tanda." },
+    { title: "Terapkan dan periksa", description: "Selesaikan cerita suhu dan jelaskan hasilnya. Nol bukan positif atau negatif; pembagian dengan nol tidak terdefinisi." },
   ],
   "faktor-kelipatan": [
-    { title: "Bedakan faktor dan kelipatan", description: "Faktor membagi habis suatu bilangan. Kelipatan diperoleh dari bilangan itu dikali 1, 2, 3, dan seterusnya." },
-    { title: "Temukan yang sama", description: "Daftar faktor bersama untuk mencari FPB, atau daftar kelipatan bersama untuk mencari KPK." },
-    { title: "Pilih sesuai cerita", description: "FPB cocok untuk membagi menjadi kelompok terbesar yang sama. KPK cocok untuk mencari waktu pertemuan berulang paling awal." },
+    { title: "Masalah: kapan dua kegiatan berulang bertemu?", description: "Satu kegiatan berulang tiap 4 hari dan kegiatan lain tiap 6 hari. Kapan keduanya berlangsung pada hari yang sama lagi?" },
+    { title: "Bangun daftar kelipatan", description: "Lompat berulang pada garis bilangan atau susun benda dalam kelompok sama banyak untuk melihat faktor dan kelipatan." },
+    { title: "Gambar daftar atau kelompok", description: "Coret layar untuk membuat dua daftar lompatan/kelipatan dan lingkari nilai yang bertemu." },
+    { title: "Hubungkan ke FPB dan KPK", description: "Faktor membagi habis; kelipatan diperoleh dari perkalian berulang. Kelipatan bersama membantu menemukan KPK." },
+    { title: "Terapkan dan periksa", description: "Jawab kapan kedua kegiatan bertemu dan cek bahwa hasilnya habis dibagi 4 dan 6. Untuk membagi benda, gunakan gagasan FPB." },
   ],
   "urutan-operasi": [
-    { title: "Selesaikan bagian yang terikat", description: "Kerjakan yang berada di dalam tanda kurung lebih dahulu, kemudian pangkat jika ada." },
-    { title: "Lanjutkan operasi setingkat", description: "Perkalian dan pembagian setingkat; penjumlahan dan pengurangan juga setingkat. Kerjakan dari kiri ke kanan." },
-    { title: "Cek langkahnya", description: "Tulis satu langkah pada satu waktu agar urutan jelas dan hasil dapat diperiksa kembali." },
+    { title: "Masalah: dua cara hitung, satu ekspresi", description: "Untuk ekspresi 8 + 4 × 3, apakah hasilnya 36 atau 20? Jelaskan mengapa urutan tindakan penting." },
+    { title: "Bangun ekspresi selangkah demi selangkah", description: "Gunakan model kelompok untuk perkalian dan gabungkan hasilnya dengan penjumlahan. Amati bagian yang dikerjakan lebih dahulu." },
+    { title: "Gambar urutan pengerjaan", description: "Coret layar untuk memberi nomor pada operasi yang dikerjakan dan tunjukkan kelompok yang dihitung lebih dahulu." },
+    { title: "Hubungkan ke aturan formal", description: "Kerjakan tanda kurung lebih dahulu, kemudian pangkat jika ada. Perkalian/pembagian setingkat; tambah/kurang setingkat dan dikerjakan dari kiri ke kanan." },
+    { title: "Terapkan dan periksa", description: "Hitung ekspresi tadi satu langkah pada satu waktu. Substitusikan kembali hasil sementara untuk memastikan urutannya konsisten." },
   ],
 }
 
@@ -505,13 +516,13 @@ function LearningPath() {
 export default function BilanganOperasiHitung({ resetSignal }: { resetSignal: number }) {
   const [activeLesson, setActiveLesson] = useState<LessonId>("nilai-tempat")
   const [resetKey, setResetKey] = useState(0)
-  const [mode, setMode] = useState<LearningMode>("learn")
+  const [mode, setMode] = useState<LearningMode>("lab")
   const [guidedStep, setGuidedStep] = useState(0)
 
   useEffect(() => {
     if (resetSignal === 0) return
     setActiveLesson("nilai-tempat")
-    setMode("learn")
+    setMode("lab")
     setGuidedStep(0)
     setResetKey((current) => current + 1)
     window.scrollTo({ top: 0, behavior: "smooth" })
@@ -521,7 +532,7 @@ export default function BilanganOperasiHitung({ resetSignal }: { resetSignal: nu
     <div className="relative mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
       <section className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300"><Sparkles className="h-3.5 w-3.5" />Laboratorium konsep | SD dan SMP</div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300"><DinoLabLogo className="h-4 w-4 object-contain" />DinoLab · SD dan SMP</div>
           <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">Bilangan dan operasi hitung</h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">Amati nilai digit, gerakkan bilangan, dan susun kelompok. Setiap langkah hitung ditautkan ke model yang menunjukkan mengapa jawabannya masuk akal.</p>
         </div>
@@ -529,7 +540,7 @@ export default function BilanganOperasiHitung({ resetSignal }: { resetSignal: nu
       </section>
 
       <section aria-labelledby="pilih-topik-bilangan" className="space-y-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-2"><h3 id="pilih-topik-bilangan" className="font-bold">Pilih jalur belajar</h3><p className="text-xs text-muted-foreground">5 laboratorium interaktif | SD dan SMP</p></div>
+        <div className="flex flex-wrap items-baseline justify-between gap-2"><h3 id="pilih-topik-bilangan" className="font-bold">Pilih jalur belajar</h3><p className="text-xs text-muted-foreground">5 topik interaktif | SD dan SMP</p></div>
         <nav aria-label="Pilih topik bilangan" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
           {lessons.map(({ id, title, summary, Icon }) => <button key={id} type="button" onClick={() => { setActiveLesson(id); setGuidedStep(0) }} aria-current={activeLesson === id ? "page" : undefined} className={"flex min-h-[4.25rem] items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 " + (activeLesson === id ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-800 shadow-sm dark:text-emerald-200" : "border-border/70 bg-background/75 hover:border-emerald-400/50 hover:bg-emerald-500/5")}><span className={"flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " + (activeLesson === id ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground")}><Icon className="h-4 w-4" /></span><span className="min-w-0 flex-1"><strong className="block text-xs leading-4 sm:text-sm">{title}</strong><span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">{summary}</span></span></button>)}
         </nav>
@@ -554,6 +565,13 @@ export default function BilanganOperasiHitung({ resetSignal }: { resetSignal: nu
       </section>
 
       <LearningPath />
+      {mode === "learn" && (
+        <ScreenScribble
+          key={activeLesson}
+          visible
+          context={`${lessons.find((lesson) => lesson.id === activeLesson)?.title ?? "Materi bilangan"}. Tahap ${guidedStep + 1}: ${guidedSteps[activeLesson][guidedStep].title}. ${guidedSteps[activeLesson][guidedStep].description}`}
+        />
+      )}
       <RujukanPenyusunan material="bilangan" />
     </div>
   )

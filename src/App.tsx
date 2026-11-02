@@ -21,6 +21,7 @@ import AIEvaluasiPembelajaran from "./components/AIEvaluasiPembelajaran";
 import AIModulAjar from "./components/AIModulAjar";
 import AIGuruStudio from "./components/AIGuruStudio";
 import LaboratoriumDino from "./components/LaboratoriumDino";
+import DinoLabLogo from "./components/DinoLabLogo";
 import {
   ArrowRight,
   LayoutDashboard,
@@ -33,7 +34,6 @@ import {
   ClipboardList,
   ClipboardCheck,
   BarChart3,
-  Box,
   BookOpen,
   ChevronDown,
   Menu,
@@ -80,7 +80,7 @@ function App() {
   const productNavItems = [
     { label: "Fitur AI", href: "#fitur" },
     { label: "DinoMath", href: "#dinomath" },
-    { label: "Laboratorium Dino", href: "#laboratorium-dino" },
+    { label: "DinoLab", href: "#laboratorium-dino" },
     { label: "NUMEA EDU", href: "#numea" },
   ];
   const [showAuth, setShowAuth] = useState(false);
@@ -1111,7 +1111,7 @@ useEffect(() => {
                 </h2>
                 <p className="mt-5 text-[20px] leading-relaxed text-muted-foreground">
                   Belajar dengan cara yang menyenangkan dan tumbuh bersama
-                  komunitas pendidikan dalam satu ruang digital, termasuk ruang eksplorasi Laboratorium Dino.
+                  komunitas pendidikan dalam satu ruang digital, termasuk ruang eksplorasi DinoLab.
                 </p>
               </div>
               <div className="grid items-stretch gap-6 lg:grid-cols-3">
@@ -1131,7 +1131,7 @@ useEffect(() => {
                       <img
                         src="/dinomath.PNG"
                         alt="Logo DinoMath"
-                        className="h-16 w-16 shrink-0 object-contain animate-pulse"
+                        className="dino-logo-beat h-16 w-16 shrink-0 object-contain brightness-125 saturate-125 drop-shadow-[0_0_8px_rgba(251,146,60,0.5)]"
                       />
                     </div>
                     <h3 className="mt-7 text-3xl font-bold tracking-tight sm:text-4xl">
@@ -1196,7 +1196,7 @@ useEffect(() => {
                       <img
                         src="/numeaedu.PNG"
                         alt="Logo NUMEA EDU"
-                        className="h-16 w-16 shrink-0 object-contain animate-pulse"
+                        className="dino-logo-beat h-16 w-16 shrink-0 object-contain brightness-125 saturate-125 drop-shadow-[0_0_8px_rgba(244,114,182,0.5)]"
                       />
                     </div>
                     <h3 className="mt-7 text-3xl font-bold tracking-tight sm:text-4xl">
@@ -1251,11 +1251,9 @@ useEffect(() => {
                       <span className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-300">
                         Eksplorasi &amp; Kreasi
                       </span>
-                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-emerald-400/30 bg-emerald-400/10 text-emerald-600 dark:text-emerald-300">
-                        <Box aria-hidden="true" className="h-9 w-9" strokeWidth={1.5} />
-                      </div>
+                      <DinoLabLogo className="dino-logo-beat h-16 w-16 shrink-0 object-contain brightness-150 saturate-125 drop-shadow-[0_0_10px_rgba(52,211,153,0.55)]" />
                     </div>
-                    <h3 className="mt-7 text-3xl font-bold tracking-tight sm:text-4xl">Laboratorium Dino</h3>
+                    <h3 className="mt-7 text-3xl font-bold tracking-tight sm:text-4xl">DinoLab</h3>
                     <p className="mt-2 text-sm font-semibold text-emerald-600 dark:text-emerald-300">Matematika interaktif untuk dijelajahi</p>
                     <p className="mt-5 text-[15px] leading-7 text-muted-foreground">
                       Pilih dari enam kategori matematika dan mulai bereksperimen. Materi Bangun ruang sudah tersedia untuk dijelajahi.
@@ -1270,10 +1268,10 @@ useEffect(() => {
                         onClick={openDashboardOrAuth}
                         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-500/30 sm:w-auto"
                       >
-                        Jelajahi Laboratorium
+                        Jelajahi DinoLab
                         <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                       </button>
-                      <p className="mt-3 text-xs leading-5 text-muted-foreground">Masuk ke dashboard, lalu pilih Laboratorium Dino untuk mulai menjelajah.</p>
+                      <p className="mt-3 text-xs leading-5 text-muted-foreground">Masuk ke dashboard, lalu pilih DinoLab untuk mulai menjelajah.</p>
                     </div>
                   </div>
                 </article>

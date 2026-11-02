@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react"
 import { BookOpen, CheckCircle2, Ruler, Shapes, Sparkles } from "lucide-react"
 import RujukanPenyusunan from "./laboratorium/RujukanPenyusunan"
+import DinoLabLogo from "./DinoLabLogo"
+import GuidedLearning from "./laboratorium/GuidedLearning"
+import ScreenScribble from "./laboratorium/ScreenScribble"
 
 type ShapeId =
   | "square"
@@ -378,7 +381,7 @@ function fitDimensionsToShape(shape: PlaneShape, dimensions: Dimensions): Dimens
 }
 
 export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: number }) {
-  const [mode, setMode] = useState<"learn" | "lab">("learn")
+  const [mode, setMode] = useState<"learn" | "lab">("lab")
   const [lessonStep, setLessonStep] = useState(0)
   const [selectedId, setSelectedId] = useState<ShapeId>("square")
   const [dimensions, setDimensions] = useState<Dimensions>(INITIAL_DIMENSIONS)
@@ -392,7 +395,7 @@ export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: nu
 
   useEffect(() => {
     if (resetSignal === 0) return
-    setMode("learn")
+    setMode("lab")
     setSelectedId("square")
     setDimensions(INITIAL_DIMENSIONS)
     setShowGrid(true)
@@ -408,9 +411,11 @@ export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: nu
   const selectedShape = planeShapes.find((shape) => shape.id === selectedId)!
   const stats = getStats(selectedId, dimensions)
   const guidedLessons = [
-    { title: "Kenali bentuknya", description: `${selectedShape.description} Amati juga garis putus-putus untuk mengenali simetri lipatnya.` },
-    { title: "Pahami rumusnya", description: `Luas ${selectedShape.name.toLowerCase()} dihitung dengan ${stats.areaFormula}; kelilingnya dihitung dengan ${stats.perimeterFormula}.` },
-    { title: "Lakukan eksperimen", description: "Ubah ukuran dan putar bentuknya. Amati perubahan luas serta keliling, lalu jawab uji pemahaman." },
+    { title: "Masalah: rancang bentuk dengan luas tertentu", description: `Bagaimana membuat ${selectedShape.name.toLowerCase()} dengan luas tertentu tanpa mengubah jenis bentuk? Perkirakan ukuran yang perlu diubah.` },
+    { title: "Bangun dan amati bentuk", description: `${selectedShape.description} Ubah ukurannya dan amati garis simetri untuk melihat apa yang tetap dan berubah.` },
+    { title: "Gambar ukuran dan simetri", description: "Coret layar untuk menandai sisi, tinggi, diagonal, atau sumbu simetri yang kamu gunakan." },
+    { title: "Hubungkan gambar ke rumus", description: `Luas ${selectedShape.name.toLowerCase()} dihitung dengan ${stats.areaFormula}; kelilingnya dihitung dengan ${stats.perimeterFormula}. Hubungkan setiap ukuran pada rumus dengan gambar.` },
+    { title: "Terapkan dan periksa", description: "Ubah satu ukuran, hitung luas dan keliling, lalu bandingkan hasilnya dengan perkiraan serta gambar coretanmu." },
   ]
   const correctQuizAnswer = Number(stats.area.toFixed(2))
   const quizAnswers = [...new Set([
@@ -458,7 +463,7 @@ export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: nu
     <div className="relative mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
       <section className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300"><Shapes className="h-3.5 w-3.5" />Geometri · 12 bentuk interaktif</div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300"><DinoLabLogo className="h-4 w-4 object-contain" />Geometri · 12 bentuk interaktif</div>
           <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">Bangun datar</h2>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">Bangun datar adalah bentuk dua dimensi dengan panjang dan lebar. Poligon memiliki sisi lurus; lingkaran memiliki garis tepi lengkung. Pilih bentuk lalu geser ukurannya untuk melihat perubahan luas dan keliling.</p>
         </div>
@@ -468,7 +473,7 @@ export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: nu
               <BookOpen className="h-4 w-4" />Mode Belajar
             </button>
             <button type="button" onClick={() => setMode("lab")} aria-pressed={mode === "lab"} className={"inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm " + (mode === "lab" ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700" : "text-muted-foreground hover:bg-background/80 hover:text-foreground")}>
-              <Shapes className="h-4 w-4" />Laboratorium
+              <Shapes className="h-4 w-4" />DinoLab
             </button>
           </div>
         </div>
@@ -507,18 +512,11 @@ export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: nu
       <section className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-5">
           {mode === "learn" && (
-            <section className="rounded-2xl bg-emerald-500/5 p-4 sm:p-5">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"><BookOpen className="h-5 w-5" /></div>
-                <div><h3 className="font-bold">Pembelajaran terpandu</h3><p className="text-xs text-muted-foreground">Langkah {lessonStep + 1} dari {guidedLessons.length}</p></div>
-              </div>
-              <div className="mb-5 space-y-2"><h4 className="font-semibold">{guidedLessons[lessonStep].title}</h4><p className="text-sm leading-6 text-muted-foreground">{guidedLessons[lessonStep].description}</p></div>
-              <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: String(((lessonStep + 1) / guidedLessons.length) * 100) + "%" }} /></div>
-              <div className="flex justify-between gap-3">
-                <button type="button" disabled={lessonStep === 0} onClick={() => setLessonStep((current) => current - 1)} className="rounded-xl px-4 py-2 text-sm font-semibold transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40">Sebelumnya</button>
-                <button type="button" disabled={lessonStep === guidedLessons.length - 1} onClick={() => setLessonStep((current) => current + 1)} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">Berikutnya</button>
-              </div>
-            </section>
+            <GuidedLearning
+              steps={guidedLessons}
+              step={lessonStep}
+              onStepChange={setLessonStep}
+            />
           )}
           <div className="min-w-0 overflow-hidden rounded-3xl border border-border/70 bg-background/75 shadow-lg shadow-emerald-950/5">
           <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/60 px-4 py-4 sm:px-6">
@@ -674,6 +672,13 @@ export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: nu
         </aside>
       </section>
 
+      {mode === "learn" && (
+        <ScreenScribble
+          key={selectedId}
+          visible
+          context={`Bangun datar ${selectedShape.name}. Tahap ${lessonStep + 1}: ${guidedLessons[lessonStep].title}. ${guidedLessons[lessonStep].description}`}
+        />
+      )}
       <RujukanPenyusunan material="geometri" />
     </div>
   )

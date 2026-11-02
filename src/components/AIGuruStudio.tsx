@@ -424,7 +424,7 @@ export default function AIGuruStudio({ kind, onBack }: AIGuruStudioProps) {
                   : "Buat lembar kerja peserta didik yang terarah, sesuai tujuan belajar, dan siap dicetak."}
               </p>
               <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-[#EF629F]/15 bg-[#EF629F]/5 px-4 py-2 text-xs font-medium text-muted-foreground">
-                <BookOpen className="h-4 w-4 text-[#EF629F]" /> Menggunakan {isPpt ? 3 : 2} kredit AI per pembuatan
+                <BookOpen className="h-4 w-4 text-[#EF629F]" /> Menggunakan 2 kredit AI per pembuatan
               </div>
             </div>
           </div>
@@ -477,7 +477,7 @@ export default function AIGuruStudio({ kind, onBack }: AIGuruStudioProps) {
               </label>
               <button type="button" onClick={() => void handleGenerate()} disabled={!isComplete || isBusy} className="dino-gradient flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[15px] font-semibold text-white shadow-lg shadow-pink-500/10 transition disabled:cursor-not-allowed disabled:opacity-50">
                 <img src="/logodino.PNG" alt="" className="h-4 w-4 object-contain" />
-                {isGenerating ? "Sedang menyusun..." : `Buat ${isPpt ? "Presentasi" : "LKPD"} dengan AI · ${isPpt ? 3 : 2} kredit`}
+                {isGenerating ? "Sedang menyusun..." : `Buat ${isPpt ? "Presentasi" : "LKPD"} dengan AI · 2 kredit`}
               </button>
               {message && <p role="status" className="rounded-2xl border border-[#EF629F]/20 bg-[#EF629F]/5 px-4 py-3 text-center text-sm leading-6 text-muted-foreground">{message}</p>}
               {error && <p role="alert" className="rounded-2xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-center text-sm leading-6 text-red-500">{error}</p>}

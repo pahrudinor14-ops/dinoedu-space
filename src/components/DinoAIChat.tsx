@@ -551,7 +551,7 @@ export default function DinoAIChat({
       return;
     }
     /* FRONTEND CREDIT CHECK */
-    if (quota && quota.creditsRemaining < 1 && walletCredits < 1) {
+    if (quota && quota.creditsRemaining + walletCredits < 2) {
       return;
     }
     const conversationId = activeConversation.id;
@@ -670,7 +670,7 @@ export default function DinoAIChat({
           ),
         )
       : 0;
-  const quotaEmpty = !!quota && quota.creditsRemaining <= 0 && walletCredits <= 0;
+  const quotaEmpty = !!quota && quota.creditsRemaining + walletCredits < 2;
   const quotaResetLabel = quota?.resetAt
     ? formatResetTime(quota.resetAt)
     : "Waktu reset belum tersedia";
@@ -720,6 +720,9 @@ export default function DinoAIChat({
             <span>Token pembelian tersisa</span>
             <span className="font-semibold text-foreground">{walletCredits}</span>
           </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Setiap permintaan DinoAI menggunakan 2 kredit.
+          </p>
           <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-1.5 text-[10px] text-muted-foreground">
             <Clock3 className="h-3 w-3 shrink-0" />
             <span className="truncate">
@@ -734,7 +737,7 @@ export default function DinoAIChat({
           </div>
           {quotaEmpty && (
             <div className="mt-2 text-[11px] font-medium text-[#EF629F]">
-              Kuota harian dan token pembelian kamu sudah habis
+              Kredit belum cukup untuk satu permintaan AI (2 kredit)
             </div>
           )}
         </>
@@ -756,8 +759,8 @@ export default function DinoAIChat({
           Kuota harian dan token pembelianmu sudah habis
         </h3>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Terima kasih sudah belajar bersama DinoAI. Credit akan tersedia lagi
-          setelah reset harian.
+          Satu permintaan DinoAI menggunakan 2 kredit. Kredit harian kembali
+          setelah reset atau kamu dapat melihat paket kredit pembelian.
         </p>
         <p className="mt-2 text-xs font-medium text-muted-foreground">
           {quota?.resetAt ? (

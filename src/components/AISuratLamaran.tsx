@@ -898,7 +898,7 @@ async function handleGenerateAI() {
                   />
                   {aiLoading
                     ? "Sedang menyusun surat..."
-                    : "Buat Surat dengan AI · 1 kredit"}
+                    : "Buat Surat dengan AI · 2 kredit"}
                 </button>
                 {message && (
                   <div className="mt-4 rounded-2xl border border-[#EF629F]/20 bg-[#EF629F]/5 px-4 py-3 text-center text-[13px] leading-6 text-muted-foreground">
@@ -911,7 +911,7 @@ async function handleGenerateAI() {
                   </div>
                 )}
                 <p className="mt-3 text-center text-[12px] text-muted-foreground">
-                  Pembuatan surat menggunakan 1 kredit AI setelah hasil berhasil dibuat
+                  Pembuatan surat menggunakan 2 kredit AI setelah hasil berhasil dibuat
                 </p>
               </div>
               {/* PREVIEW */}

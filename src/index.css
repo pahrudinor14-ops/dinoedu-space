@@ -344,6 +344,24 @@ img[src="/numeaedu.PNG"] {
     transform: scale(1.05);
   }
 }
+@keyframes dino-logo-beat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.12);
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.08);
+  }
+  70% {
+    transform: scale(1);
+  }
+}
 @keyframes dino-nav-rise {
   from {
     opacity: 0;
@@ -366,6 +384,10 @@ img[src="/numeaedu.PNG"] {
   }
   .dino-pulse-soft {
     animation: dino-pulse-soft 5s ease-in-out infinite;
+  }
+  .dino-logo-beat {
+    animation: dino-logo-beat 1.8s ease-in-out infinite;
+    transform-origin: center;
   }
   .dino-interactive {
     transition:

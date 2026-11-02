@@ -3,9 +3,12 @@ import Dino3DScene, { type DinoShape, type SelectedPart } from "./Dino3DScene"
 import BangunDatarInteraktif from "./BangunDatarInteraktif"
 import BilanganOperasiHitung from "./laboratorium/BilanganOperasiHitung"
 import DataPolaPemecahanMasalah from "./laboratorium/DataPolaPemecahanMasalah"
+import DinoLabLogo from "./DinoLabLogo"
+import GuidedLearning from "./laboratorium/GuidedLearning"
 import ModeSelector, { type LearningMode } from "./laboratorium/ModeSelector"
 import PecahanRasioPengukuran from "./laboratorium/PecahanRasioPengukuran"
 import RujukanPenyusunan from "./laboratorium/RujukanPenyusunan"
+import ScreenScribble from "./laboratorium/ScreenScribble"
 import {
   ArrowLeft,
   ArrowRight,
@@ -90,9 +93,11 @@ const learningCategories = [
 const availableLearningCategories = learningCategories.filter((category) => category.available).length
 
 const lessons = [
-  { title: "Kenali bentuknya", description: "Amati sisi, rusuk, titik sudut, dan ukuran bangun ruang. Putar objek 3D untuk melihat bentuknya dari berbagai arah." },
-  { title: "Pahami rumusnya", description: "Volume menunjukkan ruang yang ditempati benda. Luas permukaan menunjukkan total luas seluruh bagian luar benda." },
-  { title: "Lakukan eksperimen", description: "Ubah satu ukuran pada satu waktu. Bandingkan hasil perhitungan sebelum dan sesudah perubahan untuk menemukan polanya." },
+  { title: "Masalah: pilih wadah yang tepat", description: "Bayangkan kamu perlu mengemas benda berbentuk kubus atau balok. Bagaimana memperkirakan ruang yang dibutuhkan dan bahan pembungkusnya?" },
+  { title: "Bangun dan amati model", description: "Pilih bentuk, putar model 3D, dan klik sisi, rusuk, atau titik sudut. Ubah satu ukuran untuk mengamati benda dari berbagai arah." },
+  { title: "Gambar ukuran dan bagiannya", description: "Coret layar untuk menandai rusuk, tinggi, jari-jari, atau sisi yang diketahui. Buat sketsa jaring-jaring bila membantu." },
+  { title: "Hubungkan model ke rumus", description: "Volume menunjukkan ruang yang ditempati benda; luas permukaan adalah seluruh bagian luarnya. Hubungkan dimensi pada model dengan rumus." },
+  { title: "Terapkan dan periksa", description: "Hitung volume atau luas permukaan, lalu bandingkan hasil saat satu dimensi diubah. Jelaskan apakah hasilnya masuk akal." },
 ]
 
 const PI = 3.14
@@ -183,7 +188,7 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
   const [numberResetSignal, setNumberResetSignal] = useState(0)
   const [dataResetSignal, setDataResetSignal] = useState(0)
   const [shape, setShape] = useState<ShapeType>("cube")
-  const [mode, setMode] = useState<LearningMode>("learn")
+  const [mode, setMode] = useState<LearningMode>("lab")
   const [length, setLength] = useState(4)
   const [width, setWidth] = useState(3)
   const [height, setHeight] = useState(5)
@@ -215,7 +220,7 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
 
   const reset = () => {
     setShape("cube")
-    setMode("learn")
+    setMode("lab")
     setLength(4)
     setWidth(3)
     setHeight(5)
@@ -254,10 +259,10 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
             <ArrowLeft className="h-4 w-4" /><span className="hidden sm:inline">{activeCategory ? "Semua materi" : "Kembali"}</span>
           </button>
           <div className={"flex min-w-0 items-center gap-2 " + (activeCategory ? "absolute left-1/2 -translate-x-1/2" : "")}>
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"><Shapes className="h-5 w-5" /></div>
+            <DinoLabLogo className="h-9 w-9 shrink-0 object-contain" />
             <div className="min-w-0">
-              <h1 className="truncate text-sm font-bold sm:text-base">Laboratorium Dino</h1>
-              <p className="hidden text-xs text-muted-foreground sm:block">Laboratorium visual matematika</p>
+              <h1 className="truncate text-sm font-bold sm:text-base">DinoLab</h1>
+              <p className="hidden text-xs text-muted-foreground sm:block">Eksplorasi matematika interaktif</p>
             </div>
           </div>
           {activeCategory && (
@@ -279,9 +284,10 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
         {activeCategory === null ? (
           <div className="relative mx-auto max-w-7xl space-y-8 px-4 py-7 sm:px-6 sm:py-10">
             <section className="relative overflow-hidden rounded-[2rem] border border-emerald-200/70 bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 px-6 py-8 text-white shadow-xl shadow-emerald-950/10 sm:px-10 sm:py-11">
+              <DinoLabLogo className="pointer-events-none absolute right-4 top-1/2 z-0 h-1/2 w-auto -translate-y-1/2 object-contain opacity-[0.10] sm:right-8" />
               <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-16 h-64 w-64 rounded-full border-[28px] border-white/10" />
               <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 right-1/3 h-48 w-48 rounded-full bg-cyan-200/15 blur-3xl" />
-              <div className="relative max-w-3xl">
+              <div className="relative z-10 max-w-3xl">
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-semibold text-emerald-50 backdrop-blur-sm">
                   <Sparkles className="h-3.5 w-3.5" />Ruang eksplorasi matematika
                 </div>
@@ -310,7 +316,10 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
                     key={id}
                     type="button"
                     disabled={!available}
-                    onClick={() => setActiveCategory(id)}
+                    onClick={() => {
+                      setMode("lab")
+                      setActiveCategory(id)
+                    }}
                     className={"group relative flex min-h-52 flex-col items-start rounded-2xl border bg-background/80 p-5 text-left shadow-sm transition sm:p-6 " + (available
                       ? "border-emerald-300/80 shadow-emerald-950/5 hover:-translate-y-1 hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-950/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                       : "cursor-not-allowed border-border/70 opacity-75")}
@@ -332,7 +341,7 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
               </div>
             </section>
 
-            <footer className="pt-2 text-center text-xs text-muted-foreground">Laboratorium Dino - Pilih kategori untuk mulai menjelajahi matematika.</footer>
+            <footer className="pt-2 text-center text-xs text-muted-foreground">DinoLab - Pilih kategori untuk mulai menjelajahi matematika.</footer>
           </div>
         ) : activeCategory === "geometri" ? (
           <BangunDatarInteraktif resetSignal={geometryResetSignal} />
@@ -377,18 +386,11 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
           <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_350px]">
             <section className="min-w-0 space-y-5">
               {mode === "learn" && (
-                <div className="rounded-2xl bg-emerald-500/5 p-4 sm:p-5">
-                  <div className="mb-4 flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"><BookOpen className="h-5 w-5" /></div>
-                    <div><h3 className="font-bold">Pembelajaran terpandu</h3><p className="text-xs text-muted-foreground">Langkah {lessonStep + 1} dari {lessons.length}</p></div>
-                  </div>
-                  <div className="mb-5 space-y-2"><h4 className="font-semibold">{lessons[lessonStep].title}</h4><p className="text-sm leading-6 text-muted-foreground">{lessons[lessonStep].description}</p></div>
-                  <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: String(((lessonStep + 1) / lessons.length) * 100) + "%" }} /></div>
-                  <div className="flex justify-between gap-3">
-                    <button type="button" disabled={lessonStep === 0} onClick={() => setLessonStep((current) => current - 1)} className="rounded-xl px-4 py-2 text-sm font-semibold transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40">Sebelumnya</button>
-                    <button type="button" disabled={lessonStep === lessons.length - 1} onClick={() => setLessonStep((current) => current + 1)} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">Berikutnya</button>
-                  </div>
-                </div>
+                <GuidedLearning
+                  steps={lessons}
+                  step={lessonStep}
+                  onStepChange={setLessonStep}
+                />
               )}
               <div className="overflow-hidden rounded-3xl bg-background/55 shadow-xl shadow-emerald-950/5 dark:bg-background/35 dark:shadow-black/10">
                 <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
@@ -483,8 +485,13 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
             </aside>
           </div>
 
+          <ScreenScribble
+            key={`${activeCategory}-${shape}`}
+            visible={mode === "learn"}
+            context={`Bangun ruang ${currentTopic.title}. Tahap ${lessonStep + 1}: ${lessons[lessonStep].title}. ${lessons[lessonStep].description}`}
+          />
           <RujukanPenyusunan material="bangun-ruang" />
-          <footer className="py-5 text-center text-xs text-muted-foreground">Laboratorium Dino - Jelajahi, eksperimen, dan pahami matematika.</footer>
+          <footer className="py-5 text-center text-xs text-muted-foreground">DinoLab - Jelajahi, eksperimen, dan pahami matematika.</footer>
         </div>
         )}
       </main>

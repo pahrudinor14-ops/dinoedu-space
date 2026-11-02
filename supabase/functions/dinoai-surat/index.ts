@@ -358,7 +358,7 @@ Deno.serve(async (request) => {
   if (
     !isRecord(reservation) ||
     typeof reservation.allowed !== "boolean" ||
-    (reservation.allowed && reservation.credits_consumed !== 1)
+    (reservation.allowed && reservation.credits_consumed !== 2)
   ) {
     console.error("AI Surat Lamaran: format respons reservasi kredit tidak valid.");
     await releaseReservation("invalid_reservation_response");

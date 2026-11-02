@@ -5,7 +5,6 @@ import {
    ClipboardList,
    ClipboardCheck,
    BarChart3,
-   Box,
    Layers3,
    Shapes,
   CheckCircle2,
@@ -22,6 +21,7 @@ import {
    ShieldCheck,
    Sun,
 } from "lucide-react";
+import DinoLabLogo from "./DinoLabLogo";
 import {
    DashboardComplaintButton,
    DashboardComplaintDialog,
@@ -385,9 +385,15 @@ export default function Dashboard({
                   </div>
                </div>
             </section>
-            {/* LABORATORIUM DINO PROMO */}
+            {/* DINOLAB PROMO */}
             <section className="mt-10">
                <div className="group relative isolate overflow-hidden rounded-[32px] border border-emerald-300/30 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-6 text-white shadow-xl shadow-emerald-900/15 sm:p-9 lg:p-10">
+                  <img
+                     src="/dinolab.PNG"
+                     alt=""
+                     aria-hidden="true"
+                     className="pointer-events-none absolute right-[18%] top-1/2 z-0 h-44 w-44 -translate-y-1/2 object-contain opacity-[0.10] transition-transform duration-700 group-hover:scale-[1.03] sm:right-[22%] sm:h-60 sm:w-60 lg:right-[25%] lg:h-72 lg:w-72"
+                  />
                   <div className="pointer-events-none absolute -bottom-28 -right-20 z-0 h-72 w-72 rounded-full bg-cyan-200/20 blur-3xl" />
                   <div className="pointer-events-none absolute -left-20 -top-24 z-0 h-64 w-64 rounded-full bg-emerald-200/20 blur-3xl" />
                   <svg aria-hidden="true" viewBox="0 0 280 220" className="pointer-events-none absolute right-8 top-4 z-0 h-40 w-52 text-white/15 sm:right-16 sm:h-52 sm:w-64 lg:right-24">
@@ -416,7 +422,7 @@ export default function Dashboard({
                            className="mt-7 inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-emerald-800 shadow-lg shadow-emerald-950/15 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-emerald-600"
                         >
                            <Shapes className="h-5 w-5" />
-                           Jelajahi Laboratorium
+                           Jelajahi DinoLab
                            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                         </button>
                      </div>
@@ -424,7 +430,7 @@ export default function Dashboard({
                         <div className="absolute -right-3 -top-3 rounded-full bg-cyan-200 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-emerald-950 shadow-md">
                            Yuk, eksplorasi!
                         </div>
-                        <Box aria-hidden="true" className="h-28 w-28 text-white drop-shadow-lg sm:h-32 sm:w-32" strokeWidth={1.4} />
+                        <DinoLabLogo className="h-28 w-28 object-contain brightness-150 saturate-125 drop-shadow-[0_0_14px_rgba(167,243,208,0.7)] sm:h-32 sm:w-32" />
                      </div>
                   </div>
                </div>

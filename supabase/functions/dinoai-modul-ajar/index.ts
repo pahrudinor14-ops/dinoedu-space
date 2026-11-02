@@ -607,7 +607,7 @@ Deno.serve(async (request) => {
   }
   const reservation = Array.isArray(reservationData) ? reservationData[0] : reservationData;
   if (!isRecord(reservation) || typeof reservation.allowed !== "boolean" ||
-    (reservation.allowed && reservation.credits_consumed !== 3)) {
+    (reservation.allowed && reservation.credits_consumed !== 2)) {
     console.error("AI Modul Ajar: format respons reservasi kredit tidak valid.");
     await releaseReservation("invalid_reservation_response");
     return jsonResponse({ error: "Kuota AI tidak dapat diperiksa. Coba lagi nanti." }, 503);

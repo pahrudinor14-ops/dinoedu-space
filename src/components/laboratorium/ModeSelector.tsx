@@ -9,7 +9,7 @@ export default function ModeSelector({ mode, onChange }: { mode: LearningMode; o
         <BookOpen className="h-4 w-4" />Mode Belajar
       </button>
       <button type="button" onClick={() => onChange("lab")} aria-pressed={mode === "lab"} className={"inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm " + (mode === "lab" ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700" : "text-muted-foreground hover:bg-background/80 hover:text-foreground")}>
-        <Shapes className="h-4 w-4" />Laboratorium
+        <Shapes className="h-4 w-4" />DinoLab
       </button>
     </div>
   )
