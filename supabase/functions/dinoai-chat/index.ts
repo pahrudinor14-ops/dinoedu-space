@@ -267,6 +267,11 @@ Deno.serve(async (request) => {
     if (error) {
       console.error("DinoAI Chat: reservasi kredit gagal.", error.code);
       await releaseReservation("reservation_response_error");
+      if (image && /fitur ai tidak dikenal/i.test(error.message)) {
+        return jsonResponse({
+          error: "Kebijakan kredit analisis coretan belum aktif di database. Admin perlu menerapkan migration Supabase terbaru.",
+        }, 503);
+      }
       return jsonResponse({ error: "Kuota AI tidak dapat diperiksa. Coba lagi nanti." }, 503);
     }
     reservationData = data;
@@ -285,6 +290,11 @@ Deno.serve(async (request) => {
   ) {
     console.error("DinoAI Chat: format respons reservasi kredit tidak valid.");
     await releaseReservation("invalid_reservation_response");
+    if (image && isRecord(reservation) && reservation.allowed === true) {
+      return jsonResponse({
+        error: "Biaya kredit analisis coretan di database belum sinkron. Admin perlu menerapkan migration Supabase terbaru.",
+      }, 503);
+    }
     return jsonResponse({ error: "Kuota AI tidak dapat diperiksa. Coba lagi nanti." }, 503);
   }
   if (!reservation.allowed) {
