@@ -702,7 +702,7 @@ Deno.serve(async (request) => {
     return jsonResponse({
       success: true,
       modul,
-      creditsConsumed: 3,
+      creditsConsumed: 2,
       ...(!completed
         ? { quotaWarning: "Modul Ajar berhasil dibuat, tetapi pencatatan kredit belum dapat dipastikan. Jangan buat ulang dulu agar tidak terhitung dua kali." }
         : {}),

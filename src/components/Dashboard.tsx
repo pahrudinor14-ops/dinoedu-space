@@ -2,10 +2,6 @@
 import {
    ArrowRight,
    BookOpen,
-   ClipboardList,
-   ClipboardCheck,
-   BarChart3,
-   Layers3,
    Shapes,
   CheckCircle2,
   Coins,
@@ -13,15 +9,14 @@ import {
   HeartHandshake,
   Crown,
   Sparkles,
-   FileText,
-   LogOut,
-   Mail,
-   MessageCircle,
+  LogOut,
+  MessageCircle,
    Moon,
    ShieldCheck,
    Sun,
    UsersRound,
 } from "lucide-react";
+import { AI_TOOLS, type AIToolId } from "../lib/aiTools";
 import DinoLabLogo from "./DinoLabLogo";
 import {
    DashboardComplaintButton,
@@ -34,15 +29,7 @@ interface DashboardProps {
    onSecurity: () => void;
    onSignOut: () => void;
    onBackHome: () => void;
-   onOpenDinoAI: () => void;
-   onOpenAICV: () => void;
-   onOpenAISurat: () => void;
-   onOpenAISoal: () => void;
-   onOpenAIRubrik: () => void;
-   onOpenAIEvaluasi: () => void;
-   onOpenAIModulAjar: () => void;
-   onOpenAILKPD: () => void;
-   onOpenAIPPTPembelajaran: () => void;
+   onOpenAITool: (toolId: AIToolId) => void;
    onOpenDinoMath: () => void;
    onOpenLaboratoriumDino: () => void;
    isAdmin?: boolean;
@@ -52,55 +39,6 @@ interface DashboardProps {
   onBuyTokens?: () => void;
   onSupportDinoAI?: () => void;
 }
-const tools = [
-   {
-      title: "DinoAI Chat",
-      description:
-         "Teman AI untuk belajar, bekerja, dan menyelesaikan berbagai kebutuhan",
-      icon: MessageCircle,
-   },
-   {
-      title: "AI CV Maker",
-      description: "Buat CV profesional berdasarkan informasi yang kamu masukkan",
-      icon: FileText,
-   },
-   {
-      title: "AI Surat Lamaran",
-      description:
-         "Susun surat lamaran yang rapi dan sesuai posisi yang kamu tuju",
-      icon: Mail,
-   },
-   {
-      title: "AI Pembuat Soal",
-      description: "Buat soal pembelajaran berdasarkan kelas dan materi",
-      icon: ClipboardList,
-   },
-   {
-      title: "AI Rubrik Penilaian",
-      description: "Buat rubrik analitik lengkap dengan deskriptor, bobot, dan penskoran",
-      icon: ClipboardCheck,
-   },
-   {
-      title: "AI Evaluasi Pembelajaran",
-      description: "Analisis capaian belajar dan tentukan tindak lanjut yang sesuai",
-      icon: BarChart3,
-   },
-   {
-      title: "AI Modul Ajar",
-      description: "Bantu menyusun modul ajar secara praktis dan terstruktur",
-      icon: BookOpen,
-   },
-   {
-      title: "AI LKPD",
-      description: "Susun lembar kerja peserta didik sesuai tujuan pembelajaran",
-      icon: ClipboardList,
-   },
-   {
-      title: "AI PPT Pembelajaran",
-      description: "Ubah materi menjadi presentasi pembelajaran yang terstruktur",
-      icon: Layers3,
-   },
-];
 export default function Dashboard({
    email,
    darkMode,
@@ -108,15 +46,7 @@ export default function Dashboard({
    onSecurity,
    onSignOut,
    onBackHome,
-   onOpenDinoAI,
-   onOpenAICV,
-   onOpenAISurat,
-   onOpenAISoal,
-   onOpenAIRubrik,
-   onOpenAIEvaluasi,
-   onOpenAIModulAjar,
-   onOpenAILKPD,
-   onOpenAIPPTPembelajaran,
+   onOpenAITool,
    onOpenDinoMath,
    onOpenLaboratoriumDino,
    isAdmin = false,
@@ -199,10 +129,10 @@ export default function Dashboard({
             email={email}
             onClose={() => setComplaintOpen(false)}
          />
-         <main className="mx-auto max-w-7xl px-5 pb-20 pt-10 sm:px-6 sm:pt-14 lg:px-8">
+         <main className="mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6 sm:pt-14 lg:px-8">
             {/* DINOEDU SPACE WELCOME */}
             <section className="dino-enter">
-               <div className="dino-glass relative overflow-hidden rounded-[32px] p-7 sm:p-10">
+               <div className="dino-glass relative overflow-hidden rounded-[24px] p-5 sm:rounded-[32px] sm:p-10">
                   <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#EF629F]/10 blur-3xl" />
                   <div className="relative">
                      <div className="flex items-center gap-2 text-[14px] font-semibold text-[#EF629F]">
@@ -213,10 +143,10 @@ export default function Dashboard({
                         />
                         DinoEdu Space
                      </div>
-                     <h1 className="dino-hero-title mt-4 max-w-2xl text-2xl font-bold sm:text-5xl">
+                     <h1 className="dino-hero-title dino-responsive-hero-title mt-4 max-w-2xl font-bold">
                         Selamat datang di ruang belajarmu
                      </h1>
-                     <p className="mt-4 max-w-2xl text-[18px] leading-relaxed text-muted-foreground">
+                     <p className="dino-responsive-lead mt-4 max-w-2xl text-muted-foreground">
                         Pilih tools yang ingin kamu gunakan untuk belajar, bekerja, dan
                         berkarya
                      </p>
@@ -233,75 +163,43 @@ export default function Dashboard({
             <section className="mt-10">
                <div className="mb-6">
                   <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
-                     DinoAI
+                     Fitur DinoEdu Space
                   </p>
-                  <h2 className="mt-2 text-3xl font-bold tracking-normal sm:text-4xl">
-                     Tools utama
+                  <h2 className="dino-section-title mt-3 font-bold tracking-normal">
+                     Satu ruang, <span className="text-[#EF629F]">banyak solusi</span>
                   </h2>
+                  <p className="dino-responsive-lead mt-4 max-w-2xl text-muted-foreground sm:mt-5">
+                     Temukan tools AI untuk belajar, menyiapkan karier, dan mendukung
+                     pekerjaan pendidikan.
+                  </p>
                </div>
-               <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                  {tools.map((tool) => {
+               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {AI_TOOLS.map((tool, index) => {
                      const Icon = tool.icon;
                      return (
-                        <div
-                           key={tool.title}
-                           className="dino-glass dino-interactive group relative overflow-hidden rounded-[28px] p-6"
+                        <article
+                           key={tool.id}
+                           className="dino-glass dino-interactive dino-enter group flex flex-col rounded-2xl border border-[#EF629F]/10 p-4"
+                           style={{ animationDelay: `${100 + index * 70}ms` }}
                         >
-                           <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-[#EF629F]/10 blur-2xl transition-all duration-500 group-hover:scale-125" />
-                           <div className="relative">
-                              <div className="dino-gradient flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg">
-                                 <Icon className="h-6 w-6 text-white" />
+                           <div className="flex items-start gap-3">
+                              <div className="dino-gradient flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-md shadow-pink-500/10">
+                                 <Icon className="h-[18px] w-[18px] text-white" />
                               </div>
-                              <h3 className="mt-5 text-xl font-semibold">{tool.title}</h3>
-                              <p className="mt-2 text-[14px] leading-7 text-muted-foreground">
-                                 {tool.description}
-                              </p>
-                              {tool.title === "DinoAI Chat" ||
-                              tool.title === "AI CV Maker" ||
-                              tool.title === "AI Surat Lamaran" ||
-                                 tool.title === "AI Pembuat Soal" ||
-                                 tool.title === "AI Rubrik Penilaian" ||
-                                 tool.title === "AI Evaluasi Pembelajaran" ||
-                                 tool.title === "AI Modul Ajar" ||
-                                 tool.title === "AI LKPD" ||
-                                 tool.title === "AI PPT Pembelajaran" ? (
-                                 <button
-                                    type="button"
-                                    onClick={
-                                       tool.title === "DinoAI Chat"
-                                          ? onOpenDinoAI
-                                          : tool.title === "AI CV Maker"
-                                             ? onOpenAICV
-                                             : tool.title === "AI Surat Lamaran"
-                                                ? onOpenAISurat
-                                                : tool.title === "AI Pembuat Soal"
-                                                   ? onOpenAISoal
-                                                   : tool.title === "AI Rubrik Penilaian"
-                                                      ? onOpenAIRubrik
-                                                   : tool.title === "AI Evaluasi Pembelajaran"
-                                                      ? onOpenAIEvaluasi
-                                                   : tool.title === "AI Modul Ajar"
-                                                      ? onOpenAIModulAjar
-                                                      : tool.title === "AI LKPD"
-                                                         ? onOpenAILKPD
-                                                         : onOpenAIPPTPembelajaran
-                                    }
-                                    className="mt-5 inline-flex items-center gap-2 text-[14px] font-semibold text-[#EF629F] transition-all duration-200 hover:gap-3"
-                                 >
-                                    Pakai Sekarang
-                                    <ArrowRight className="h-4 w-4" />
-                                 </button>
-                              ) : (
-                                 <button
-                                    type="button"
-                                    disabled
-                                    className="mt-5 inline-flex items-center gap-2 text-[14px] font-semibold text-muted-foreground/60"
-                                 >
-                                    Segera hadir
-                                 </button>
-                              )}
+                              <h3 className="pt-1 text-[15px] font-semibold leading-5">{tool.title}</h3>
                            </div>
-                        </div>
+                           <p className="mt-3 flex-1 text-[13px] leading-5 text-muted-foreground">
+                              {tool.description}
+                           </p>
+                           <button
+                              type="button"
+                              onClick={() => onOpenAITool(tool.id)}
+                              className="mt-3 inline-flex w-fit items-center gap-1.5 text-xs font-semibold text-[#EF629F] transition-all duration-200 hover:gap-2.5"
+                           >
+                              Mulai gunakan
+                              <ArrowRight className="h-3.5 w-3.5" />
+                           </button>
+                        </article>
                      );
                   })}
                </div>
@@ -507,7 +405,7 @@ export default function Dashboard({
               Mulai gratis, tambah token saat diperlukan, atau dukung pengembangan DinoEdu Space. Tidak ada kewajiban untuk berlangganan.
             </p>
           </div>
-          <div className="mt-8 grid gap-4 lg:grid-cols-3">
+          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {/* FREE PLAN */}
             <article className="flex flex-col rounded-[24px] border border-border/70 bg-background/65 p-5 backdrop-blur-sm sm:p-6">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-600 dark:text-violet-300">

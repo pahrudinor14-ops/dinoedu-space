@@ -17,6 +17,7 @@ import {
   UserRound,
 } from "lucide-react"
 import { supabase } from "../lib/supabase"
+import AIPreviewHeader from "./AIPreviewHeader"
 interface AICVMakerProps {
   onBack: () => void
 }
@@ -1651,22 +1652,10 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
               </div>
               {/* PREVIEW */}
               <div className="lg:sticky lg:top-28 lg:self-start">
-                <div className="mb-4 flex items-end justify-between gap-4 dino-no-print">
-                  <div>
-                    <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
-                      Preview
-                    </p>
-                    <h2 className="mt-2 text-2xl font-bold">
-                      Pratinjau CV
-                    </h2>
-                  </div>
-                  {aiResult && (
-                    <div className="hidden items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-[12px] font-semibold text-emerald-600 sm:inline-flex">
-                      <Check className="h-3.5 w-3.5" />
-                      CV siap
-                    </div>
-                  )}
-                </div>
+                <AIPreviewHeader
+                  title="Pratinjau CV"
+                  status={aiResult ? "CV siap" : undefined}
+                />
                 {aiResult && (
                   <div className="mb-4 flex flex-wrap gap-2 dino-no-print">
                     <button

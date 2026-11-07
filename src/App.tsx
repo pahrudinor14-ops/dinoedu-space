@@ -8,6 +8,7 @@ import Dashboard from "./components/Dashboard";
 import FeedbackAdmin from "./components/FeedbackAdmin";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
+import { AI_TOOLS, type AIToolId } from "./lib/aiTools";
 import DinoAIChat from "./components/DinoAIChat";
 import NumeaAccessGate from "./components/NumeaAccessGate";
 import PublicLegalDialog, {
@@ -29,12 +30,7 @@ import {
   Info,
   Layers3,
   MessageCircle,
-  FileText,
   Mail,
-  ClipboardList,
-  ClipboardCheck,
-  BarChart3,
-  BookOpen,
   ChevronDown,
   Menu,
   Moon,
@@ -80,8 +76,8 @@ function App() {
   const productNavItems = [
     { label: "Fitur AI", href: "#fitur" },
     { label: "DinoMath", href: "#dinomath" },
-    { label: "DinoLab", href: "#laboratorium-dino" },
     { label: "NUMEA EDU", href: "#numea" },
+    { label: "DinoLab", href: "#laboratorium-dino" },
   ];
   const [showAuth, setShowAuth] = useState(false);
   const [showMFA, setShowMFA] = useState(false);
@@ -559,6 +555,27 @@ useEffect(() => {
     }
     setShowAuth(true);
   };
+  const openAITool = (toolId: AIToolId) => {
+    const actions: Record<AIToolId, () => void> = {
+      dinoai: openDinoAI,
+      cv: openAICV,
+      surat: openAISurat,
+      soal: openAIPembuatSoal,
+      rubrik: openAIPembuatRubrik,
+      evaluasi: openAIEvaluasi,
+      "modul-ajar": openAIModulAjar,
+      lkpd: openAILKPD,
+      "ppt-pembelajaran": openAIPPTPembelajaran,
+    };
+    actions[toolId]();
+  };
+  const openPublicAITool = (toolId: AIToolId) => {
+    if (toolId === "rubrik" || toolId === "evaluasi" || toolId === "lkpd" || toolId === "ppt-pembelajaran") {
+      openLearningToolOrAuth(() => openAITool(toolId));
+      return;
+    }
+    openDashboardOrAuth();
+  };
   const closeAIModulAjar = returnToPreviousRoute;
   const closeDinoAI = returnToPreviousRoute;
   const closeAICV = returnToPreviousRoute;
@@ -613,7 +630,7 @@ useEffect(() => {
       </div>
       {!((showDashboard || showDinoAI || showAICV || showAISurat || showAIPembuatSoal || showAIPembuatRubrik || showAIEvaluasi || showAIModulAjar || showAILKPD || showAIPPTPembelajaran || showDinoMath || showLaboratoriumDino || showFeedbackAdmin) && user) && (
         <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
-          <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
+          <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
             <a
               href="#beranda"
               className="dino-interactive flex items-center gap-3"
@@ -626,15 +643,15 @@ useEffect(() => {
                 />
               </div>
               <div>
-                <div className="text-lg font-semibold tracking-tight">
+                <div className="text-sm font-semibold tracking-tight sm:text-lg">
                   DinoEdu Space
                 </div>
-                <div className="text-[14px] text-muted-foreground">
+                <div className="hidden text-[14px] text-muted-foreground sm:block">
                   Education • Creative • Digital
                 </div>
               </div>
             </a>
-            <nav className="hidden items-center gap-4 xl:gap-7 lg:flex">
+            <nav className="hidden items-center gap-4 xl:flex xl:gap-7">
               <a
                 href="#beranda"
                 className="inline-flex h-10 items-center leading-none text-[14px] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EF629F]"
@@ -714,7 +731,7 @@ useEffect(() => {
                   setProductMenuOpen(false);
                   setMobileMenu((value) => !value);
                 }}
-                className="dino-button flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EF629F] lg:hidden dark:bg-white/5"
+                className="dino-button flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/60 bg-white/40 backdrop-blur-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EF629F] xl:hidden dark:bg-white/5"
                 aria-label={mobileMenu ? "Tutup menu utama" : "Buka menu utama"}
                 aria-expanded={mobileMenu}
               >
@@ -725,7 +742,7 @@ useEffect(() => {
                 )}
               </button>
               {user ? (
-                <div className="hidden items-center gap-2 lg:flex">
+                <div className="hidden items-center gap-2 xl:flex">
                   <button
                     type="button"
                     onClick={openDashboard}
@@ -754,7 +771,7 @@ useEffect(() => {
                 <button
                   type="button"
                   onClick={() => setShowAuth(true)}
-                  className="dino-gradient dino-button hidden rounded-full px-5 py-3 text-[14px] font-semibold text-white shadow-lg shadow-pink-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EF629F] lg:inline-flex"
+                  className="dino-gradient dino-button hidden rounded-full px-5 py-3 text-[14px] font-semibold text-white shadow-lg shadow-pink-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EF629F] xl:inline-flex"
                 >
                   Mulai Sekarang
                 </button>
@@ -762,7 +779,7 @@ useEffect(() => {
             </div>
           </div>
           {mobileMenu && (
-            <div className="dino-enter border-t border-border/50 px-6 py-5 lg:hidden">
+            <div className="dino-enter border-t border-border/50 px-4 py-5 sm:px-6 xl:hidden">
               <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-4 text-center">
                 <a
                   href="#beranda"
@@ -882,9 +899,9 @@ useEffect(() => {
       ) : showAIEvaluasi && user ? (
         <AIEvaluasiPembelajaran onBack={returnToPreviousRoute} />
       ) : showAILKPD && user ? (
-        <AIGuruStudio kind="lkpd" onBack={returnToPreviousRoute} />
+        <AIGuruStudio key={currentRoute} kind="lkpd" onBack={returnToPreviousRoute} />
       ) : showAIPPTPembelajaran && user ? (
-        <AIGuruStudio kind="ppt" onBack={returnToPreviousRoute} />
+        <AIGuruStudio key={currentRoute} kind="ppt" onBack={returnToPreviousRoute} />
       ) : showAIPembuatSoal && user ? (
         <AIPembuatSoal onBack={closeAIPembuatSoal} />
       ) : showAISurat && user ? (
@@ -923,15 +940,7 @@ useEffect(() => {
           onSecurity={openSecurity}
           onSignOut={handleSignOut}
           onBackHome={backHome}
-          onOpenDinoAI={openDinoAI}
-          onOpenAICV={openAICV}
-          onOpenAISurat={openAISurat}
-          onOpenAISoal={openAIPembuatSoal}
-          onOpenAIRubrik={openAIPembuatRubrik}
-          onOpenAIEvaluasi={openAIEvaluasi}
-          onOpenAIModulAjar={openAIModulAjar}
-          onOpenAILKPD={openAILKPD}
-          onOpenAIPPTPembelajaran={openAIPPTPembelajaran}
+          onOpenAITool={openAITool}
           onOpenDinoMath={openDinoMath}
           onOpenLaboratoriumDino={openLaboratoriumDino}
           isAdmin={user.app_metadata?.role === "admin"}
@@ -945,11 +954,11 @@ useEffect(() => {
           <main>
             <section
               id="beranda"
-              className="mx-auto max-w-7xl px-5 pb-32 pt-16 sm:px-6 sm:pb-24 sm:pt-20 lg:px-8 lg:pb-32 lg:pt-28"
+              className="mx-auto max-w-7xl px-4 pb-32 pt-12 sm:px-6 sm:pb-24 sm:pt-20 lg:px-8 lg:pb-32 lg:pt-28"
             >
               <div className="mx-auto max-w-6xl text-center">
                 <div
-                  className="dino-glass dino-enter mx-auto inline-flex items-center gap-2 rounded-full px-4 py-2 text-[14px] font-medium"
+                  className="dino-glass dino-enter mx-auto inline-flex max-w-full flex-wrap items-center justify-center gap-2 rounded-full px-3 py-2 text-center text-xs font-medium sm:px-4 sm:text-sm"
                   style={{ animationDelay: "80ms" }}
                 >
                   <img
@@ -960,7 +969,7 @@ useEffect(() => {
                   AI untuk Belajar, Bekerja, dan Berkarya
                 </div>
                 <h1
-                  className="dino-enter dino-hero-title mx-auto mt-8 max-w-5xl text-3xl font-bold sm:text-6xl lg:text-7xl"
+                  className="dino-enter dino-hero-title dino-responsive-hero-title mx-auto mt-6 max-w-5xl font-bold sm:mt-8"
                   style={{ animationDelay: "160ms" }}
                 >
                   Satu ruang untuk
@@ -969,7 +978,7 @@ useEffect(() => {
                   </span>
                 </h1>
                 <p
-                  className="dino-enter mx-auto mt-7 max-w-3xl text-[20px] leading-relaxed text-muted-foreground"
+                  className="dino-enter dino-responsive-lead mx-auto mt-6 max-w-3xl text-muted-foreground sm:mt-7"
                   style={{ animationDelay: "240ms" }}
                 >
                   DinoEdu Space menghadirkan tools AI sederhana untuk
@@ -1000,98 +1009,53 @@ useEffect(() => {
             {/* FITUR DINOEDU SPACE */}
             <section
               id="fitur"
-              className="mx-auto max-w-7xl scroll-mt-28 px-6 pb-24 lg:px-8"
+              className="mx-auto max-w-7xl scroll-mt-28 px-4 pb-16 sm:px-6 lg:px-8"
             >
-              <div className="dino-enter mb-10 max-w-3xl">
-                <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
-                  Fitur DinoEdu Space
-                </p>
-                <h2 className="mt-3 text-4xl font-bold tracking-normal sm:text-5xl">
-                  Satu ruang, <span className="text-[#EF629F]">banyak solusi</span>
-                </h2>
-                <p className="mt-5 text-[18px] leading-relaxed text-muted-foreground">
-                  Selain DinoMath dan NUMEA EDU, kamu juga bisa menggunakan berbagai
-                  tools AI untuk belajar, menyiapkan kebutuhan karier, dan mendukung
-                  pekerjaan pendidikan.
-                </p>
+              <div className="dino-enter mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="max-w-2xl">
+                  <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
+                    Fitur DinoEdu Space
+                  </p>
+                  <h2 className="dino-section-title mt-3 font-bold tracking-normal">
+                    Satu ruang, <span className="text-[#EF629F]">banyak solusi</span>
+                  </h2>
+                  <p className="dino-responsive-lead mt-4 max-w-2xl text-muted-foreground sm:mt-5">
+                    Selain DinoMath dan NUMEA EDU, temukan tools AI untuk belajar,
+                    menyiapkan karier, dan mendukung pekerjaan pendidikan.
+                  </p>
+                </div>
+                <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-[#EF629F]/20 bg-[#EF629F]/[0.07] px-3 py-1.5 text-xs font-semibold text-[#EF629F]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#EF629F]" />
+                  {AI_TOOLS.length} tools AI
+                </span>
               </div>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {[
-                  {
-                    title: "DinoAI Chat",
-                    description: "Teman AI untuk mencari ide, memahami materi, dan membantu menyelesaikan berbagai kebutuhan.",
-                    icon: MessageCircle,
-                  },
-                  {
-                    title: "AI CV Maker",
-                    description: "Susun CV profesional berdasarkan informasi, pengalaman, dan keterampilan yang kamu miliki.",
-                    icon: FileText,
-                  },
-                  {
-                    title: "AI Surat Lamaran",
-                    description: "Bantu menulis surat lamaran yang rapi dan disesuaikan dengan posisi yang dituju.",
-                    icon: Mail,
-                  },
-                  {
-                    title: "AI Pembuat Soal",
-                    description: "Buat rancangan soal pembelajaran berdasarkan kelas, materi, dan kebutuhan evaluasi.",
-                    icon: ClipboardList,
-                  },
-                  {
-                    title: "AI Rubrik Penilaian",
-                    description: "Susun kriteria, deskriptor performa, bobot, dan lembar penskoran yang selaras dengan tujuan belajar.",
-                    icon: ClipboardCheck,
-                  },
-                  {
-                    title: "AI Evaluasi Pembelajaran",
-                    description: "Analisis capaian kelas dari hasil asesmen dan siapkan tindak lanjut pembelajaran.",
-                    icon: BarChart3,
-                  },
-                  {
-                    title: "AI Modul Ajar",
-                    description: "Bantu menyusun modul ajar secara praktis dan terstruktur untuk mendukung pembelajaran.",
-                    icon: BookOpen,
-                  },
-                  {
-                    title: "AI LKPD",
-                    description: "Susun lembar kerja peserta didik yang sesuai tujuan dan materi pembelajaran.",
-                    icon: ClipboardList,
-                  },
-                  {
-                    title: "AI PPT Pembelajaran",
-                    description: "Ubah materi pembelajaran menjadi presentasi PowerPoint yang terstruktur.",
-                    icon: Layers3,
-                  },
-                ].map((feature, index) => {
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {AI_TOOLS.map((feature, index) => {
                   const Icon = feature.icon;
                   return (
                     <article
-                      key={feature.title}
-                      className="dino-glass dino-interactive dino-enter group rounded-[28px] p-6"
+                      key={feature.id}
+                      className="dino-glass dino-interactive dino-enter group flex flex-col rounded-2xl border border-[#EF629F]/10 p-4"
                       style={{ animationDelay: `${100 + index * 70}ms` }}
                     >
-                      <div className="dino-gradient flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg">
-                        <Icon className="h-5 w-5 text-white" />
+                      <div className="flex items-start gap-3">
+                        <div className="dino-gradient flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-md shadow-pink-500/10">
+                          <Icon className="h-[18px] w-[18px] text-white" />
+                        </div>
+                        <h3 className="pt-1 text-[15px] font-semibold leading-5">
+                          {feature.title}
+                        </h3>
                       </div>
-                      <h3 className="mt-5 text-xl font-semibold">{feature.title}</h3>
-                      <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                      <p className="mt-3 flex-1 text-[13px] leading-5 text-muted-foreground">
                         {feature.description}
                       </p>
                       <button
                         type="button"
-                        onClick={() => feature.title === "AI LKPD"
-                          ? openLearningToolOrAuth(openAILKPD)
-                          : feature.title === "AI PPT Pembelajaran"
-                            ? openLearningToolOrAuth(openAIPPTPembelajaran)
-                            : feature.title === "AI Rubrik Penilaian"
-                              ? openLearningToolOrAuth(openAIPembuatRubrik)
-                            : feature.title === "AI Evaluasi Pembelajaran"
-                              ? openLearningToolOrAuth(openAIEvaluasi)
-                            : openDashboardOrAuth()}
-                        className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#EF629F] transition-all duration-200 hover:gap-3"
+                        onClick={() => openPublicAITool(feature.id)}
+                        className="mt-3 inline-flex w-fit items-center gap-1.5 text-xs font-semibold text-[#EF629F] transition-all duration-200 hover:gap-2.5"
                       >
                         Mulai gunakan
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRight className="h-3.5 w-3.5" />
                       </button>
                     </article>
                   );
@@ -1101,22 +1065,22 @@ useEffect(() => {
             {/* PROMOSI DINOMATH & NUMEA EDU */}
             <section
               id="eksplorasi"
-              className="mx-auto max-w-7xl px-6 pb-28 lg:px-8"
+              className="mx-auto max-w-7xl px-4 pb-28 sm:px-6 lg:px-8"
             >
               <div className="dino-enter mb-12 max-w-2xl">
                 <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
                   Jelajahi DinoEdu Space
                 </p>
-                <h2 className="mt-3 text-4xl font-bold tracking-normal sm:text-5xl">
+                <h2 className="dino-section-title mt-3 font-bold tracking-normal">
                   Lebih banyak hal untuk{" "}
                   <span className="text-[#EF629F]">kamu jelajahi</span>
                 </h2>
-                <p className="mt-5 text-[20px] leading-relaxed text-muted-foreground">
+                <p className="dino-responsive-lead mt-4 text-muted-foreground sm:mt-5">
                   Belajar dengan cara yang menyenangkan dan tumbuh bersama
                   komunitas pendidikan dalam satu ruang digital, termasuk ruang eksplorasi DinoLab.
                 </p>
               </div>
-              <div className="grid items-stretch gap-6 lg:grid-cols-3">
+              <div className="grid items-stretch gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {/* PROMOSI DINOMATH */}
                 <article
                   id="dinomath"
@@ -1282,13 +1246,13 @@ useEffect(() => {
             <section
               id="tentang"
               aria-labelledby="about-heading"
-              className="mx-auto max-w-7xl scroll-mt-28 px-6 pb-24 lg:px-8"
+              className="mx-auto max-w-7xl scroll-mt-28 px-4 pb-24 sm:px-6 lg:px-8"
             >
               <div className="dino-enter mb-10 max-w-3xl">
                 <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
                   Tentang DinoEdu Space
                 </p>
-                <h2 id="about-heading" className="mt-3 text-4xl font-bold tracking-normal sm:text-5xl">
+                <h2 id="about-heading" className="dino-section-title mt-3 font-bold tracking-normal">
                   Belajar, berkarya, dan <span className="text-[#EF629F]">bertumbuh</span>
                 </h2>
                 <p className="mt-5 text-[17px] leading-7 text-muted-foreground">
@@ -1331,7 +1295,7 @@ useEffect(() => {
                 <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
                   Pusat bantuan
                 </p>
-                <h2 id="help-heading" className="mt-3 text-4xl font-bold tracking-normal sm:text-5xl">
+                <h2 id="help-heading" className="dino-section-title mt-3 font-bold tracking-normal">
                   Bantuan untuk <span className="text-[#EF629F]">memulai</span>
                 </h2>
                 <p className="mt-5 text-[17px] leading-7 text-muted-foreground">
@@ -1463,9 +1427,16 @@ useEffect(() => {
               </a>
               <button
                 type="button"
-                onClick={openDashboardOrAuth}
+                onClick={() => {
+                  if (user) {
+                    openDinoAI();
+                  } else {
+                    setShowAuth(true);
+                  }
+                }}
                 className="dino-button dino-gradient flex h-12 w-full items-center justify-center rounded-full text-white shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EF629F]"
                 aria-label="DinoAI"
+                title="Buka DinoAI Chat"
               >
                 <img
                   src="/logodino.PNG"
@@ -1551,11 +1522,11 @@ useEffect(() => {
                     className="inline-flex items-center gap-2.5 text-muted-foreground transition-colors hover:text-[#EF629F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EF629F]"
                   >
                     <MessageCircle aria-hidden="true" className="h-4 w-4 shrink-0 text-[#EF629F]" />
-                    WhatsApp 083159608714
+                    WhatsApp Kami
                   </a>
                 </div>
               </section>
-              <div className="border-t border-border/50 pt-4 text-[13px] text-muted-foreground sm:col-span-2 lg:col-span-3">
+              <div className="border-t border-border/50 pt-4 text-center text-[13px] text-muted-foreground sm:col-span-2 lg:col-span-3">
                 © {new Date().getFullYear()} DinoEdu Space
               </div>
             </div>

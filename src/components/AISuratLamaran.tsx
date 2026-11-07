@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { invokeDinoAI } from "../lib/invokeDinoAI"
+import AIPreviewHeader from "./AIPreviewHeader"
 interface AISuratLamaranProps {
   onBack: () => void
 }
@@ -919,14 +920,7 @@ async function handleGenerateAI() {
                 id="dinoedu-surat-preview"
                 className="lg:sticky lg:top-28 lg:self-start"
               >
-                <div className="mb-4 dino-no-print">
-                  <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
-                    Preview
-                  </p>
-                  <h2 className="mt-2 text-2xl font-bold">
-                    Pratinjau surat lamaran
-                  </h2>
-                </div>
+                <AIPreviewHeader title="Pratinjau surat lamaran" />
                 {letterResult && (
                   <div className="dino-no-print mb-4 flex flex-wrap gap-2">
                     <button

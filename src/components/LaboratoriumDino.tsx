@@ -91,6 +91,7 @@ const learningCategories = [
 ] as const
 
 const availableLearningCategories = learningCategories.filter((category) => category.available).length
+type LearningCategoryId = (typeof learningCategories)[number]["id"]
 
 const lessons = [
   { title: "Masalah: pilih wadah yang tepat", description: "Bayangkan kamu perlu mengemas benda berbentuk kubus atau balok. Bagaimana memperkirakan ruang yang dibutuhkan dan bahan pembungkusnya?" },
@@ -182,7 +183,10 @@ function getQuestion(shape: ShapeType, length: number, width: number, height: nu
 }
 
 export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
-  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [activeCategory, setActiveCategory] = useState<LearningCategoryId | null>(() => {
+    const savedCategory = new URLSearchParams(window.location.search).get("materi")
+    return learningCategories.find((category) => category.id === savedCategory && category.available)?.id ?? null
+  })
   const [geometryResetSignal, setGeometryResetSignal] = useState(0)
   const [fractionResetSignal, setFractionResetSignal] = useState(0)
   const [numberResetSignal, setNumberResetSignal] = useState(0)
@@ -202,6 +206,20 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [activeCategory])
+
+  const openCategory = (categoryId: LearningCategoryId) => {
+    const url = new URL(window.location.href)
+    url.searchParams.set("materi", categoryId)
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`)
+    setActiveCategory(categoryId)
+  }
+
+  const returnToCategories = () => {
+    const url = new URL(window.location.href)
+    url.searchParams.delete("materi")
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`)
+    setActiveCategory(null)
+  }
 
   const metrics = getMetrics(shape, length, width, height, radius)
   const currentTopic = topics.find((topic) => topic.id === shape)!
@@ -255,7 +273,7 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
     <div className="min-h-dvh bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border/50 bg-background/85 backdrop-blur-xl">
         <div className="relative mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
-          <button type="button" onClick={activeCategory ? () => setActiveCategory(null) : onBack} className="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition hover:bg-muted" aria-label={activeCategory ? "Kembali ke pilihan materi" : "Kembali ke dashboard"}>
+          <button type="button" onClick={activeCategory ? returnToCategories : onBack} className="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition hover:bg-muted" aria-label={activeCategory ? "Kembali ke pilihan materi" : "Kembali ke dashboard"}>
             <ArrowLeft className="h-4 w-4" /><span className="hidden sm:inline">{activeCategory ? "Semua materi" : "Kembali"}</span>
           </button>
           <div className={"flex min-w-0 items-center gap-2 " + (activeCategory ? "absolute left-1/2 -translate-x-1/2" : "")}>
@@ -318,7 +336,7 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
                     disabled={!available}
                     onClick={() => {
                       setMode("lab")
-                      setActiveCategory(id)
+                      openCategory(id)
                     }}
                     className={"group relative flex min-h-52 flex-col items-start rounded-2xl border bg-background/80 p-5 text-left shadow-sm transition sm:p-6 " + (available
                       ? "border-emerald-300/80 shadow-emerald-950/5 hover:-translate-y-1 hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-950/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"

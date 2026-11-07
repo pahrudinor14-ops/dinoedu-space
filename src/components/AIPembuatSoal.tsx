@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { invokeDinoAI } from "../lib/invokeDinoAI"
+import AIPreviewHeader from "./AIPreviewHeader"
 interface AIPembuatSoalProps {
   onBack: () => void
 }
@@ -820,13 +821,7 @@ async function handleGenerateQuestions() {
               </p>
             </div>
             <div className="lg:sticky lg:top-28 lg:self-start">
-              <div className="question-no-print mb-4 flex flex-wrap items-end justify-between gap-4">
-                <div>
-                  <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">
-                    Preview
-                  </p>
-                  <h2 className="mt-2 text-2xl font-bold">Hasil soal</h2>
-                </div>
+              <AIPreviewHeader title="Pratinjau soal">
                 {quizResult && (
                   <div className="flex flex-wrap justify-end gap-2">
                     <button
@@ -868,7 +863,7 @@ async function handleGenerateQuestions() {
                     </button>
                   </div>
                 )}
-              </div>
+              </AIPreviewHeader>
               <div className="dino-glass rounded-[32px] p-5 sm:p-7">
                 {quizResult ? (
                   <div className="question-screen-card rounded-2xl border border-zinc-200 bg-white p-7 text-zinc-900 shadow-xl sm:p-8">

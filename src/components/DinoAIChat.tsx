@@ -3,13 +3,18 @@ import {
   ArrowLeft,
   Check,
   Clock3,
+  FileText,
   HeartHandshake,
+  Image,
   Loader2,
+  Mic,
   MessageSquare,
   PanelLeft,
+  Paperclip,
   Pencil,
   Plus,
   Send,
+  Square,
   Trash2,
   UsersRound,
   X,
@@ -29,7 +34,17 @@ interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+  attachment?: ChatAttachmentMeta;
   incomplete?: boolean;
+}
+type ChatAttachmentKind = "image" | "document" | "audio";
+interface ChatAttachmentMeta {
+  kind: ChatAttachmentKind;
+  name: string;
+  mimeType: string;
+}
+interface PendingChatAttachment extends ChatAttachmentMeta {
+  data: string;
 }
 interface ChatConversation {
   id: string;
@@ -52,6 +67,112 @@ const welcomeMessage =
 const maxRequestHistoryItems = 12;
 const maxRequestHistoryCharacters = 3_000;
 const maxRequestHistoryItemCharacters = 1_000;
+const maxAttachmentBytes = 1_000_000;
+const maxRecordingDurationMs = 30_000;
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return btoa(binary);
+}
+
+function getAttachmentKind(file: File): ChatAttachmentKind | null {
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  if (
+    file.type === "image/jpeg" ||
+    file.type === "image/png" ||
+    extension === "jpg" ||
+    extension === "jpeg" ||
+    extension === "png"
+  ) return "image";
+  if (file.type === "application/pdf" || extension === "pdf") return "document";
+  if (
+    file.type === "text/plain" ||
+    file.type === "text/markdown" ||
+    file.type === "text/csv" ||
+    ["txt", "md", "csv"].includes(extension ?? "")
+  ) return "document";
+  if (
+    ["audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg", "audio/aac", "audio/mp4"].includes(file.type) ||
+    ["mp3", "wav", "ogg", "aac", "m4a"].includes(extension ?? "")
+  ) return "audio";
+  return null;
+}
+
+function getAttachmentMimeType(file: File, kind: ChatAttachmentKind): string {
+  if (kind === "image") {
+    return file.type === "image/png" || file.name.toLowerCase().endsWith(".png")
+      ? "image/png"
+      : "image/jpeg";
+  }
+  if (kind === "document") {
+    if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+      return "application/pdf";
+    }
+    if (file.name.toLowerCase().endsWith(".md")) return "text/markdown";
+    if (file.name.toLowerCase().endsWith(".csv")) return "text/csv";
+    return "text/plain";
+  }
+  if (file.type === "audio/mp4" || file.name.toLowerCase().endsWith(".m4a")) {
+    return "audio/mp4";
+  }
+  if (file.type === "audio/ogg" || file.name.toLowerCase().endsWith(".ogg")) {
+    return "audio/ogg";
+  }
+  if (file.type === "audio/aac" || file.name.toLowerCase().endsWith(".aac")) {
+    return "audio/aac";
+  }
+  if (file.type === "audio/wav" || file.name.toLowerCase().endsWith(".wav")) {
+    return "audio/wav";
+  }
+  return "audio/mpeg";
+}
+
+function encodeMonoWav(audioBuffer: AudioBuffer, outputSampleRate = 16_000) {
+  const frameCount = Math.ceil(audioBuffer.length * outputSampleRate / audioBuffer.sampleRate);
+  const wav = new ArrayBuffer(44 + frameCount * 2);
+  const view = new DataView(wav);
+  const channels = Array.from({ length: audioBuffer.numberOfChannels }, (_, index) =>
+    audioBuffer.getChannelData(index),
+  );
+  const writeText = (offset: number, value: string) => {
+    for (let index = 0; index < value.length; index += 1) {
+      view.setUint8(offset + index, value.charCodeAt(index));
+    }
+  };
+  writeText(0, "RIFF");
+  view.setUint32(4, 36 + frameCount * 2, true);
+  writeText(8, "WAVE");
+  writeText(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, outputSampleRate, true);
+  view.setUint32(28, outputSampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeText(36, "data");
+  view.setUint32(40, frameCount * 2, true);
+  for (let index = 0; index < frameCount; index += 1) {
+    const sourcePosition = index * audioBuffer.sampleRate / outputSampleRate;
+    const leftIndex = Math.floor(sourcePosition);
+    const blend = sourcePosition - leftIndex;
+    let sample = 0;
+    for (const channel of channels) {
+      const left = channel[Math.min(leftIndex, channel.length - 1)] ?? 0;
+      const right = channel[Math.min(leftIndex + 1, channel.length - 1)] ?? left;
+      sample += left + (right - left) * blend;
+    }
+    sample /= channels.length;
+    const pcm = Math.max(-1, Math.min(1, sample));
+    view.setInt16(44 + index * 2, pcm < 0 ? pcm * 0x8000 : pcm * 0x7fff, true);
+  }
+  return new Uint8Array(wav);
+}
+
 function buildRequestHistory(messages: ChatMessage[]) {
   const previousMessages = messages.filter(
     (message, index) =>
@@ -150,10 +271,20 @@ function isChatMessage(value: unknown): value is ChatMessage {
     return false;
   }
   const message = value as Record<string, unknown>;
+  const attachment = message.attachment;
+  const validAttachment = attachment === undefined ||
+    (typeof attachment === "object" &&
+      attachment !== null &&
+      typeof (attachment as Record<string, unknown>).name === "string" &&
+      typeof (attachment as Record<string, unknown>).mimeType === "string" &&
+      ["image", "document", "audio"].includes(
+        String((attachment as Record<string, unknown>).kind),
+      ));
   return (
     typeof message.id === "string" &&
     (message.role === "user" || message.role === "assistant") &&
-    typeof message.content === "string"
+    typeof message.content === "string" &&
+    validAttachment
   );
 }
 function isChatConversation(value: unknown): value is ChatConversation {
@@ -314,6 +445,10 @@ export default function DinoAIChat({
   }`;
   const storageKey = `dinoedu-chat-history:${userId}`;
   const [input, setInput] = useState("");
+  const [pendingAttachment, setPendingAttachment] =
+    useState<PendingChatAttachment | null>(null);
+  const [attachmentError, setAttachmentError] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [loadingConversationIds, setLoadingConversationIds] = useState<
     string[]
@@ -342,6 +477,11 @@ export default function DinoAIChat({
   const messages = activeConversation.messages;
   const loading = loadingConversationIds.includes(activeConversation.id);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordingStreamRef = useRef<MediaStream | null>(null);
+  const recordingChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<number | null>(null);
   /* DINOAI LOAD QUOTA */
   const loadQuota = async () => {
     setQuotaLoading(true);
@@ -380,6 +520,110 @@ export default function DinoAIChat({
     const value = typeof balance === "number" || typeof balance === "string" ? balance : balance && typeof balance === "object" ? (balance as Record<string, unknown>).credits_remaining ?? (balance as Record<string, unknown>).wallet_balance ?? (balance as Record<string, unknown>).get_dino_ai_wallet_balance : 0;
     setWalletCredits(Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0);
   };
+  const handleAttachmentSelect = async (file?: File) => {
+    if (!file) return;
+    if (file.size > maxAttachmentBytes) {
+      setAttachmentError("Ukuran file maksimal 1 MB.");
+      return;
+    }
+    const kind = getAttachmentKind(file);
+    if (!kind) {
+      setAttachmentError("Format didukung: JPG, PNG, PDF, TXT, MD, CSV, MP3, WAV, OGG, AAC, atau M4A.");
+      return;
+    }
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      setPendingAttachment({
+        kind,
+        name: file.name.slice(0, 180),
+        mimeType: getAttachmentMimeType(file, kind),
+        data: bytesToBase64(bytes),
+      });
+      setAttachmentError("");
+    } catch (error) {
+      console.error("Gagal membaca lampiran DinoAI:", error);
+      setAttachmentError("File tidak dapat dibaca. Coba pilih file lain.");
+    }
+  };
+  const startVoiceRecording = async () => {
+    if (typeof MediaRecorder === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      setAttachmentError("Perekaman suara tidak didukung di browser ini.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordingStreamRef.current = stream;
+      recordingChunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+      recorderRef.current = recorder;
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) recordingChunksRef.current.push(event.data);
+      };
+      recorder.onstop = async () => {
+        if (recordingTimerRef.current !== null) {
+          window.clearTimeout(recordingTimerRef.current);
+          recordingTimerRef.current = null;
+        }
+        recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+        recordingStreamRef.current = null;
+        recorderRef.current = null;
+        setIsRecording(false);
+        const recording = new Blob(recordingChunksRef.current, {
+          type: recorder.mimeType || "audio/webm",
+        });
+        recordingChunksRef.current = [];
+        let audioContext: AudioContext | null = null;
+        try {
+          audioContext = new AudioContext();
+          const decoded = await audioContext.decodeAudioData(await recording.arrayBuffer());
+          const wavBytes = encodeMonoWav(decoded);
+          if (wavBytes.byteLength > maxAttachmentBytes) {
+            setAttachmentError("Rekaman terlalu besar. Coba rekam dengan durasi lebih singkat.");
+            return;
+          }
+          setPendingAttachment({
+            kind: "audio",
+            name: "Pesan suara.wav",
+            mimeType: "audio/wav",
+            data: bytesToBase64(wavBytes),
+          });
+          setAttachmentError("");
+        } catch (error) {
+          console.error("Gagal memproses rekaman DinoAI:", error);
+          setAttachmentError("Rekaman tidak dapat diproses. Coba rekam ulang.");
+        } finally {
+          await audioContext?.close();
+        }
+      };
+      recorder.start();
+      setAttachmentError("");
+      setIsRecording(true);
+      recordingTimerRef.current = window.setTimeout(
+        () => recorder.state === "recording" && recorder.stop(),
+        maxRecordingDurationMs,
+      );
+    } catch (error) {
+      console.error("Tidak dapat memulai rekaman suara:", error);
+      setAttachmentError("Akses mikrofon gagal. Izinkan mikrofon lalu coba lagi.");
+    }
+  };
+  const stopVoiceRecording = () => {
+    if (recorderRef.current?.state === "recording") recorderRef.current.stop();
+  };
+  const removePendingAttachment = () => {
+    setPendingAttachment(null);
+    setAttachmentError("");
+  };
+  useEffect(() => () => {
+    if (recordingTimerRef.current !== null) {
+      window.clearTimeout(recordingTimerRef.current);
+    }
+    if (recorderRef.current) {
+      recorderRef.current.onstop = null;
+      if (recorderRef.current.state === "recording") recorderRef.current.stop();
+    }
+    recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+  }, []);
   /* DINOAI AUTO SCROLL */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
@@ -493,12 +737,16 @@ export default function DinoAIChat({
     setConversations((current) => [conversation, ...current]);
     setActiveConversationId(conversation.id);
     setInput("");
+    setPendingAttachment(null);
+    setAttachmentError("");
     setHistoryOpen(false);
   };
   /* DINOAI SELECT CHAT */
   const selectConversation = (conversationId: string) => {
     setActiveConversationId(conversationId);
     setInput("");
+    setPendingAttachment(null);
+    setAttachmentError("");
     setHistoryOpen(false);
   };
   /* DINOAI DELETE CHAT */
@@ -546,12 +794,24 @@ export default function DinoAIChat({
   };
   /* DINOAI SEND */
   const handleSend = async (prompt?: string) => {
-    const text = (prompt ?? input).trim();
-    if (!text || loading) {
+    const attachment = pendingAttachment;
+    const text = (prompt ?? input).trim() || (
+      attachment?.kind === "audio"
+        ? "Transkripsikan dan rangkum pesan suara ini."
+        : attachment
+          ? "Analisis lampiran ini dan jelaskan poin pentingnya."
+          : ""
+    );
+    if ((!text && !attachment) || loading) {
       return;
     }
-    /* FRONTEND CREDIT CHECK */
-    if (quota && quota.creditsRemaining + walletCredits < 1) {
+    const creditCost = attachment ? 2 : 1;
+    if (quota && quota.creditsRemaining + walletCredits < creditCost) {
+      setAttachmentError(
+        attachment
+          ? "Analisis file, gambar, dan suara memerlukan 2 kredit."
+          : "Kredit belum cukup untuk mengirim pesan.",
+      );
       return;
     }
     const conversationId = activeConversation.id;
@@ -559,6 +819,15 @@ export default function DinoAIChat({
       id: createId(),
       role: "user",
       content: text,
+      ...(attachment
+        ? {
+            attachment: {
+              kind: attachment.kind,
+              name: attachment.name,
+              mimeType: attachment.mimeType,
+            },
+          }
+        : {}),
     };
     const history = buildRequestHistory(activeConversation.messages);
     setConversations((current) =>
@@ -582,6 +851,8 @@ export default function DinoAIChat({
       }),
     );
     setInput("");
+    setPendingAttachment(null);
+    setAttachmentError("");
     setLoadingConversationIds((current) => [...current, conversationId]);
     try {
       const {
@@ -593,6 +864,7 @@ export default function DinoAIChat({
           body: {
             message: text,
             history,
+            ...(attachment ? { attachment } : {}),
           },
         },
       );
@@ -671,6 +943,8 @@ export default function DinoAIChat({
         )
       : 0;
   const quotaEmpty = !!quota && quota.creditsRemaining + walletCredits < 1;
+  const availableCredits = creditsRemaining + walletCredits;
+  const attachmentNeedsMoreCredits = !!pendingAttachment && availableCredits < 2;
   const quotaResetLabel = quota?.resetAt
     ? formatResetTime(quota.resetAt)
     : "Waktu reset belum tersedia";
@@ -720,8 +994,8 @@ export default function DinoAIChat({
             <span>Token pembelian tersisa</span>
             <span className="font-semibold text-foreground">{walletCredits}</span>
           </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Setiap pesan DinoAI menggunakan 1 kredit.
+          <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+            Chat teks 1 kredit · analisis file, gambar, dan suara 2 kredit.
           </p>
           <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-1.5 text-[10px] text-muted-foreground">
             <Clock3 className="h-3 w-3 shrink-0" />
@@ -737,7 +1011,7 @@ export default function DinoAIChat({
           </div>
           {quotaEmpty && (
             <div className="mt-2 text-[11px] font-medium text-[#EF629F]">
-              Kredit belum cukup untuk mengirim pesan (1 kredit)
+              Kredit belum cukup untuk mengirim pesan teks (1 kredit)
             </div>
           )}
         </>
@@ -759,8 +1033,9 @@ export default function DinoAIChat({
           Kuota harian dan token pembelianmu sudah habis
         </h3>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Satu pesan DinoAI menggunakan 1 kredit. Kredit harian kembali
-          setelah reset atau kamu dapat melihat paket kredit pembelian.
+          Chat teks menggunakan 1 kredit, sedangkan analisis file, gambar, dan
+          suara menggunakan 2 kredit. Kredit harian kembali setelah reset atau
+          kamu dapat melihat paket kredit pembelian.
         </p>
         <p className="mt-2 text-xs font-medium text-muted-foreground">
           {quota?.resetAt ? (
@@ -1028,6 +1303,24 @@ export default function DinoAIChat({
                         : "dino-glass min-w-0 max-w-[85%] break-words rounded-[24px] rounded-bl-md px-5 py-4 text-[16px] leading-7 sm:max-w-[75%]"
                     }
                   >
+                    {message.attachment && (
+                      <div
+                        className={`mb-2 flex max-w-full items-center gap-2 rounded-xl px-3 py-2 text-xs ${
+                          message.role === "user"
+                            ? "bg-white/15 text-white"
+                            : "bg-muted/70 text-muted-foreground"
+                        }`}
+                      >
+                        {message.attachment.kind === "image" ? (
+                          <Image className="h-4 w-4 shrink-0" />
+                        ) : message.attachment.kind === "audio" ? (
+                          <Mic className="h-4 w-4 shrink-0" />
+                        ) : (
+                          <FileText className="h-4 w-4 shrink-0" />
+                        )}
+                        <span className="truncate">{message.attachment.name}</span>
+                      </div>
+                    )}
                     {message.role === "assistant" ? (
                       <div className="chat-answer">
                         <ReactMarkdown
@@ -1225,34 +1518,98 @@ export default function DinoAIChat({
               <>{renderQuotaEmpty()}</>
             ) : (
               <>
-                <div className="dino-glass flex items-end gap-3 rounded-[28px] p-3 shadow-xl shadow-black/5">
-                  <textarea
-                    value={input}
-                    maxLength={8_000}
-                    onChange={(event) => setInput(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" && !event.shiftKey) {
-                        event.preventDefault();
-                        void handleSend();
-                      }
-                    }}
-                    rows={1}
-                    placeholder="Tanyakan sesuatu kepada DinoAI..."
-                    className="min-h-12 flex-1 resize-none bg-transparent px-3 py-3 text-[17px] leading-6 outline-none placeholder:text-muted-foreground"
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void handleSend()}
-                    disabled={!input.trim() || loading}
-                    className="dino-gradient flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg shadow-pink-500/10 transition duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
-                    aria-label="Kirim pesan"
-                  >
-                    <Send className="h-5 w-5" />
-                  </button>
+                <input
+                  ref={attachmentInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,application/pdf,text/plain,text/markdown,text/csv,.md,.csv,audio/mpeg,audio/wav,audio/ogg,audio/aac,audio/mp4,.mp3,.wav,.ogg,.aac,.m4a"
+                  className="hidden"
+                  aria-label="Pilih file, gambar, atau audio"
+                  onChange={(event) => {
+                    void handleAttachmentSelect(event.currentTarget.files?.[0]);
+                    event.currentTarget.value = "";
+                  }}
+                  disabled={loading || isRecording}
+                />
+                <div className="dino-glass rounded-[28px] p-3 shadow-xl shadow-black/5">
+                  {pendingAttachment && (
+                    <div className="mb-2 flex min-w-0 items-center gap-2 rounded-xl border border-border/60 bg-white/40 px-3 py-2 text-xs dark:bg-white/5">
+                      {pendingAttachment.kind === "image" ? (
+                        <Image className="h-4 w-4 shrink-0 text-[#EF629F]" />
+                      ) : pendingAttachment.kind === "audio" ? (
+                        <Mic className="h-4 w-4 shrink-0 text-[#EF629F]" />
+                      ) : (
+                        <FileText className="h-4 w-4 shrink-0 text-[#EF629F]" />
+                      )}
+                      <span className="min-w-0 flex-1 truncate">{pendingAttachment.name}</span>
+                      <span className="shrink-0 text-muted-foreground">2 kredit</span>
+                      <button
+                        type="button"
+                        onClick={removePendingAttachment}
+                        className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        aria-label="Hapus lampiran"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex items-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => attachmentInputRef.current?.click()}
+                      disabled={loading || isRecording}
+                      className="dino-button flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border/60 bg-white/40 text-muted-foreground transition hover:text-[#EF629F] disabled:opacity-40 dark:bg-white/5"
+                      aria-label="Lampirkan file, gambar, atau audio"
+                      title="Lampirkan file atau gambar"
+                    >
+                      <Paperclip className="h-5 w-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={isRecording ? stopVoiceRecording : () => void startVoiceRecording()}
+                      disabled={loading}
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition disabled:opacity-40 ${
+                        isRecording
+                          ? "bg-red-500 text-white"
+                          : "dino-button border border-border/60 bg-white/40 text-muted-foreground hover:text-[#EF629F] dark:bg-white/5"
+                      }`}
+                      aria-label={isRecording ? "Hentikan rekaman suara" : "Rekam pesan suara"}
+                      title={isRecording ? "Hentikan rekaman" : "Rekam pesan suara"}
+                    >
+                      {isRecording ? <Square className="h-4 w-4" /> : <Mic className="h-5 w-5" />}
+                    </button>
+                    <textarea
+                      value={input}
+                      maxLength={8_000}
+                      onChange={(event) => setInput(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && !event.shiftKey) {
+                          event.preventDefault();
+                          void handleSend();
+                        }
+                      }}
+                      rows={1}
+                      placeholder={isRecording ? "Sedang merekam... (maks. 30 detik)" : "Tanyakan sesuatu kepada DinoAI..."}
+                      className="min-h-12 min-w-0 flex-1 resize-none bg-transparent px-2 py-3 text-[17px] leading-6 outline-none placeholder:text-muted-foreground"
+                      disabled={loading || isRecording}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void handleSend()}
+                      disabled={(!input.trim() && !pendingAttachment) || loading || isRecording || attachmentNeedsMoreCredits}
+                      className="dino-gradient flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg shadow-pink-500/10 transition duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+                      aria-label="Kirim pesan"
+                    >
+                      <Send className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
+                {(attachmentError || attachmentNeedsMoreCredits) && (
+                  <p role="status" className="mt-2 text-center text-xs text-[#c9447b]">
+                    {attachmentError || "Analisis file, gambar, dan suara memerlukan 2 kredit. Tambah token atau lanjutkan dengan chat teks."}
+                  </p>
+                )}
                 <p className="mt-2 text-center text-[12px] text-muted-foreground">
-                  DinoAI masih dalam tahap pengembangan
+                  Chat teks 1 kredit · analisis file, gambar, dan suara 2 kredit · rekaman maksimal 30 detik
                 </p>
               </>
             )}

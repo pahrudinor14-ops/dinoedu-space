@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { invokeDinoAI } from "../lib/invokeDinoAI"
+import AIPreviewHeader from "./AIPreviewHeader"
 import "./AIPembuatRubrik.css"
 
 interface AIPembuatRubrikProps {
@@ -574,6 +575,7 @@ export default function AIPembuatRubrik({ onBack }: AIPembuatRubrikProps) {
 
           <section className="min-w-0 space-y-5">
             {(errorMessage || message) && <div role={errorMessage ? "alert" : "status"} className={`rounded-2xl border px-4 py-3 text-sm leading-6 ${errorMessage ? "border-red-500/25 bg-red-500/5 text-red-700 dark:text-red-300" : "border-emerald-500/25 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300"}`}>{errorMessage || message}</div>}
+            <AIPreviewHeader title="Pratinjau rubrik penilaian" />
             {isLoadingSaved ? (
               <div className="dino-glass flex min-h-96 items-center justify-center rounded-[28px] text-sm text-muted-foreground"><LoaderCircle className="mr-2 h-4 w-4 animate-spin" />Memuat rubrik tersimpan…</div>
             ) : result ? (

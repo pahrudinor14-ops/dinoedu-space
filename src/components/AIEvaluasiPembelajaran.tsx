@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { invokeDinoAI } from "../lib/invokeDinoAI"
+import AIPreviewHeader from "./AIPreviewHeader"
 import "./AIEvaluasiPembelajaran.css"
 
 interface AIEvaluasiPembelajaranProps {
@@ -478,8 +479,7 @@ export default function AIEvaluasiPembelajaran({ onBack }: AIEvaluasiPembelajara
           </section>
 
           <section className="min-w-0 space-y-5">
-            <div className="evaluation-no-print flex flex-wrap items-end justify-between gap-4">
-              <div><p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-[#EF629F]">Preview</p><h2 className="mt-2 text-2xl font-bold">Laporan evaluasi</h2></div>
+            <AIPreviewHeader title="Pratinjau laporan evaluasi">
               {result && <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={() => void deleteEvaluation()} disabled={isDeleting || isSaving || isGenerating || isLoadingSaved} className="inline-flex items-center gap-2 rounded-full border border-red-500/25 bg-red-500/5 px-3 py-2 text-[13px] font-semibold text-red-600 disabled:opacity-50"><Trash2 className="h-4 w-4" />Hapus</button>
                 <button type="button" onClick={() => void toggleEdit()} disabled={isSaving || isDeleting} className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-3 py-2 text-[13px] font-semibold backdrop-blur-xl dark:bg-white/5">{isEditing ? <Check className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}{isEditing ? "Simpan edit" : "Edit"}</button>
@@ -487,7 +487,7 @@ export default function AIEvaluasiPembelajaran({ onBack }: AIEvaluasiPembelajara
                 <button type="button" onClick={() => window.print()} className="dino-gradient inline-flex items-center gap-2 rounded-full px-3 py-2 text-[13px] font-semibold text-white"><Printer className="h-4 w-4" />Cetak / PDF</button>
                 <button type="button" onClick={downloadCsv} className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/40 px-3 py-2 text-[13px] font-semibold backdrop-blur-xl dark:bg-white/5"><FileDown className="h-4 w-4" />CSV</button>
               </div>}
-            </div>
+            </AIPreviewHeader>
 
             {isLoadingSaved ? <div className="dino-glass flex min-h-96 items-center justify-center rounded-[28px] text-sm text-muted-foreground"><LoaderCircle className="mr-2 h-4 w-4 animate-spin" />Memuat evaluasi tersimpan...</div> : result && summary ? (
               <div id="evaluation-print-document" className="evaluation-print-document space-y-5">

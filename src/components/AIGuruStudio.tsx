@@ -15,6 +15,7 @@ import {
 import { supabase } from "../lib/supabase"
 import { invokeDinoAI } from "../lib/invokeDinoAI"
 import { downloadPowerPoint, type PowerPointSlide } from "../lib/exportPowerPoint"
+import AIPreviewHeader from "./AIPreviewHeader"
 
 type ToolKind = "lkpd" | "ppt"
 type EducationLevel = "PAUD" | "SD/MI" | "SMP/MTs" | "SMA/MA" | "SMK/MAK" | "Kesetaraan" | ""
@@ -225,6 +226,13 @@ export default function AIGuruStudio({ kind, onBack }: AIGuruStudioProps) {
         if (restored) setResult(restored)
       } catch (loadError) {
         console.error(`Load ${toolTitle} error:`, loadError)
+        if (isActive) {
+          setError(
+            loadError instanceof Error
+              ? `Draf ${toolTitle} gagal dimuat: ${loadError.message}`
+              : `Draf ${toolTitle} gagal dimuat. Periksa koneksi lalu coba lagi.`,
+          )
+        }
       } finally {
         if (isActive) setIsLoadingSaved(false)
       }
@@ -495,10 +503,7 @@ export default function AIGuruStudio({ kind, onBack }: AIGuruStudioProps) {
                 <button type="button" onClick={() => void deleteDocument()} disabled={isBusy} className="dino-button inline-flex items-center gap-2 rounded-xl border border-red-500/25 bg-red-500/5 px-4 py-2.5 text-[13px] font-semibold text-red-600 disabled:opacity-50"><Trash2 className="h-4 w-4" /> Hapus</button>
               </div>
             )}
-            <div className="dino-no-print mb-4 flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EF629F]/10 text-[#EF629F]">{isPpt ? <Presentation className="h-5 w-5" /> : <FileText className="h-5 w-5" />}</div>
-              <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#EF629F]">Hasil DinoAI</p><h2 className="mt-1 text-xl font-bold">Pratinjau {isPpt ? "presentasi" : "LKPD"}</h2></div>
-            </div>
+            <AIPreviewHeader title={`Pratinjau ${isPpt ? "presentasi" : "LKPD"}`} />
             <div className="dino-glass min-h-[560px] rounded-[32px] p-5 sm:p-7">
               {result ? (
                 <div className={`learning-print-document ${isPpt ? "min-h-[620px] rounded-2xl bg-white p-5 text-zinc-900 shadow-xl sm:p-8" : ""}`}>
