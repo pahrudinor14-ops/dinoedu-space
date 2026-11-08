@@ -99,6 +99,8 @@ interface DinoAICreditStatus {
   dailyRemaining: number
   dailyLimit: number
   purchasedRemaining: number
+  sharedRequestsToday: number
+  sharedRequestsRemaining: number
 }
 
 const lessons = [
@@ -241,13 +243,19 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
       const quota = quotaValue as Record<string, unknown>
       const dailyLimit = Number(quota.daily_limit)
       const dailyRemaining = Number(quota.credits_remaining)
+      const sharedRequestsToday = Number(quota.global_requests_today)
+      const sharedRequestsRemaining = Number(quota.global_requests_remaining)
       const purchasedRemaining = Number(walletResult.data)
       if (
         !Number.isSafeInteger(dailyLimit) ||
         !Number.isSafeInteger(dailyRemaining) ||
+        !Number.isSafeInteger(sharedRequestsToday) ||
+        !Number.isSafeInteger(sharedRequestsRemaining) ||
         !Number.isSafeInteger(purchasedRemaining) ||
         dailyLimit < 0 ||
         dailyRemaining < 0 ||
+        sharedRequestsToday < 0 ||
+        sharedRequestsRemaining < 0 ||
         purchasedRemaining < 0
       ) {
         console.error("Nilai kuota DinoAI tidak valid untuk status DinoLab.")
@@ -259,6 +267,8 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
         dailyLimit,
         dailyRemaining,
         purchasedRemaining,
+        sharedRequestsToday,
+        sharedRequestsRemaining,
       })
       setCreditStatusError(false)
     } catch (error) {
@@ -407,9 +417,15 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
                     : creditStatusError && !creditStatus
                       ? "Status kredit belum dapat dimuat."
                       : creditStatus
-                        ? `Kredit berlaku: ${creditStatus.dailyRemaining} dari ${creditStatus.dailyLimit} harian + ${creditStatus.purchasedRemaining} pembelian (${creditStatus.dailyRemaining + creditStatus.purchasedRemaining} total)${creditStatusLoading ? " · Memperbarui..." : creditStatusError ? " · Pembaruan gagal, menampilkan data terakhir" : ""}`
+                        ? `Kredit akun: ${creditStatus.dailyRemaining} dari ${creditStatus.dailyLimit} harian + ${creditStatus.purchasedRemaining} pembelian (${creditStatus.dailyRemaining + creditStatus.purchasedRemaining} total)${creditStatusLoading ? " · Memperbarui..." : creditStatusError ? " · Pembaruan gagal, menampilkan data terakhir" : ""}`
                         : "Status kredit belum tersedia."}
                 </p>
+                {creditStatus && (
+                  <p className="mt-1 text-xs text-emerald-50/90 sm:text-sm" role="status" aria-live="polite">
+                    Kapasitas AI bersama: {creditStatus.sharedRequestsRemaining} dari {creditStatus.sharedRequestsToday + creditStatus.sharedRequestsRemaining} permintaan tersisa hari ini.
+                    {creditStatus.sharedRequestsRemaining === 0 && " Batas layanan harian tercapai meskipun kredit akun masih tersedia."}
+                  </p>
+                )}
               </div>
             </section>
 
