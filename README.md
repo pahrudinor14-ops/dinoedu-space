@@ -25,21 +25,21 @@ DinoEdu Space adalah aplikasi React, TypeScript, dan Vite. Frontend memakai Supa
    npm run dev
    ```
 
-## Deploy frontend ke Cloudflare Pages
+## Deploy frontend ke Cloudflare Workers
 
-Hubungkan repository GitHub ini ke Cloudflare Pages, lalu atur:
+Proyek ini memakai Cloudflare Workers Static Assets. Konfigurasi Wrangler di `wrangler.jsonc` mengirim folder `dist` dan menyediakan fallback SPA melalui `not_found_handling`. Jangan tambahkan `public/_redirects`: wildcard ke `/index.html` ditolak Wrangler sebagai redirect loop.
 
 | Pengaturan | Nilai |
 | --- | --- |
 | Production branch | `master` |
 | Root directory | `/` (folder repository) |
 | Build command | `npm ci && npm run build` |
-| Build output directory | `dist` |
+| Deploy command | `npx wrangler deploy` |
 | Node.js version | Dibaca dari `.node-version` (`22.23.4`) |
 
-Tambahkan `VITE_SUPABASE_URL` dan `VITE_SUPABASE_PUBLISHABLE_KEY` di **Settings → Environment variables** untuk Production dan Preview. Tambahkan `VITE_DINOMATH_*` hanya jika memakai URL PDF atau seri DinoMath lain. Setelah GitHub terhubung, push ke branch `master` akan memulai deployment.
+Tambahkan `VITE_SUPABASE_URL` dan `VITE_SUPABASE_PUBLISHABLE_KEY` pada konfigurasi build untuk environment produksi. Tambahkan `VITE_DINOMATH_*` hanya jika memakai URL PDF atau seri DinoMath lain. Setelah integrasi GitHub aktif, push ke branch `master` akan memulai build dan deploy Worker.
 
-`public/_redirects` mengatur fallback SPA agar URL aplikasi seperti `/app/cv`, `/app/surat`, dan `/app/soal` tetap membuka aplikasi saat dimuat langsung. Untuk deploy manual, jalankan `npm.cmd ci`, `npm.cmd run build`, lalu `npx.cmd wrangler pages deploy dist --project-name <NAMA_PROYEK_PAGES>` dari PowerShell.
+Untuk deploy manual dari PowerShell, jalankan `npm.cmd ci`, `npm.cmd run build`, lalu `npx.cmd wrangler deploy`. File `wrangler.jsonc` mengatur fallback agar URL seperti `/app/cv`, `/app/surat`, dan `/app/soal` membuka aplikasi saat dimuat langsung.
 
 Nilai dengan awalan `VITE_` dimasukkan ke bundle frontend dan dapat dilihat pengguna. Gunakan hanya URL Supabase dan publishable key di sana. Jangan memasukkan `SUPABASE_SERVICE_ROLE_KEY`, API key Gemini, atau secret Midtrans ke environment frontend.
 
@@ -48,9 +48,9 @@ Untuk menyiapkan perubahan lokal, meninjau file yang akan dikirim, lalu memicu d
 ```powershell
 git status --short
 git diff --check
-git add -- README.md src supabase/functions supabase/migrations .node-version public/_redirects
+git add -- README.md src supabase/functions supabase/migrations .node-version wrangler.jsonc
 git diff --cached --stat
-git commit -m "Unify DinoAI credits and fix Cloudflare build"
+git commit -m "Unify DinoAI credits and fix Cloudflare deployment"
 git push origin master
 ```
 
