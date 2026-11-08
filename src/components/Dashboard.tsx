@@ -309,8 +309,8 @@ export default function Dashboard({
                            Matematika Visual untuk SD
                         </div>
                         <h2 className="mt-4 max-w-2xl text-2xl font-bold tracking-normal sm:text-5xl">
-                           <span className="block">Matematika jadi terlihat</span>
-                           <span className="block">dan terasa seru</span>
+                           <span className="block">Matematika jadi Terlihat</span>
+                           <span className="block">dan terasa Seru</span>
                         </h2>
                         <p className="mt-4 max-w-xl text-base leading-7 text-emerald-50/95 sm:text-lg">
                            Pilih dari enam kategori matematika dan mulai bereksperimen. Materi Bangun ruang tersedia sekarang; kategori lainnya akan menyusul.
