@@ -19,6 +19,7 @@ import {
   Calculator,
   CheckCircle2,
   CircleHelp,
+  Coins,
   Cuboid,
   Gamepad2,
   LockKeyhole,
@@ -99,8 +100,6 @@ interface DinoAICreditStatus {
   dailyRemaining: number
   dailyLimit: number
   purchasedRemaining: number
-  sharedRequestsToday: number
-  sharedRequestsRemaining: number
 }
 
 const lessons = [
@@ -243,19 +242,13 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
       const quota = quotaValue as Record<string, unknown>
       const dailyLimit = Number(quota.daily_limit)
       const dailyRemaining = Number(quota.credits_remaining)
-      const sharedRequestsToday = Number(quota.global_requests_today)
-      const sharedRequestsRemaining = Number(quota.global_requests_remaining)
       const purchasedRemaining = Number(walletResult.data)
       if (
         !Number.isSafeInteger(dailyLimit) ||
         !Number.isSafeInteger(dailyRemaining) ||
-        !Number.isSafeInteger(sharedRequestsToday) ||
-        !Number.isSafeInteger(sharedRequestsRemaining) ||
         !Number.isSafeInteger(purchasedRemaining) ||
         dailyLimit < 0 ||
         dailyRemaining < 0 ||
-        sharedRequestsToday < 0 ||
-        sharedRequestsRemaining < 0 ||
         purchasedRemaining < 0
       ) {
         console.error("Nilai kuota DinoAI tidak valid untuk status DinoLab.")
@@ -267,8 +260,6 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
         dailyLimit,
         dailyRemaining,
         purchasedRemaining,
-        sharedRequestsToday,
-        sharedRequestsRemaining,
       })
       setCreditStatusError(false)
     } catch (error) {
@@ -411,21 +402,16 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
                 <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/15 px-3.5 py-2 text-xs font-semibold text-white sm:text-sm">
                   <CheckCircle2 className="h-4 w-4 text-cyan-100" />{availableLearningCategories} dari {learningCategories.length} kategori tersedia
                 </div>
-                <p className="mt-2 text-xs font-medium text-emerald-50/95 sm:text-sm" role="status" aria-live="polite">
-                  {creditStatusLoading && !creditStatus
-                    ? "Memuat status kredit..."
-                    : creditStatusError && !creditStatus
-                      ? "Status kredit belum dapat dimuat."
-                      : creditStatus
-                        ? `Kredit akun: ${creditStatus.dailyRemaining} dari ${creditStatus.dailyLimit} harian + ${creditStatus.purchasedRemaining} pembelian (${creditStatus.dailyRemaining + creditStatus.purchasedRemaining} total)${creditStatusLoading ? " · Memperbarui..." : creditStatusError ? " · Pembaruan gagal, menampilkan data terakhir" : ""}`
-                        : "Status kredit belum tersedia."}
-                </p>
-                {creditStatus && (
-                  <p className="mt-1 text-xs text-emerald-50/90 sm:text-sm" role="status" aria-live="polite">
-                    Kapasitas AI bersama: {creditStatus.sharedRequestsRemaining} dari {creditStatus.sharedRequestsToday + creditStatus.sharedRequestsRemaining} permintaan tersisa hari ini.
-                    {creditStatus.sharedRequestsRemaining === 0 && " Batas layanan harian tercapai meskipun kredit akun masih tersedia."}
-                  </p>
-                )}
+                <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-emerald-50/95 sm:text-sm" role="status" aria-live="polite">
+                  <Coins className="h-4 w-4 shrink-0 text-amber-200" aria-hidden="true" />
+                  <span>
+                    {creditStatus
+                      ? `${creditStatus.dailyRemaining + creditStatus.purchasedRemaining} kredit tersedia`
+                      : creditStatusLoading
+                        ? "Memuat kredit..."
+                        : "Kredit belum tersedia"}
+                  </span>
+                </div>
               </div>
             </section>
 
