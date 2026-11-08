@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Dino3DScene, { type DinoShape, type SelectedPart } from "./Dino3DScene"
 import BangunDatarInteraktif from "./BangunDatarInteraktif"
 import BilanganOperasiHitung from "./laboratorium/BilanganOperasiHitung"
@@ -9,6 +9,8 @@ import ModeSelector, { type LearningMode } from "./laboratorium/ModeSelector"
 import PecahanRasioPengukuran from "./laboratorium/PecahanRasioPengukuran"
 import RujukanPenyusunan from "./laboratorium/RujukanPenyusunan"
 import ScreenScribble from "./laboratorium/ScreenScribble"
+import { supabase } from "../lib/supabase"
+import { DINO_AI_USAGE_CHANGED_EVENT } from "../lib/invokeDinoAI"
 import {
   ArrowLeft,
   ArrowRight,
@@ -92,6 +94,12 @@ const learningCategories = [
 
 const availableLearningCategories = learningCategories.filter((category) => category.available).length
 type LearningCategoryId = (typeof learningCategories)[number]["id"]
+
+interface DinoAICreditStatus {
+  dailyRemaining: number
+  dailyLimit: number
+  purchasedRemaining: number
+}
 
 const lessons = [
   { title: "Masalah: pilih wadah yang tepat", description: "Bayangkan kamu perlu mengemas benda berbentuk kubus atau balok. Bagaimana memperkirakan ruang yang dibutuhkan dan bahan pembungkusnya?" },
@@ -183,6 +191,9 @@ function getQuestion(shape: ShapeType, length: number, width: number, height: nu
 }
 
 export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
+  const [creditStatus, setCreditStatus] = useState<DinoAICreditStatus | null>(null)
+  const [creditStatusLoading, setCreditStatusLoading] = useState(true)
+  const [creditStatusError, setCreditStatusError] = useState(false)
   const [activeCategory, setActiveCategory] = useState<LearningCategoryId | null>(() => {
     const savedCategory = new URLSearchParams(window.location.search).get("materi")
     return learningCategories.find((category) => category.id === savedCategory && category.available)?.id ?? null
@@ -202,6 +213,80 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
   const [checked, setChecked] = useState(false)
   const [selectedPart, setSelectedPart] = useState<SelectedPart | null>(null)
   const [showHiddenEdges, setShowHiddenEdges] = useState(true)
+
+  const loadCreditStatus = useCallback(async () => {
+    setCreditStatusLoading(true)
+    try {
+      const [quotaResult, walletResult] = await Promise.all([
+        supabase.rpc("get_dino_ai_quota"),
+        supabase.rpc("get_dino_ai_wallet_balance"),
+      ])
+      if (quotaResult.error || walletResult.error) {
+        console.error("Gagal memperbarui status kredit DinoLab:", {
+          quota: quotaResult.error,
+          wallet: walletResult.error,
+        })
+        setCreditStatusError(true)
+        return
+      }
+
+      const quotaValue = Array.isArray(quotaResult.data)
+        ? quotaResult.data[0]
+        : quotaResult.data
+      if (!quotaValue || typeof quotaValue !== "object") {
+        console.error("Format kuota DinoAI tidak valid untuk status DinoLab.")
+        setCreditStatusError(true)
+        return
+      }
+      const quota = quotaValue as Record<string, unknown>
+      const dailyLimit = Number(quota.daily_limit)
+      const dailyRemaining = Number(quota.credits_remaining)
+      const purchasedRemaining = Number(walletResult.data)
+      if (
+        !Number.isSafeInteger(dailyLimit) ||
+        !Number.isSafeInteger(dailyRemaining) ||
+        !Number.isSafeInteger(purchasedRemaining) ||
+        dailyLimit < 0 ||
+        dailyRemaining < 0 ||
+        purchasedRemaining < 0
+      ) {
+        console.error("Nilai kuota DinoAI tidak valid untuk status DinoLab.")
+        setCreditStatusError(true)
+        return
+      }
+
+      setCreditStatus({
+        dailyLimit,
+        dailyRemaining,
+        purchasedRemaining,
+      })
+      setCreditStatusError(false)
+    } catch (error) {
+      console.error("Gagal memuat status kredit DinoLab:", error)
+      setCreditStatusError(true)
+    } finally {
+      setCreditStatusLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadCreditStatus()
+    const refreshVisibleStatus = () => {
+      if (document.visibilityState === "visible") {
+        void loadCreditStatus()
+      }
+    }
+    const interval = window.setInterval(refreshVisibleStatus, 15_000)
+    window.addEventListener(DINO_AI_USAGE_CHANGED_EVENT, loadCreditStatus)
+    window.addEventListener("focus", loadCreditStatus)
+    document.addEventListener("visibilitychange", refreshVisibleStatus)
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener(DINO_AI_USAGE_CHANGED_EVENT, loadCreditStatus)
+      window.removeEventListener("focus", loadCreditStatus)
+      document.removeEventListener("visibilitychange", refreshVisibleStatus)
+    }
+  }, [loadCreditStatus])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -316,6 +401,15 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
                 <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/15 px-3.5 py-2 text-xs font-semibold text-white sm:text-sm">
                   <CheckCircle2 className="h-4 w-4 text-cyan-100" />{availableLearningCategories} dari {learningCategories.length} kategori tersedia
                 </div>
+                <p className="mt-2 text-xs font-medium text-emerald-50/95 sm:text-sm" role="status" aria-live="polite">
+                  {creditStatusLoading && !creditStatus
+                    ? "Memuat status kredit..."
+                    : creditStatusError && !creditStatus
+                      ? "Status kredit belum dapat dimuat."
+                      : creditStatus
+                        ? `Kredit berlaku: ${creditStatus.dailyRemaining} dari ${creditStatus.dailyLimit} harian + ${creditStatus.purchasedRemaining} pembelian (${creditStatus.dailyRemaining + creditStatus.purchasedRemaining} total)${creditStatusLoading ? " · Memperbarui..." : creditStatusError ? " · Pembaruan gagal, menampilkan data terakhir" : ""}`
+                        : "Status kredit belum tersedia."}
+                </p>
               </div>
             </section>
 

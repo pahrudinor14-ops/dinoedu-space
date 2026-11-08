@@ -44,6 +44,10 @@ Nilai dengan awalan `VITE_` dimasukkan ke bundle frontend dan dapat dilihat peng
 
 ## Deploy Supabase
 
+Kuota harian DinoAI dihitung di Supabase dan direset pukul 00.00 WITA
+(Asia/Makassar). Semua fitur AI, termasuk DinoLab, memakai reservasi kredit
+server yang sama; saldo harian dan token pembelian tetap ditampilkan terpisah.
+
 Pastikan URL frontend produksi sudah ditambahkan ke **Authentication → URL Configuration** pada proyek Supabase: isi Site URL dan Redirect URLs agar login email kembali ke domain aplikasi.
 
 Untuk menerapkan migrasi database yang belum ada di proyek tujuan:

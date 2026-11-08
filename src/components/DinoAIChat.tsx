@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   Check,
@@ -25,6 +25,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { supabase } from "../lib/supabase";
+import { DINO_AI_USAGE_CHANGED_EVENT } from "../lib/invokeDinoAI";
 interface DinoAIChatProps {
   email?: string | null;
   userId: string;
@@ -483,7 +484,7 @@ export default function DinoAIChat({
   const recordingChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<number | null>(null);
   /* DINOAI LOAD QUOTA */
-  const loadQuota = async () => {
+  const loadQuota = useCallback(async () => {
     setQuotaLoading(true);
     try {
       const {
@@ -509,8 +510,8 @@ export default function DinoAIChat({
     } finally {
       setQuotaLoading(false);
     }
-  };
-  const loadWalletCredits = async () => {
+  }, []);
+  const loadWalletCredits = useCallback(async () => {
     const { data, error } = await supabase.rpc("get_dino_ai_wallet_balance");
     if (error) {
       console.error("Gagal mengambil saldo token DinoAI:", error);
@@ -519,7 +520,7 @@ export default function DinoAIChat({
     const balance = Array.isArray(data) ? data[0] : data;
     const value = typeof balance === "number" || typeof balance === "string" ? balance : balance && typeof balance === "object" ? (balance as Record<string, unknown>).credits_remaining ?? (balance as Record<string, unknown>).wallet_balance ?? (balance as Record<string, unknown>).get_dino_ai_wallet_balance : 0;
     setWalletCredits(Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0);
-  };
+  }, []);
   const handleAttachmentSelect = async (file?: File) => {
     if (!file) return;
     if (file.size > maxAttachmentBytes) {
@@ -717,7 +718,26 @@ export default function DinoAIChat({
   useEffect(() => {
     void loadQuota();
     void loadWalletCredits();
-  }, [userId]);
+  }, [userId, loadQuota, loadWalletCredits]);
+  useEffect(() => {
+    const refreshUsage = () => {
+      void loadQuota();
+      void loadWalletCredits();
+    };
+    const refreshVisibleUsage = () => {
+      if (document.visibilityState === "visible") {
+        refreshUsage();
+      }
+    };
+    window.addEventListener(DINO_AI_USAGE_CHANGED_EVENT, refreshUsage);
+    window.addEventListener("focus", refreshUsage);
+    document.addEventListener("visibilitychange", refreshVisibleUsage);
+    return () => {
+      window.removeEventListener(DINO_AI_USAGE_CHANGED_EVENT, refreshUsage);
+      window.removeEventListener("focus", refreshUsage);
+      document.removeEventListener("visibilitychange", refreshVisibleUsage);
+    };
+  }, [loadQuota, loadWalletCredits]);
   /* DINOAI RESET CLOCK */
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -730,7 +750,7 @@ export default function DinoAIChat({
     return () => {
       window.clearInterval(timer);
     };
-  }, [quota?.resetAt]);
+  }, [loadQuota, quota?.resetAt]);
   /* DINOAI NEW CHAT */
   const startConversation = () => {
     const conversation = createConversation();
@@ -855,10 +875,7 @@ export default function DinoAIChat({
     setAttachmentError("");
     setLoadingConversationIds((current) => [...current, conversationId]);
     try {
-      const {
-        data,
-        error,
-      } = await supabase.functions.invoke(
+      const { data, error } = await supabase.functions.invoke(
         "dinoai-chat",
         {
           body: {

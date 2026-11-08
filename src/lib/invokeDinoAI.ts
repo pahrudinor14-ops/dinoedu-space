@@ -1,5 +1,13 @@
 import { supabase } from "./supabase"
 
+export const DINO_AI_USAGE_CHANGED_EVENT = "dinoai:usage-changed"
+
+export function notifyDinoAIUsageChanged() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(DINO_AI_USAGE_CHANGED_EVENT))
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
 }
@@ -45,10 +53,16 @@ export async function invokeDinoAI<TResponse>(
     throw new Error("Sesi login tidak ditemukan. Silakan masuk kembali.")
   }
 
-  const { data, error } = await supabase.functions.invoke(functionName, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    body,
-  })
+  let data: unknown
+  let error: unknown
+  try {
+    ({ data, error } = await supabase.functions.invoke(functionName, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body,
+    }))
+  } finally {
+    notifyDinoAIUsageChanged()
+  }
 
   if (error) {
     throw new Error(await readFunctionError(error, `AI ${functionName} gagal diproses.`))
