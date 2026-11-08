@@ -11,6 +11,7 @@ import RujukanPenyusunan from "./laboratorium/RujukanPenyusunan"
 import ScreenScribble from "./laboratorium/ScreenScribble"
 import { supabase } from "../lib/supabase"
 import { DINO_AI_USAGE_CHANGED_EVENT } from "../lib/invokeDinoAI"
+import { DINO_AI_CREDIT_COSTS, creditLabel, type DinoAICreditStatus } from "../lib/dinoAiCreditPolicy"
 import {
   ArrowLeft,
   ArrowRight,
@@ -95,12 +96,6 @@ const learningCategories = [
 
 const availableLearningCategories = learningCategories.filter((category) => category.available).length
 type LearningCategoryId = (typeof learningCategories)[number]["id"]
-
-interface DinoAICreditStatus {
-  dailyRemaining: number
-  dailyLimit: number
-  purchasedRemaining: number
-}
 
 const lessons = [
   { title: "Masalah: pilih wadah yang tepat", description: "Bayangkan kamu perlu mengemas benda berbentuk kubus atau balok. Bagaimana memperkirakan ruang yang dibutuhkan dan bahan pembungkusnya?" },
@@ -218,31 +213,29 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
   const loadCreditStatus = useCallback(async () => {
     setCreditStatusLoading(true)
     try {
-      const [quotaResult, walletResult] = await Promise.all([
-        supabase.rpc("get_dino_ai_quota"),
-        supabase.rpc("get_dino_ai_wallet_balance"),
-      ])
-      if (quotaResult.error || walletResult.error) {
+      const balanceResult = await supabase.rpc("get_dino_ai_credit_balance")
+      if (balanceResult.error) {
         console.error("Gagal memperbarui status kredit DinoLab:", {
-          quota: quotaResult.error,
-          wallet: walletResult.error,
+          balance: balanceResult.error,
         })
+        setCreditStatus(null)
         setCreditStatusError(true)
         return
       }
 
-      const quotaValue = Array.isArray(quotaResult.data)
-        ? quotaResult.data[0]
-        : quotaResult.data
+      const quotaValue = Array.isArray(balanceResult.data)
+        ? balanceResult.data[0]
+        : balanceResult.data
       if (!quotaValue || typeof quotaValue !== "object") {
         console.error("Format kuota DinoAI tidak valid untuk status DinoLab.")
+        setCreditStatus(null)
         setCreditStatusError(true)
         return
       }
       const quota = quotaValue as Record<string, unknown>
       const dailyLimit = Number(quota.daily_limit)
       const dailyRemaining = Number(quota.credits_remaining)
-      const purchasedRemaining = Number(walletResult.data)
+      const purchasedRemaining = Number(quota.purchased_credits_remaining)
       if (
         !Number.isSafeInteger(dailyLimit) ||
         !Number.isSafeInteger(dailyRemaining) ||
@@ -252,6 +245,7 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
         purchasedRemaining < 0
       ) {
         console.error("Nilai kuota DinoAI tidak valid untuk status DinoLab.")
+        setCreditStatus(null)
         setCreditStatusError(true)
         return
       }
@@ -264,6 +258,7 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
       setCreditStatusError(false)
     } catch (error) {
       console.error("Gagal memuat status kredit DinoLab:", error)
+      setCreditStatus(null)
       setCreditStatusError(true)
     } finally {
       setCreditStatusLoading(false)
@@ -406,12 +401,13 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
                   <Coins className="h-4 w-4 shrink-0 text-amber-200" aria-hidden="true" />
                   <span>
                     {creditStatus
-                      ? `${creditStatus.dailyRemaining + creditStatus.purchasedRemaining} kredit tersedia`
+                      ? `${creditStatus.dailyRemaining + creditStatus.purchasedRemaining} kredit tersedia (${creditStatus.dailyRemaining} harian + ${creditStatus.purchasedRemaining} pembelian)`
                       : creditStatusLoading
                         ? "Memuat kredit..."
-                        : "Kredit belum tersedia"}
+                        : creditStatusError ? "Saldo kredit belum dapat dimuat" : "Saldo kredit belum tersedia"}
                   </span>
                 </div>
+                <p className="mt-2 text-xs leading-5 text-emerald-50/90">Materi interaktif DinoLab gratis. Analisis coretan AI menggunakan {creditLabel(DINO_AI_CREDIT_COSTS.dinoLabScribble)}; kuota harian dipakai dahulu dan direset pukul 00.00 WITA.</p>
               </div>
             </section>
 
@@ -458,13 +454,33 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
             <footer className="pt-2 text-center text-xs text-muted-foreground">DinoLab - Pilih kategori untuk mulai menjelajahi matematika.</footer>
           </div>
         ) : activeCategory === "geometri" ? (
-          <BangunDatarInteraktif resetSignal={geometryResetSignal} />
+          <BangunDatarInteraktif
+            resetSignal={geometryResetSignal}
+            creditStatus={creditStatus}
+            creditStatusLoading={creditStatusLoading}
+            creditStatusError={creditStatusError}
+          />
         ) : activeCategory === "pecahan" ? (
-          <PecahanRasioPengukuran resetSignal={fractionResetSignal} />
+          <PecahanRasioPengukuran
+            resetSignal={fractionResetSignal}
+            creditStatus={creditStatus}
+            creditStatusLoading={creditStatusLoading}
+            creditStatusError={creditStatusError}
+          />
         ) : activeCategory === "bilangan" ? (
-          <BilanganOperasiHitung resetSignal={numberResetSignal} />
+          <BilanganOperasiHitung
+            resetSignal={numberResetSignal}
+            creditStatus={creditStatus}
+            creditStatusLoading={creditStatusLoading}
+            creditStatusError={creditStatusError}
+          />
         ) : activeCategory === "data" ? (
-          <DataPolaPemecahanMasalah resetSignal={dataResetSignal} />
+          <DataPolaPemecahanMasalah
+            resetSignal={dataResetSignal}
+            creditStatus={creditStatus}
+            creditStatusLoading={creditStatusLoading}
+            creditStatusError={creditStatusError}
+          />
         ) : (
         <div className="relative mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
           <section className="flex flex-wrap items-end justify-between gap-4">
@@ -603,6 +619,9 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
             key={`${activeCategory}-${shape}`}
             visible={mode === "learn"}
             context={`Bangun ruang ${currentTopic.title}. Tahap ${lessonStep + 1}: ${lessons[lessonStep].title}. ${lessons[lessonStep].description}`}
+            creditStatus={creditStatus}
+            creditStatusLoading={creditStatusLoading}
+            creditStatusError={creditStatusError}
           />
           <RujukanPenyusunan material="bangun-ruang" />
           <footer className="py-5 text-center text-xs text-muted-foreground">DinoLab - Jelajahi, eksperimen, dan pahami matematika.</footer>

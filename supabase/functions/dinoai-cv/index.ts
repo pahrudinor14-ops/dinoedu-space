@@ -4,6 +4,7 @@ import {
   extractGeminiContent,
   getGeminiFailureReason,
 } from "../_shared/gemini.ts";
+import { DINO_AI_CREDIT_COSTS, DINO_AI_CREDIT_FEATURES } from "../_shared/dinoAiCreditPolicy.ts";
 const MAX_REQUEST_BYTES = 48_000;
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -367,7 +368,7 @@ Deno.serve(async (request) => {
   try {
     const reservationResult = await admin.rpc("reserve_dino_ai_credit", {
       p_user_id: authData.user.id,
-      p_feature: "ai-cv-maker",
+      p_feature: DINO_AI_CREDIT_FEATURES.cv,
       p_idempotency_key: idempotencyKey,
     });
     reservationData = reservationResult.data;
@@ -387,7 +388,7 @@ Deno.serve(async (request) => {
   if (
     !isRecord(reservation) ||
     typeof reservation.allowed !== "boolean" ||
-    (reservation.allowed && reservation.credits_consumed !== 2)
+    (reservation.allowed && reservation.credits_consumed !== DINO_AI_CREDIT_COSTS.cv)
   ) {
     console.error("AI CV Maker: format respons reservasi kredit tidak valid.");
     await releaseReservation("invalid_reservation_response");
@@ -521,13 +522,13 @@ Deno.serve(async (request) => {
         {
           success: true,
           cv,
-          creditsConsumed: 2,
+          creditsConsumed: DINO_AI_CREDIT_COSTS.cv,
           quotaWarning: "CV berhasil dibuat, tetapi status pencatatan kuota belum dapat dipastikan. Jangan buat ulang dulu agar tidak terhitung dua kali.",
         },
         200,
       );
     }
-    return jsonResponse({ success: true, cv, creditsConsumed: 2 });
+    return jsonResponse({ success: true, cv, creditsConsumed: DINO_AI_CREDIT_COSTS.cv });
   } catch (error) {
     console.error(
       "AI CV Maker: layanan Gemini gagal.",

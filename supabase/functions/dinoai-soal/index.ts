@@ -4,6 +4,7 @@ import {
   extractGeminiContent,
   getGeminiFailureReason,
 } from "../_shared/gemini.ts";
+import { DINO_AI_CREDIT_COSTS, DINO_AI_CREDIT_FEATURES } from "../_shared/dinoAiCreditPolicy.ts";
 
 const MAX_REQUEST_BYTES = 48_000;
 const corsHeaders = {
@@ -423,7 +424,7 @@ Deno.serve(async (request) => {
   try {
     const { data, error } = await admin.rpc("reserve_dino_ai_credit", {
       p_user_id: user.id,
-      p_feature: "ai-pembuat-soal",
+      p_feature: DINO_AI_CREDIT_FEATURES.questionSet,
       p_idempotency_key: idempotencyKey,
     });
     if (error) {
@@ -443,7 +444,7 @@ Deno.serve(async (request) => {
   if (
     !isRecord(reservation) ||
     typeof reservation.allowed !== "boolean" ||
-    (reservation.allowed && reservation.credits_consumed !== 2)
+    (reservation.allowed && reservation.credits_consumed !== DINO_AI_CREDIT_COSTS.questionSet)
   ) {
     console.error("AI Pembuat Soal: format respons reservasi kredit tidak valid.");
     await releaseReservation("invalid_reservation_response");
@@ -551,7 +552,7 @@ Deno.serve(async (request) => {
     return jsonResponse({
       success: true,
       quiz,
-      creditsConsumed: 2,
+      creditsConsumed: DINO_AI_CREDIT_COSTS.questionSet,
       ...(!completed
         ? { quotaWarning: "Soal berhasil dibuat, tetapi pencatatan kredit belum dapat dipastikan. Jangan buat ulang dulu agar tidak terhitung dua kali." }
         : {}),

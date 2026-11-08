@@ -4,6 +4,7 @@ import {
   extractGeminiContent,
   getGeminiFailureReason,
 } from "../_shared/gemini.ts";
+import { DINO_AI_CREDIT_COSTS, DINO_AI_CREDIT_FEATURES } from "../_shared/dinoAiCreditPolicy.ts";
 const MAX_REQUEST_BYTES = 48_000;
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -340,7 +341,7 @@ Deno.serve(async (request) => {
   try {
     const result = await admin.rpc("reserve_dino_ai_credit", {
       p_user_id: user.id,
-      p_feature: "ai-surat-lamaran",
+      p_feature: DINO_AI_CREDIT_FEATURES.jobLetter,
       p_idempotency_key: idempotencyKey,
     });
     reservationData = result.data;
@@ -358,7 +359,7 @@ Deno.serve(async (request) => {
   if (
     !isRecord(reservation) ||
     typeof reservation.allowed !== "boolean" ||
-    (reservation.allowed && reservation.credits_consumed !== 2)
+    (reservation.allowed && reservation.credits_consumed !== DINO_AI_CREDIT_COSTS.jobLetter)
   ) {
     console.error("AI Surat Lamaran: format respons reservasi kredit tidak valid.");
     await releaseReservation("invalid_reservation_response");
@@ -478,7 +479,7 @@ Deno.serve(async (request) => {
     return jsonResponse({
       success: true,
       letter,
-      creditsConsumed: 1,
+      creditsConsumed: DINO_AI_CREDIT_COSTS.jobLetter,
       ...(completed
         ? {}
         : { quotaWarning: "Surat berhasil dibuat, tetapi pencatatan kredit belum dapat dipastikan. Jangan buat ulang dulu." }),

@@ -4,6 +4,7 @@ import {
   extractGeminiContent,
   getGeminiFailureReason,
 } from "../_shared/gemini.ts";
+import { DINO_AI_CREDIT_COSTS, DINO_AI_CREDIT_FEATURES } from "../_shared/dinoAiCreditPolicy.ts";
 
 const MAX_REQUEST_BYTES = 24_000;
 const corsHeaders = {
@@ -304,8 +305,9 @@ Deno.serve(async (request) => {
 
   let reservationData: unknown;
   try {
-    const { data, error } = await admin.rpc("reserve_dino_ai_rubric_credit", {
+    const { data, error } = await admin.rpc("reserve_dino_ai_credit", {
       p_user_id: user.id,
+      p_feature: DINO_AI_CREDIT_FEATURES.rubric,
       p_idempotency_key: idempotencyKey,
     });
     if (error) {
@@ -319,7 +321,7 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "Kuota AI tidak dapat diperiksa. Coba lagi nanti." }, 503);
   }
   const reservation = Array.isArray(reservationData) ? reservationData[0] : reservationData;
-  if (!isRecord(reservation) || typeof reservation.allowed !== "boolean" || (reservation.allowed && reservation.credits_consumed !== 2)) {
+  if (!isRecord(reservation) || typeof reservation.allowed !== "boolean" || (reservation.allowed && reservation.credits_consumed !== DINO_AI_CREDIT_COSTS.rubric)) {
     console.error("AI Rubrik: format reservasi kredit tidak valid.");
     await releaseReservation("invalid_reservation_response");
     return jsonResponse({ error: "Kuota AI tidak dapat diperiksa. Coba lagi nanti." }, 503);
@@ -399,7 +401,7 @@ Deno.serve(async (request) => {
     return jsonResponse({
       success: true,
       rubric,
-      creditsConsumed: 2,
+      creditsConsumed: DINO_AI_CREDIT_COSTS.rubric,
       ...(!completed ? { quotaWarning: "Rubrik berhasil dibuat, tetapi pencatatan kredit belum dapat dipastikan. Jangan buat ulang dulu agar tidak terhitung dua kali." } : {}),
     });
   } catch (error) {

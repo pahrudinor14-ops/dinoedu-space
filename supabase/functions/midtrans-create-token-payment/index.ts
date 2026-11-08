@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (pendingError) {
       console.error("Token payment: gagal memeriksa order pending.", pendingError.code);
-      return jsonResponse({ error: "Pesanan token tidak dapat diperiksa." }, 500);
+      return jsonResponse({ error: "Pesanan kredit tidak dapat diperiksa." }, 500);
     }
     if (pendingOrder) {
       if (pendingOrder.qr_url) {
@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
         });
       }
       return jsonResponse(
-        { error: "Pesanan token sebelumnya sedang dibuat. Periksa status sebelum mencoba lagi." },
+        { error: "Pesanan kredit sebelumnya sedang dibuat. Periksa status sebelum mencoba lagi." },
         409,
       );
     }
@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
           error:
             insertError.code === "23505"
               ? "Order sedang dibuat. Periksa status sebelum mencoba lagi."
-              : "Pesanan token gagal dibuat.",
+              : "Pesanan kredit gagal dibuat.",
         },
         insertError.code === "23505" ? 409 : 500,
       );

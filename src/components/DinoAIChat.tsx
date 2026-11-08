@@ -26,6 +26,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { supabase } from "../lib/supabase";
 import { DINO_AI_USAGE_CHANGED_EVENT } from "../lib/invokeDinoAI";
+import { DINO_AI_CREDIT_COSTS, creditLabel } from "../lib/dinoAiCreditPolicy";
 interface DinoAIChatProps {
   email?: string | null;
   userId: string;
@@ -431,7 +432,7 @@ function getPlanLabel(plan: string) {
     case "community":
       return "Anggota NUMEA EDU";
     case "paid":
-      return "Berbayar";
+      return "Supporter";
     default:
       return "Gratis";
   }
@@ -490,36 +491,32 @@ export default function DinoAIChat({
       const {
         data,
         error,
-      } = await supabase.rpc("get_dino_ai_quota");
+      } = await supabase.rpc("get_dino_ai_credit_balance");
       if (error) {
         console.error(
           "Gagal mengambil quota DinoAI:",
           error,
         );
         setQuota(null);
+        setWalletCredits(0);
         return;
       }
       const rawQuota = Array.isArray(data) ? data[0] : data;
       setQuota(normalizeQuota(rawQuota));
+      const purchasedCredits = rawQuota && typeof rawQuota === "object"
+        ? Number((rawQuota as Record<string, unknown>).purchased_credits_remaining)
+        : 0;
+      setWalletCredits(Number.isSafeInteger(purchasedCredits) ? Math.max(0, purchasedCredits) : 0);
     } catch (error) {
       console.error(
         "Quota DinoAI error:",
         error,
       );
       setQuota(null);
+      setWalletCredits(0);
     } finally {
       setQuotaLoading(false);
     }
-  }, []);
-  const loadWalletCredits = useCallback(async () => {
-    const { data, error } = await supabase.rpc("get_dino_ai_wallet_balance");
-    if (error) {
-      console.error("Gagal mengambil saldo token DinoAI:", error);
-      return;
-    }
-    const balance = Array.isArray(data) ? data[0] : data;
-    const value = typeof balance === "number" || typeof balance === "string" ? balance : balance && typeof balance === "object" ? (balance as Record<string, unknown>).credits_remaining ?? (balance as Record<string, unknown>).wallet_balance ?? (balance as Record<string, unknown>).get_dino_ai_wallet_balance : 0;
-    setWalletCredits(Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0);
   }, []);
   const handleAttachmentSelect = async (file?: File) => {
     if (!file) return;
@@ -717,12 +714,10 @@ export default function DinoAIChat({
   /* DINOAI INITIAL QUOTA */
   useEffect(() => {
     void loadQuota();
-    void loadWalletCredits();
-  }, [userId, loadQuota, loadWalletCredits]);
+  }, [userId, loadQuota]);
   useEffect(() => {
     const refreshUsage = () => {
       void loadQuota();
-      void loadWalletCredits();
     };
     const refreshVisibleUsage = () => {
       if (document.visibilityState === "visible") {
@@ -737,7 +732,7 @@ export default function DinoAIChat({
       window.removeEventListener("focus", refreshUsage);
       document.removeEventListener("visibilitychange", refreshVisibleUsage);
     };
-  }, [loadQuota, loadWalletCredits]);
+  }, [loadQuota]);
   /* DINOAI RESET CLOCK */
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -825,11 +820,13 @@ export default function DinoAIChat({
     if ((!text && !attachment) || loading) {
       return;
     }
-    const creditCost = attachment ? 2 : 1;
+    const creditCost = attachment
+      ? DINO_AI_CREDIT_COSTS.chatAttachment
+      : DINO_AI_CREDIT_COSTS.chatText;
     if (quota && quota.creditsRemaining + walletCredits < creditCost) {
       setAttachmentError(
         attachment
-          ? "Analisis file, gambar, dan suara memerlukan 2 kredit."
+          ? `Analisis file, gambar, dan suara memerlukan ${creditLabel(DINO_AI_CREDIT_COSTS.chatAttachment)}.`
           : "Kredit belum cukup untuk mengirim pesan.",
       );
       return;
@@ -898,7 +895,6 @@ export default function DinoAIChat({
       } else {
         void loadQuota();
       }
-      void loadWalletCredits();
       const assistantMessage: ChatMessage = {
         id: createId(),
         role: "assistant",
@@ -923,7 +919,6 @@ export default function DinoAIChat({
       );
       /* REFRESH QUOTA AFTER ERROR */
       void loadQuota();
-      void loadWalletCredits();
       const assistantMessage: ChatMessage = {
         id: createId(),
         role: "assistant",
@@ -1004,15 +999,15 @@ export default function DinoAIChat({
             />
           </div>
           <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-            <span>{creditsRemaining} credit tersisa hari ini</span>
+            <span>{creditsRemaining} kredit tersisa hari ini</span>
             <span>{quota.creditsUsed} dipakai</span>
           </div>
           <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-            <span>Token pembelian tersisa</span>
+            <span>Kredit pembelian tersisa</span>
             <span className="font-semibold text-foreground">{walletCredits}</span>
           </div>
           <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
-            Chat teks 1 kredit · analisis file, gambar, dan suara 2 kredit.
+            Chat teks {creditLabel(DINO_AI_CREDIT_COSTS.chatText)} · analisis file, gambar, dan suara {creditLabel(DINO_AI_CREDIT_COSTS.chatAttachment)}.
           </p>
           <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-1.5 text-[10px] text-muted-foreground">
             <Clock3 className="h-3 w-3 shrink-0" />
@@ -1028,7 +1023,7 @@ export default function DinoAIChat({
           </div>
           {quotaEmpty && (
             <div className="mt-2 text-[11px] font-medium text-[#EF629F]">
-              Kredit belum cukup untuk mengirim pesan teks (1 kredit)
+              Kredit belum cukup untuk mengirim pesan teks ({creditLabel(DINO_AI_CREDIT_COSTS.chatText)})
             </div>
           )}
         </>
@@ -1047,12 +1042,11 @@ export default function DinoAIChat({
           />
         </div>
         <h3 className="mt-4 text-base font-semibold">
-          Kuota harian dan token pembelianmu sudah habis
+          Kuota harian dan kredit pembelianmu sudah habis
         </h3>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Chat teks menggunakan 1 kredit, sedangkan analisis file, gambar, dan
-          suara menggunakan 2 kredit. Kredit harian kembali setelah reset atau
-          kamu dapat melihat paket kredit pembelian.
+          Chat teks menggunakan {creditLabel(DINO_AI_CREDIT_COSTS.chatText)}, sedangkan analisis file, gambar, dan
+          suara menggunakan {creditLabel(DINO_AI_CREDIT_COSTS.chatAttachment)}. Kuota harian direset pukul 00.00 WITA; kredit pembelian digunakan jika kuota harian tidak cukup.
         </p>
         <p className="mt-2 text-xs font-medium text-muted-foreground">
           {quota?.resetAt ? (
@@ -1558,7 +1552,7 @@ export default function DinoAIChat({
                         <FileText className="h-4 w-4 shrink-0 text-[#EF629F]" />
                       )}
                       <span className="min-w-0 flex-1 truncate">{pendingAttachment.name}</span>
-                      <span className="shrink-0 text-muted-foreground">2 kredit</span>
+                      <span className="shrink-0 text-muted-foreground">{creditLabel(DINO_AI_CREDIT_COSTS.chatAttachment)}</span>
                       <button
                         type="button"
                         onClick={removePendingAttachment}
@@ -1622,11 +1616,11 @@ export default function DinoAIChat({
                 </div>
                 {(attachmentError || attachmentNeedsMoreCredits) && (
                   <p role="status" className="mt-2 text-center text-xs text-[#c9447b]">
-                    {attachmentError || "Analisis file, gambar, dan suara memerlukan 2 kredit. Tambah token atau lanjutkan dengan chat teks."}
+                    {attachmentError || `Analisis file, gambar, dan suara memerlukan ${creditLabel(DINO_AI_CREDIT_COSTS.chatAttachment)}. Tambah kredit atau lanjutkan dengan chat teks.`}
                   </p>
                 )}
                 <p className="mt-2 text-center text-[12px] text-muted-foreground">
-                  Chat teks 1 kredit · analisis file, gambar, dan suara 2 kredit · rekaman maksimal 30 detik
+                  Chat teks {creditLabel(DINO_AI_CREDIT_COSTS.chatText)} · analisis file, gambar, dan suara {creditLabel(DINO_AI_CREDIT_COSTS.chatAttachment)} · rekaman maksimal 30 detik
                 </p>
               </>
             )}

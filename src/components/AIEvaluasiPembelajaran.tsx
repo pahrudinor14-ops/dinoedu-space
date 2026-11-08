@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { invokeDinoAI } from "../lib/invokeDinoAI"
+import { DINO_AI_CREDIT_COSTS, creditLabel } from "../lib/dinoAiCreditPolicy"
 import AIPreviewHeader from "./AIPreviewHeader"
 import "./AIEvaluasiPembelajaran.css"
 
@@ -471,7 +472,7 @@ export default function AIEvaluasiPembelajaran({ onBack }: AIEvaluasiPembelajara
 
               <button type="button" disabled={!isFormComplete || isGenerating || isSaving || isLoadingSaved} onClick={() => void generateEvaluation()} className={`dino-gradient mt-10 flex w-full items-center justify-center rounded-2xl px-5 py-4 text-center text-[15px] font-semibold text-white shadow-lg shadow-pink-500/10 transition-all duration-200 ${isFormComplete && !isGenerating && !isSaving && !isLoadingSaved ? "dino-button" : "cursor-not-allowed opacity-50"}`}>
                 <img src="/logodino.PNG" alt="" className="mr-2 h-4 w-4 object-contain" />
-                {isGenerating ? "Sedang menganalisis capaian..." : "Buat Evaluasi dengan AI · 2 kredit"}
+                {isGenerating ? "Sedang menganalisis capaian..." : `Buat Evaluasi dengan AI · ${creditLabel(DINO_AI_CREDIT_COSTS.evaluation)}`}
               </button>
               <p className="text-center text-[11px] leading-5 text-muted-foreground">Nilai dikirim tanpa nama. Jangan tuliskan identitas peserta didik di catatan. Tinjau hasil AI sebelum menjadi keputusan pembelajaran.</p>
               {(errorMessage || message) && <div role={errorMessage ? "alert" : "status"} className={`rounded-2xl border px-4 py-3 text-sm leading-6 ${errorMessage ? "border-red-500/25 bg-red-500/5 text-red-700 dark:text-red-300" : "border-emerald-500/25 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300"}`}>{errorMessage || message}</div>}

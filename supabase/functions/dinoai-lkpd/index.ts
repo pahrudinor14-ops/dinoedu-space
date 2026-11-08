@@ -4,6 +4,7 @@ import {
   extractGeminiContent,
   getGeminiFailureReason,
 } from "../_shared/gemini.ts";
+import { DINO_AI_CREDIT_COSTS, DINO_AI_CREDIT_FEATURES } from "../_shared/dinoAiCreditPolicy.ts";
 
 const MAX_REQUEST_BYTES = 32_000;
 const corsHeaders = {
@@ -274,8 +275,9 @@ Deno.serve(async (request) => {
 
   let reservationData: unknown;
   try {
-    const { data, error } = await admin.rpc("reserve_dino_ai_lkpd_credit", {
+    const { data, error } = await admin.rpc("reserve_dino_ai_credit", {
       p_user_id: user.id,
+      p_feature: DINO_AI_CREDIT_FEATURES.worksheet,
       p_idempotency_key: idempotencyKey,
     });
     if (error) {
@@ -291,7 +293,7 @@ Deno.serve(async (request) => {
 
   const reservation = Array.isArray(reservationData) ? reservationData[0] : reservationData;
   if (!isRecord(reservation) || typeof reservation.allowed !== "boolean" ||
-    (reservation.allowed && reservation.credits_consumed !== 2)) {
+    (reservation.allowed && reservation.credits_consumed !== DINO_AI_CREDIT_COSTS.worksheet)) {
     console.error("AI LKPD: format respons reservasi kredit tidak valid.");
     await releaseReservation("invalid_reservation_response");
     return jsonResponse({ error: "Kuota AI tidak dapat diperiksa. Coba lagi nanti." }, 503);
@@ -382,7 +384,7 @@ Deno.serve(async (request) => {
       success: true,
       title: worksheet.title,
       worksheet: worksheet.worksheet,
-      creditsConsumed: 2,
+      creditsConsumed: DINO_AI_CREDIT_COSTS.worksheet,
       ...(!completed ? { quotaWarning: "LKPD berhasil dibuat, tetapi pencatatan kredit belum dapat dipastikan. Jangan buat ulang dulu agar tidak terhitung dua kali." } : {}),
     });
   } catch (error) {

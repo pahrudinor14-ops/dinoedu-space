@@ -36,7 +36,7 @@ interface DashboardProps {
    onOpenFeedbackAdmin?: () => void;
   // Callback paket DinoAI; akan dihubungkan dari App.tsx.
   onStartFree?: () => void;
-  onBuyTokens?: () => void;
+  onBuyCredits?: () => void;
   onSupportDinoAI?: () => void;
 }
 export default function Dashboard({
@@ -52,7 +52,7 @@ export default function Dashboard({
    isAdmin = false,
    onOpenFeedbackAdmin,
    onStartFree,
-   onBuyTokens,
+   onBuyCredits,
    onSupportDinoAI,
 }: DashboardProps) {
    const [complaintOpen, setComplaintOpen] = useState(false);
@@ -390,19 +390,19 @@ export default function Dashboard({
             </section>
          </main>
                {/* DINOAI TOKEN & SUPPORT PLANS */}
-      <section className="mx-auto max-w-7xl px-5 pb-12 sm:px-6 lg:px-8" aria-labelledby="token-support-title">
+      <section className="mx-auto max-w-7xl px-5 pb-12 sm:px-6 lg:px-8" aria-labelledby="credit-support-title">
         <div className="dino-glass relative isolate overflow-hidden rounded-[32px] p-6 sm:p-9 lg:p-10">
           <div className="pointer-events-none absolute -right-16 -top-16 -z-10 h-64 w-64 rounded-full bg-[#EF629F]/15 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-20 -left-12 -z-10 h-56 w-56 rounded-full bg-purple-400/10 blur-3xl" />
           <div className="mx-auto max-w-3xl text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-[#EF629F]/20 bg-[#EF629F]/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-[#EF629F]">
-              <Sparkles className="h-4 w-4" /> Token & Dukungan
+              <Sparkles className="h-4 w-4" /> Kredit & Dukungan
             </div>
-            <h2 id="token-support-title" className="mt-4 text-2xl font-bold tracking-tight sm:text-4xl">
-              Pilih cara yang nyaman untukmu
+            <h2 id="credit-support-title" className="mt-4 text-2xl font-bold tracking-tight sm:text-4xl">
+              Kredit DinoAI yang jelas dan fleksibel
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-              Mulai gratis, tambah token saat diperlukan, atau dukung pengembangan DinoEdu Space. Tidak ada kewajiban untuk berlangganan.
+              Kuota harian dipakai lebih dahulu. Kredit pembelian menutup kekurangan kuota, dan semua kuota harian direset pukul 00.00 WITA.
             </p>
           </div>
           <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -418,11 +418,11 @@ export default function Dashboard({
                 <span className="text-sm text-muted-foreground">selamanya</span>
               </div>
               <div className="mt-4 rounded-xl bg-violet-500/10 px-3 py-3">
-                <p className="text-lg font-bold">5 token <span className="text-sm font-medium text-muted-foreground">/ hari</span></p>
+                <p className="text-lg font-bold">5 kredit <span className="text-sm font-medium text-muted-foreground">/ hari</span></p>
               </div>
               <ul className="mt-5 space-y-3 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />Coba fitur AI tanpa biaya</li>
-                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />Token harian diperbarui setiap hari</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />Kuota harian direset pukul 00.00 WITA dan tidak diakumulasikan</li>
                 <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />Tidak perlu memasukkan metode pembayaran</li>
               </ul>
               <div className="mt-auto pt-6">
@@ -448,34 +448,34 @@ export default function Dashboard({
                 <Coins className="h-6 w-6" />
               </div>
               <p className="mt-4 text-sm font-semibold text-muted-foreground">Untuk kebutuhan tambahan</p>
-              <h3 className="mt-1 text-xl font-bold">Beli Token</h3>
+              <h3 className="mt-1 text-xl font-bold">Beli Kredit</h3>
               <div className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
                 <span className="text-sm text-muted-foreground line-through">Rp7.500</span>
                 <span className="text-3xl font-extrabold tracking-tight">Rp5.000</span>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">per 10 token</p>
+              <p className="mt-1 text-sm text-muted-foreground">per 10 kredit</p>
               <div className="mt-4 rounded-xl bg-gradient-to-r from-orange-100/90 to-amber-100/80 px-3 py-3 dark:from-orange-950/50 dark:to-amber-950/40">
                 <p className="text-sm font-semibold">Bayar saat perlu saja</p>
                 <p className="mt-1 text-xs text-muted-foreground">Tanpa tagihan bulanan</p>
               </div>
               <ul className="mt-5 space-y-3 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#EA580C]" />Tambah token sesuai kebutuhan</li>
-                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#EA580C]" />Tetap bisa memakai jatah gratis harian</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#EA580C]" />Tambah kredit sesuai kebutuhan</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#EA580C]" />Kredit pembelian dipakai jika kuota harian tidak cukup</li>
                 <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#EA580C]" />Tidak perlu berlangganan</li>
               </ul>
               <div className="mt-auto pt-6">
                 <button
                     type="button"
                     onClick={() => {
-                      if (onBuyTokens) {
-                        onBuyTokens();
+                      if (onBuyCredits) {
+                        onBuyCredits();
                       } else {
-                        window.alert("Pembelian token belum dihubungkan. Aksi ini akan disambungkan melalui App.tsx.");
+                        window.alert("Pembelian kredit belum dihubungkan. Aksi ini akan disambungkan melalui App.tsx.");
                       }
                     }}
                     className="inline-flex w-full cursor-pointer items-center justify-center rounded-full bg-[#F97316] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#EA580C] focus:outline-none focus:ring-2 focus:ring-orange-500"
                   >
-                    Pilihan token fleksibel
+                    Beli kredit
                   </button>
               </div>
             </article>
@@ -494,11 +494,11 @@ export default function Dashboard({
               <p className="mt-1 text-sm text-muted-foreground">per bulan</p>
               <div className="mt-4 rounded-xl border border-[#EF629F]/20 bg-background/65 px-3 py-3">
                 <p className="text-sm font-semibold">Dukungan untuk pendidikan digital</p>
-                <p className="mt-1 text-xs text-muted-foreground">30 token setiap hari, termasuk kuota harian langganan</p>
+                <p className="mt-1 text-xs text-muted-foreground">30 kredit kuota harian selama Supporter aktif</p>
               </div>
               <ul className="mt-5 space-y-3 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#DB2777]" />Dapatkan 30 token setiap hari selama langganan aktif</li>
-                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#DB2777]" />Token direset setiap hari dan tidak diakumulasikan</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#DB2777]" />Dapatkan kuota harian 30 kredit selama Supporter aktif</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#DB2777]" />Kuota direset pukul 00.00 WITA dan tidak diakumulasikan</li>
                 <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#DB2777]" />Tidak wajib berlangganan untuk memakai paket gratis</li>
               </ul>
               <div className="mt-auto pt-6">
@@ -524,7 +524,7 @@ export default function Dashboard({
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EF629F]/10 text-[#DB2777]"><HeartHandshake className="h-5 w-5" /></div>
               <div>
                 <h3 className="font-bold">Belum jadi bagian NUMEA EDU?</h3>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">Anggota NUMEA EDU mendapatkan 15 token per hari. Kuota direset setiap hari dan tidak diakumulasikan.</p>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">Anggota NUMEA EDU yang keanggotaannya disetujui mendapatkan kuota 15 kredit per hari. Kuota direset pukul 00.00 WITA dan tidak diakumulasikan.</p>
               </div>
             </div>
             <a href="/numea" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-[#EF629F]/40 px-5 py-3 text-sm font-bold text-[#DB2777] transition hover:bg-[#EF629F]/10">Ayo Bergabung<ArrowRight className="h-4 w-4" /></a>

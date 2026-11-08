@@ -4,6 +4,7 @@ import {
   extractGeminiContent,
   getGeminiFailureReason,
 } from "../_shared/gemini.ts";
+import { DINO_AI_CREDIT_COSTS, DINO_AI_CREDIT_FEATURES } from "../_shared/dinoAiCreditPolicy.ts";
 const MAX_REQUEST_BYTES = 48_000;
 const MAX_INPUT_BYTES = 32_000;
 const MAX_OUTPUT_TOKENS = 12_000;
@@ -592,7 +593,7 @@ Deno.serve(async (request) => {
   try {
     const { data, error } = await admin.rpc("reserve_dino_ai_credit", {
       p_user_id: userId,
-      p_feature: "ai-modul-ajar",
+      p_feature: DINO_AI_CREDIT_FEATURES.teachingModule,
       p_idempotency_key: idempotencyKey,
     });
     if (error) {
@@ -607,7 +608,7 @@ Deno.serve(async (request) => {
   }
   const reservation = Array.isArray(reservationData) ? reservationData[0] : reservationData;
   if (!isRecord(reservation) || typeof reservation.allowed !== "boolean" ||
-    (reservation.allowed && reservation.credits_consumed !== 2)) {
+    (reservation.allowed && reservation.credits_consumed !== DINO_AI_CREDIT_COSTS.teachingModule)) {
     console.error("AI Modul Ajar: format respons reservasi kredit tidak valid.");
     await releaseReservation("invalid_reservation_response");
     return jsonResponse({ error: "Kuota AI tidak dapat diperiksa. Coba lagi nanti." }, 503);
@@ -702,7 +703,7 @@ Deno.serve(async (request) => {
     return jsonResponse({
       success: true,
       modul,
-      creditsConsumed: 2,
+      creditsConsumed: DINO_AI_CREDIT_COSTS.teachingModule,
       ...(!completed
         ? { quotaWarning: "Modul Ajar berhasil dibuat, tetapi pencatatan kredit belum dapat dipastikan. Jangan buat ulang dulu agar tidak terhitung dua kali." }
         : {}),

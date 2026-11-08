@@ -174,7 +174,7 @@ function App() {
   const handleStartFree = () => {
     window.alert("Paket Gratis aktif sebagai paket dasar akun DinoEdu Space.");
   };
-  // Pembelian token menggunakan alur pembayaran terpisah dari Supporter.
+  // Pembelian kredit menggunakan alur pembayaran terpisah dari Supporter.
   const handleBuyTokens = async () => {
     if (!user) {
       setShowAuth(true);
@@ -205,18 +205,18 @@ function App() {
         throw new Error(
           typeof payment?.message === "string"
             ? payment.message
-            : "Respons pembayaran token tidak valid.",
+            : "Respons pembayaran kredit tidak valid.",
         );
       }
       setTokenOrderId(payment.orderId);
       setTokenQrUrl(payment.qrUrl);
       setTokenPaymentStatus(payment.status === "paid" ? "paid" : "pending");
     } catch (error) {
-      console.error("Gagal membuat pembayaran token:", error);
+      console.error("Gagal membuat pembayaran kredit:", error);
       window.alert(
         error instanceof Error
-          ? `Pembayaran token gagal dibuat: ${error.message}`
-          : "Pembayaran token gagal dibuat. Periksa Console.",
+          ? `Pembayaran kredit gagal dibuat: ${error.message}`
+          : "Pembayaran kredit gagal dibuat. Periksa Console.",
       );
     } finally {
       setTokenPaymentLoading(false);
@@ -343,7 +343,7 @@ useEffect(() => {
         const detail = response
           ? await response.clone().text().catch(() => "")
           : "";
-        console.error("Pemeriksaan status token gagal:", {
+        console.error("Pemeriksaan status kredit gagal:", {
           message: error.message,
           detail,
         });
@@ -367,7 +367,7 @@ useEffect(() => {
       }
     } catch (error) {
       console.error(
-        "Gagal memeriksa status pembayaran token:",
+        "Gagal memeriksa status pembayaran kredit:",
         error,
       );
     } finally {
@@ -946,7 +946,7 @@ useEffect(() => {
           isAdmin={user.app_metadata?.role === "admin"}
           onOpenFeedbackAdmin={openFeedbackAdmin}
           onStartFree={handleStartFree}
-          onBuyTokens={handleBuyTokens}
+          onBuyCredits={handleBuyTokens}
           onSupportDinoAI={handleSupportDinoAI}
         />
       ) : (
@@ -1605,13 +1605,13 @@ useEffect(() => {
           >
             <div className="flex items-center justify-between gap-4">
               <h2 id="token-qr-title" className="text-lg font-bold">
-                Pembelian 10 Token DinoAI
+                Pembelian 10 Kredit DinoAI
               </h2>
               <button
                 type="button"
                 onClick={() => setTokenQrUrl(null)}
                 className="rounded-full p-2 hover:bg-muted"
-                aria-label="Tutup QRIS token"
+                aria-label="Tutup QRIS kredit"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1622,7 +1622,7 @@ useEffect(() => {
             <div className="mt-5 flex justify-center rounded-2xl bg-white p-4">
               <img
                 src={tokenQrUrl}
-                alt="QRIS pembayaran 10 token DinoAI"
+                alt="QRIS pembayaran 10 kredit DinoAI"
                 className="h-auto w-full max-w-[280px] object-contain"
               />
             </div>

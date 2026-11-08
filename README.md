@@ -25,59 +25,104 @@ DinoEdu Space adalah aplikasi React, TypeScript, dan Vite. Frontend memakai Supa
    npm run dev
    ```
 
-## Deploy frontend
+## Deploy frontend ke Cloudflare Pages
 
-Frontend dapat dipasang di layanan hosting static yang mendukung Vite.
+Hubungkan repository GitHub ini ke Cloudflare Pages, lalu atur:
 
-1. Hubungkan repository GitHub dan pilih branch produksi (`master` saat panduan ini dibuat).
-2. Atur perintah instalasi `npm ci`, perintah build `npm run build`, dan folder hasil `dist`.
-3. Tambahkan `VITE_SUPABASE_URL` dan `VITE_SUPABASE_PUBLISHABLE_KEY` pada environment variables untuk environment produksi. Tambahkan variabel `VITE_DINOMATH_*` bila memakai URL PDF atau seri DinoMath lain.
-4. Atur fallback SPA pada layanan hosting agar path aplikasi seperti `/app/cv`, `/app/surat`, dan `/app/soal` menyajikan `index.html`. Gunakan aturan rewrite/fallback yang sesuai dengan penyedia hosting.
-5. Deploy branch produksi. Untuk mencoba hasil build secara lokal, jalankan:
+| Pengaturan | Nilai |
+| --- | --- |
+| Production branch | `master` |
+| Root directory | `/` (folder repository) |
+| Build command | `npm ci && npm run build` |
+| Build output directory | `dist` |
+| Node.js version | Dibaca dari `.node-version` (`22.23.4`) |
 
-   ```bash
-   npm run build
-   npm run preview
-   ```
+Tambahkan `VITE_SUPABASE_URL` dan `VITE_SUPABASE_PUBLISHABLE_KEY` di **Settings → Environment variables** untuk Production dan Preview. Tambahkan `VITE_DINOMATH_*` hanya jika memakai URL PDF atau seri DinoMath lain. Setelah GitHub terhubung, push ke branch `master` akan memulai deployment.
+
+`public/_redirects` mengatur fallback SPA agar URL aplikasi seperti `/app/cv`, `/app/surat`, dan `/app/soal` tetap membuka aplikasi saat dimuat langsung. Untuk deploy manual, jalankan `npm.cmd ci`, `npm.cmd run build`, lalu `npx.cmd wrangler pages deploy dist --project-name <NAMA_PROYEK_PAGES>` dari PowerShell.
 
 Nilai dengan awalan `VITE_` dimasukkan ke bundle frontend dan dapat dilihat pengguna. Gunakan hanya URL Supabase dan publishable key di sana. Jangan memasukkan `SUPABASE_SERVICE_ROLE_KEY`, API key Gemini, atau secret Midtrans ke environment frontend.
 
+Untuk menyiapkan perubahan lokal, meninjau file yang akan dikirim, lalu memicu deployment Cloudflare melalui integrasi GitHub:
+
+```powershell
+git status --short
+git diff --check
+git add -- README.md src supabase/functions supabase/migrations .node-version public/_redirects
+git diff --cached --stat
+git commit -m "Unify DinoAI credits and fix Cloudflare build"
+git push origin master
+```
+
+Perintah `git add` di atas sengaja tidak mengambil file sementara `supabase/.temp`.
+
 ## Deploy Supabase
 
-Kuota harian DinoAI dihitung di Supabase dan direset pukul 00.00 WITA
-(Asia/Makassar). Semua fitur AI, termasuk DinoLab, memakai reservasi kredit
-server yang sama; saldo harian dan token pembelian tetap ditampilkan terpisah.
+### Aturan kuota dan kredit DinoAI
+
+Supabase menjadi sumber kebenaran untuk saldo, reservasi, pemakaian, dan refund.
+Kuota harian memakai zona waktu WITA (Asia/Makassar), direset pukul 00.00, dan
+tidak diakumulasikan. Paket aktif menentukan kuota harian: Gratis 5 kredit,
+anggota NUMEA EDU yang disetujui 15 kredit, dan Supporter aktif 30 kredit.
+Supporter aktif mendapat prioritas jika pengguna juga anggota NUMEA EDU.
+
+| Fitur AI | Biaya |
+| --- | ---: |
+| Chat teks DinoAI | 1 kredit |
+| Chat dengan lampiran, gambar, atau suara | 2 kredit |
+| CV, Surat Lamaran, Soal, Modul Ajar, LKPD, Rubrik, Evaluasi | 2 kredit per hasil |
+| Analisis coretan AI DinoLab | 2 kredit per analisis |
+
+Kuota harian digunakan lebih dahulu. Jika sisa kuota harian kurang dari biaya
+fitur, sistem memakai kredit pembelian untuk menutup selisih. Kredit tidak cukup
+berarti permintaan ditolak sebelum dikirim ke Gemini. Kredit baru dicatat sebagai
+pemakaian setelah reservasi berhasil; bila layanan AI gagal, reservasi dikembalikan.
+Setiap fitur mencatat reservasi dengan labelnya sendiri agar riwayat pemakaian dan
+refund dapat ditelusuri.
+
+Belajar dan memakai simulasi interaktif DinoLab tidak memakai kredit. Hanya
+tindakan **Analisis AI** pada canvas yang menggunakan 2 kredit. DinoLab
+menampilkan sisa kuota harian dan kredit pembelian sebelum tindakan tersebut.
+Semua fitur juga memakai batas operasional bersama 50 permintaan per hari dan
+2 permintaan per menit.
 
 Pastikan URL frontend produksi sudah ditambahkan ke **Authentication → URL Configuration** pada proyek Supabase: isi Site URL dan Redirect URLs agar login email kembali ke domain aplikasi.
 
-Untuk menerapkan migrasi database yang belum ada di proyek tujuan:
+Ganti `<PROJECT_REF>` dengan Project ID dari Supabase Dashboard → **Settings → General**. Perintah berikut ditujukan untuk PowerShell dan memakai CLI yang sudah tercatat di `package.json`:
 
-```bash
-supabase login
-supabase link --project-ref <project-ref>
-supabase db push
+```powershell
+Set-Location C:\Users\ACER\dinoedu-space
+$ProjectRef = "<PROJECT_REF>"
+npx.cmd supabase login
+npx.cmd supabase link --project-ref $ProjectRef
+npx.cmd supabase migration list --linked
+npx.cmd supabase db push --linked --dry-run
 ```
 
-Tinjau file migrasi di `supabase/migrations` dan target proyek sebelum menjalankan `db push`.
+Periksa daftar migrasi pada dry run, lalu terapkan migrasi:
 
-Deploy Edge Functions setelah perubahan fungsi atau saat menyiapkan proyek baru:
+```powershell
+npx.cmd supabase db push --linked
+```
 
-```bash
-supabase functions deploy dinoai-chat
-supabase functions deploy dinoai-cv
-supabase functions deploy dinoai-surat
-supabase functions deploy dinoai-soal
-supabase functions deploy dinoai-modul-ajar
-supabase functions deploy dinoai-lkpd
-supabase functions deploy dinoai-rubrik
-supabase functions deploy dinoai-evaluasi
-supabase functions deploy midtrans-create-payment
-supabase functions deploy midtrans-create-token-payment
-supabase functions deploy midtrans-payment-status
-supabase functions deploy midtrans-payment-webhook
-supabase functions deploy midtrans-token-payment-status
-supabase functions deploy midtrans-token-webhook
-supabase functions deploy midtrans-webhook
+Deploy Edge Functions yang memakai aturan kredit bersama:
+
+```powershell
+$Functions = @(
+  "dinoai-chat",
+  "dinoai-cv",
+  "dinoai-surat",
+  "dinoai-soal",
+  "dinoai-modul-ajar",
+  "dinoai-lkpd",
+  "dinoai-rubrik",
+  "dinoai-evaluasi",
+  "midtrans-create-token-payment"
+)
+foreach ($FunctionName in $Functions) {
+  npx.cmd supabase functions deploy $FunctionName --project-ref $ProjectRef
+  if ($LASTEXITCODE -ne 0) { throw "Deploy function gagal: $FunctionName" }
+}
 ```
 
 Atur secret server melalui **Supabase Dashboard → Edge Functions → Secrets**. Gemini membutuhkan `GEMINI_API_KEY_DINO_AI`; fitur pembayaran Midtrans membutuhkan `MIDTRANS_SERVER_KEY`. `GEMINI_MODEL` dapat diatur opsional. Jangan menaruh secret tersebut di `.env.local` dengan awalan `VITE_`, di repository, atau di pengaturan hosting frontend. Setelah deploy, pastikan URL notifikasi Midtrans menunjuk ke Edge Function webhook yang digunakan oleh konfigurasi pembayaran proyek.

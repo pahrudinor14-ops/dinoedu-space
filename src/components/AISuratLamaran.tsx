@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { invokeDinoAI } from "../lib/invokeDinoAI"
+import { DINO_AI_CREDIT_COSTS, creditLabel } from "../lib/dinoAiCreditPolicy"
 import AIPreviewHeader from "./AIPreviewHeader"
 interface AISuratLamaranProps {
   onBack: () => void
@@ -899,7 +900,7 @@ async function handleGenerateAI() {
                   />
                   {aiLoading
                     ? "Sedang menyusun surat..."
-                    : "Buat Surat dengan AI · 2 kredit"}
+                    : `Buat Surat dengan AI · ${creditLabel(DINO_AI_CREDIT_COSTS.jobLetter)}`}
                 </button>
                 {message && (
                   <div className="mt-4 rounded-2xl border border-[#EF629F]/20 bg-[#EF629F]/5 px-4 py-3 text-center text-[13px] leading-6 text-muted-foreground">
@@ -912,7 +913,7 @@ async function handleGenerateAI() {
                   </div>
                 )}
                 <p className="mt-3 text-center text-[12px] text-muted-foreground">
-                  Pembuatan surat menggunakan 2 kredit AI setelah hasil berhasil dibuat
+                  Pembuatan surat menggunakan {creditLabel(DINO_AI_CREDIT_COSTS.jobLetter)} AI setelah hasil berhasil dibuat
                 </p>
               </div>
               {/* PREVIEW */}

@@ -16,6 +16,7 @@ import GuidedLearning, { type GuidedStep } from "./GuidedLearning"
 import ModeSelector, { type LearningMode } from "./ModeSelector"
 import DinoLabLogo from "../DinoLabLogo"
 import ScreenScribble from "./ScreenScribble"
+import type { DinoAICreditStatusProps } from "../../lib/dinoAiCreditPolicy"
 
 type Topic = "pecahan" | "rasio" | "pengukuran"
 type MeasurementKind = "panjang" | "massa" | "kapasitas" | "waktu" | "luas" | "volume" | "suhu" | "kecepatan" | "sudut"
@@ -606,7 +607,7 @@ function FactCard({ title, text }: { title: string; text: string }) {
   return <div className="rounded-2xl border border-border/70 bg-background/75 p-4"><h4 className="text-sm font-bold">{title}</h4><p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p></div>
 }
 
-export default function PecahanRasioPengukuran({ resetSignal }: { resetSignal: number }) {
+export default function PecahanRasioPengukuran({ resetSignal, ...creditStatusProps }: { resetSignal: number } & DinoAICreditStatusProps) {
   const [activeTopic, setActiveTopic] = useState<Topic>("pecahan")
   const [mode, setMode] = useState<LearningMode>("lab")
   const [guidedStep, setGuidedStep] = useState(0)
@@ -676,6 +677,7 @@ export default function PecahanRasioPengukuran({ resetSignal }: { resetSignal: n
           key={activeTopic}
           visible
           context={`${topics.find((topic) => topic.id === activeTopic)?.title ?? "Materi pengukuran"}. Tahap ${guidedStep + 1}: ${guidedSteps[activeTopic][guidedStep].title}. ${guidedSteps[activeTopic][guidedStep].description}`}
+          {...creditStatusProps}
         />
       )}
       <RujukanPenyusunan material="pecahan" />

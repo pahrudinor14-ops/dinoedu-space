@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { invokeDinoAI } from "../lib/invokeDinoAI"
+import { DINO_AI_CREDIT_COSTS, creditLabel } from "../lib/dinoAiCreditPolicy"
 import AIPreviewHeader from "./AIPreviewHeader"
 import "./AIPembuatRubrik.css"
 
@@ -567,9 +568,9 @@ export default function AIPembuatRubrik({ onBack }: AIPembuatRubrikProps) {
               </div>
               <button type="button" disabled={aiLoading || isSaving || isLoadingSaved} onClick={() => void generateRubric()} className={`dino-gradient mt-10 flex w-full items-center justify-center rounded-2xl px-5 py-4 text-center text-[15px] font-semibold text-white shadow-lg shadow-pink-500/10 transition-all duration-200 ${!aiLoading && !isSaving && !isLoadingSaved ? "dino-button" : "cursor-not-allowed opacity-50"}`}>
                 <img src="/logodino.PNG" alt="" className="mr-2 h-4 w-4 object-contain" />
-                {aiLoading ? "Sedang menyusun rubrik..." : "Buat Rubrik dengan AI · 2 kredit"}
+                {aiLoading ? "Sedang menyusun rubrik..." : `Buat Rubrik dengan AI · ${creditLabel(DINO_AI_CREDIT_COSTS.rubric)}`}
               </button>
-              <p className="text-center text-[11px] leading-5 text-muted-foreground">Membuat rubrik menggunakan 2 kredit DinoAI. Tinjau dan sesuaikan hasil sebelum dibagikan.</p>
+              <p className="text-center text-[11px] leading-5 text-muted-foreground">Membuat rubrik menggunakan {creditLabel(DINO_AI_CREDIT_COSTS.rubric)} DinoAI. Tinjau dan sesuaikan hasil sebelum dibagikan.</p>
             </div>
           </section>
 

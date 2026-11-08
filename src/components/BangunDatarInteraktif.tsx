@@ -4,6 +4,7 @@ import RujukanPenyusunan from "./laboratorium/RujukanPenyusunan"
 import DinoLabLogo from "./DinoLabLogo"
 import GuidedLearning from "./laboratorium/GuidedLearning"
 import ScreenScribble from "./laboratorium/ScreenScribble"
+import type { DinoAICreditStatusProps } from "../lib/dinoAiCreditPolicy"
 
 type ShapeId =
   | "square"
@@ -380,7 +381,7 @@ function fitDimensionsToShape(shape: PlaneShape, dimensions: Dimensions): Dimens
   return fitted
 }
 
-export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: number }) {
+export default function BangunDatarInteraktif({ resetSignal, ...creditStatusProps }: { resetSignal: number } & DinoAICreditStatusProps) {
   const [mode, setMode] = useState<"learn" | "lab">("lab")
   const [lessonStep, setLessonStep] = useState(0)
   const [selectedId, setSelectedId] = useState<ShapeId>("square")
@@ -677,6 +678,7 @@ export default function BangunDatarInteraktif({ resetSignal }: { resetSignal: nu
           key={selectedId}
           visible
           context={`Bangun datar ${selectedShape.name}. Tahap ${lessonStep + 1}: ${guidedLessons[lessonStep].title}. ${guidedLessons[lessonStep].description}`}
+          {...creditStatusProps}
         />
       )}
       <RujukanPenyusunan material="geometri" />

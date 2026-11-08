@@ -16,6 +16,7 @@ import DinoLabLogo from "../DinoLabLogo"
 import GuidedLearning, { type GuidedStep } from "./GuidedLearning"
 import ModeSelector, { type LearningMode } from "./ModeSelector"
 import ScreenScribble from "./ScreenScribble"
+import type { DinoAICreditStatusProps } from "../../lib/dinoAiCreditPolicy"
 
 type LessonId = "data" | "pola" | "statistik" | "pemecahan"
 type PatternRule = "tambah" | "kali"
@@ -319,7 +320,7 @@ function LearningPath() {
   return <section className="rounded-3xl border border-border/70 bg-background/75 p-5 sm:p-6"><div className="flex items-center gap-2"><BookOpen className="h-5 w-5 text-emerald-600" /><h3 className="font-bold">Urutan belajar SD sampai SMP</h3></div><div className="mt-4 grid gap-3 md:grid-cols-3">{steps.map((step, index) => <div key={step} className="rounded-2xl bg-muted/40 p-4"><span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/10 text-xs font-black text-emerald-800 dark:text-emerald-200">{index + 1}</span><p className="mt-2 text-sm leading-6 text-muted-foreground">{step}</p></div>)}</div></section>
 }
 
-export default function DataPolaPemecahanMasalah({ resetSignal }: { resetSignal: number }) {
+export default function DataPolaPemecahanMasalah({ resetSignal, ...creditStatusProps }: { resetSignal: number } & DinoAICreditStatusProps) {
   const [activeLesson, setActiveLesson] = useState<LessonId>("data")
   const [resetKey, setResetKey] = useState(0)
   const [mode, setMode] = useState<LearningMode>("lab")
@@ -372,6 +373,7 @@ export default function DataPolaPemecahanMasalah({ resetSignal }: { resetSignal:
           key={activeLesson}
           visible
           context={`${lessons.find((lesson) => lesson.id === activeLesson)?.title ?? "Materi data dan pola"}. Tahap ${guidedStep + 1}: ${guidedSteps[activeLesson][guidedStep].title}. ${guidedSteps[activeLesson][guidedStep].description}`}
+          {...creditStatusProps}
         />
       )}
       <RujukanPenyusunan material="data" />

@@ -17,6 +17,7 @@ import {
   UserRound,
 } from "lucide-react"
 import { supabase } from "../lib/supabase"
+import { DINO_AI_CREDIT_COSTS, creditLabel } from "../lib/dinoAiCreditPolicy"
 import AIPreviewHeader from "./AIPreviewHeader"
 interface AICVMakerProps {
   onBack: () => void
@@ -1608,8 +1609,8 @@ export default function AICVMaker({ onBack }: AICVMakerProps) {
                   {aiLoading
                     ? "Sedang menyusun CV..."
                     : aiResult
-                      ? "Buat Ulang dengan AI · 2 Kredit"
-                      : "Buat CV dengan AI · 2 Kredit"}
+                      ? `Buat Ulang dengan AI · ${creditLabel(DINO_AI_CREDIT_COSTS.cv)}`
+                      : `Buat CV dengan AI · ${creditLabel(DINO_AI_CREDIT_COSTS.cv)}`}
                 </button>
                 <div className="mt-4 flex items-start gap-3 rounded-2xl border border-[#EF629F]/15 bg-[#EF629F]/[0.04] px-4 py-3.5 text-left">
                   <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#EF629F]/10 text-[#EF629F]">

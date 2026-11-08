@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { invokeDinoAI } from "../lib/invokeDinoAI"
+import { DINO_AI_CREDIT_COSTS, creditLabel } from "../lib/dinoAiCreditPolicy"
 import AIPreviewHeader from "./AIPreviewHeader"
 interface AIPembuatSoalProps {
   onBack: () => void
@@ -323,7 +324,7 @@ async function handleGenerateQuestions() {
       setQuizResult(normalized)
       const saved = await saveDocument(normalized)
       const resultMessage = saved
-        ? "Soal berhasil dibuat dan disimpan menggunakan 2 kredit. Silakan periksa dan edit hasilnya"
+        ? `Soal berhasil dibuat dan disimpan menggunakan ${creditLabel(DINO_AI_CREDIT_COSTS.questionSet)}. Silakan periksa dan edit hasilnya`
         : "Soal berhasil dibuat, tetapi belum tersimpan. Periksa koneksi lalu tekan Simpan."
       setMessage(data.quotaWarning
         ? `${resultMessage} ${data.quotaWarning}`
@@ -804,7 +805,7 @@ async function handleGenerateQuestions() {
                 />
                 {aiLoading
                   ? "Sedang membuat soal..."
-                  : "Buat Soal dengan AI · 2 kredit"}
+                  : `Buat Soal dengan AI · ${creditLabel(DINO_AI_CREDIT_COSTS.questionSet)}`}
               </button>
               {message && (
                 <div className="mt-4 rounded-2xl border border-[#EF629F]/20 bg-[#EF629F]/5 px-4 py-3 text-center text-[13px] leading-6 text-muted-foreground">
@@ -817,7 +818,7 @@ async function handleGenerateQuestions() {
                 </div>
               )}
               <p className="mt-3 text-center text-[12px] text-muted-foreground">
-                Pembuatan soal menggunakan 2 kredit AI setelah hasil berhasil dibuat
+                Pembuatan soal menggunakan {creditLabel(DINO_AI_CREDIT_COSTS.questionSet)} AI setelah hasil berhasil dibuat
               </p>
             </div>
             <div className="lg:sticky lg:top-28 lg:self-start">

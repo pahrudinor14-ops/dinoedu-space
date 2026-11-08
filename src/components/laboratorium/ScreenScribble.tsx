@@ -6,6 +6,12 @@ import remarkMath from "remark-math"
 import rehypeKatex from "rehype-katex"
 import "katex/dist/katex.min.css"
 import { invokeDinoAI } from "../../lib/invokeDinoAI"
+import {
+  DINO_AI_CREDIT_COSTS,
+  DINO_AI_USAGE_CONTEXTS,
+  creditLabel,
+  type DinoAICreditStatusProps,
+} from "../../lib/dinoAiCreditPolicy"
 
 interface ScreenPoint {
   x: number
@@ -17,7 +23,7 @@ interface ScreenStroke {
   points: ScreenPoint[]
 }
 
-interface ScreenScribbleProps {
+interface ScreenScribbleProps extends DinoAICreditStatusProps {
   visible: boolean
   context?: string
 }
@@ -74,6 +80,9 @@ function loadSavedCanvases(): Record<string, ScreenStroke[]> {
 export default function ScreenScribble({
   visible,
   context = "Materi DinoLab",
+  creditStatus,
+  creditStatusLoading,
+  creditStatusError,
 }: ScreenScribbleProps) {
   const [color, setColor] = useState(colors[0].value)
   const [erasing, setErasing] = useState(false)
@@ -262,6 +271,7 @@ export default function ScreenScribble({
       const response = await invokeDinoAI<DinoAIResponse>("dinoai-chat", {
         message: prompt,
         history: [],
+        usageContext: DINO_AI_USAGE_CONTEXTS.dinoLabScribble,
         image: { mimeType: "image/jpeg", data: imageData },
       })
       if (response.imageAnalyzed !== true) {
@@ -400,12 +410,12 @@ export default function ScreenScribble({
               type="button"
               onClick={() => void analyzeStrokes()}
               disabled={strokes.length === 0 || analyzing}
-              aria-label={analyzing ? "Analisis sedang berjalan" : "Minta petunjuk AI, menggunakan 2 kredit"}
+              aria-label={analyzing ? "Analisis sedang berjalan" : `Minta petunjuk AI, menggunakan ${creditLabel(DINO_AI_CREDIT_COSTS.dinoLabScribble)}`}
               className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-700 text-xs font-bold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:gap-2 sm:px-3"
             >
               {analyzing ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               <span className="sr-only sm:not-sr-only">
-                {analyzing ? "Menganalisis..." : "Analisis · 2 kredit"}
+                {analyzing ? "Menganalisis..." : `Analisis · ${creditLabel(DINO_AI_CREDIT_COSTS.dinoLabScribble)}`}
               </span>
             </button>
           </div>
@@ -447,8 +457,22 @@ export default function ScreenScribble({
       </div>
       <div aria-live="polite" className="border-t border-border/60 bg-muted/20 px-4 py-3 sm:px-6">
         <p className="text-[11px] leading-5 text-muted-foreground">
-          Analisis menggunakan 2 kredit. Coretan hanya diproses setelah Anda memilih tombol analisis. Hindari menyertakan informasi pribadi.
+          Belajar dan membuat coretan di DinoLab gratis. Analisis AI menggunakan {creditLabel(DINO_AI_CREDIT_COSTS.dinoLabScribble)}; kuota harian dipakai terlebih dahulu, lalu kredit pembelian jika kuota harian kurang. Kuota harian direset pukul 00.00 WITA. Coretan hanya diproses setelah Anda memilih tombol analisis. Hindari menyertakan informasi pribadi.
         </p>
+        <div className="mt-3 rounded-xl border border-border/60 bg-background/70 px-3 py-2.5 text-xs" aria-live="polite">
+          {creditStatusLoading && !creditStatus ? (
+            <p className="text-muted-foreground">Memuat saldo kredit DinoAI...</p>
+          ) : creditStatusError ? (
+            <p className="text-amber-700 dark:text-amber-300">Saldo kredit belum dapat diperbarui. Biaya akan diperiksa sebelum analisis dikirim.</p>
+          ) : creditStatus ? (
+            <div className="grid gap-1 sm:grid-cols-2">
+              <p><span className="text-muted-foreground">Kuota harian: </span><span className="font-semibold">{creditStatus.dailyRemaining} dari {creditStatus.dailyLimit} kredit</span></p>
+              <p><span className="text-muted-foreground">Kredit pembelian: </span><span className="font-semibold">{creditStatus.purchasedRemaining} kredit</span></p>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">Saldo kredit belum tersedia.</p>
+          )}
+        </div>
         {storageWarning && (
           <p role="status" className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
             {storageWarning}

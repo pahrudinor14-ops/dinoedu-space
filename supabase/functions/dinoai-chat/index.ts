@@ -4,6 +4,7 @@ import {
   extractGeminiContent,
   getGeminiFailureReason,
 } from "../_shared/gemini.ts";
+import { DINO_AI_CREDIT_COSTS, DINO_AI_CREDIT_FEATURES, DINO_AI_USAGE_CONTEXTS } from "../_shared/dinoAiCreditPolicy.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -251,6 +252,10 @@ Deno.serve(async (request) => {
       error: error instanceof Error ? error.message : "Format lampiran tidak valid.",
     }, 400);
   }
+  const isDinoLabScribble = body.usageContext === DINO_AI_USAGE_CONTEXTS.dinoLabScribble;
+  if (isDinoLabScribble && attachment?.kind !== "image") {
+    return jsonResponse({ error: "Analisis coretan DinoLab hanya menerima gambar." }, 400);
+  }
   if (
     !attachment &&
     new TextEncoder().encode(rawBody).byteLength > MAX_TEXT_REQUEST_BYTES
@@ -315,7 +320,11 @@ Deno.serve(async (request) => {
   try {
     const { data, error } = await admin.rpc("reserve_dino_ai_credit", {
       p_user_id: user.id,
-      p_feature: attachment ? "dinoai-chat-media" : "dinoai-chat",
+      p_feature: isDinoLabScribble
+        ? DINO_AI_CREDIT_FEATURES.dinoLabScribble
+        : attachment
+          ? DINO_AI_CREDIT_FEATURES.chatAttachment
+          : DINO_AI_CREDIT_FEATURES.chatText,
       p_idempotency_key: idempotencyKey,
     });
     if (error) {
@@ -336,7 +345,11 @@ Deno.serve(async (request) => {
   const reservation = Array.isArray(reservationData)
     ? reservationData[0]
     : reservationData;
-  const expectedCreditCost = attachment ? 2 : 1;
+  const expectedCreditCost = isDinoLabScribble
+    ? DINO_AI_CREDIT_COSTS.dinoLabScribble
+    : attachment
+      ? DINO_AI_CREDIT_COSTS.chatAttachment
+      : DINO_AI_CREDIT_COSTS.chatText;
   if (
     !isRecord(reservation) ||
     typeof reservation.allowed !== "boolean" ||

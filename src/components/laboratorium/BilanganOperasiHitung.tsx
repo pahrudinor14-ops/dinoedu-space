@@ -20,6 +20,7 @@ import DinoLabLogo from "../DinoLabLogo"
 import GuidedLearning, { type GuidedStep } from "./GuidedLearning"
 import ModeSelector, { type LearningMode } from "./ModeSelector"
 import ScreenScribble from "./ScreenScribble"
+import type { DinoAICreditStatusProps } from "../../lib/dinoAiCreditPolicy"
 
 type LessonId = "nilai-tempat" | "operasi" | "bilangan-bulat" | "faktor-kelipatan" | "urutan-operasi"
 type Operation = "tambah" | "kurang" | "kali" | "bagi"
@@ -513,7 +514,7 @@ function LearningPath() {
   )
 }
 
-export default function BilanganOperasiHitung({ resetSignal }: { resetSignal: number }) {
+export default function BilanganOperasiHitung({ resetSignal, ...creditStatusProps }: { resetSignal: number } & DinoAICreditStatusProps) {
   const [activeLesson, setActiveLesson] = useState<LessonId>("nilai-tempat")
   const [resetKey, setResetKey] = useState(0)
   const [mode, setMode] = useState<LearningMode>("lab")
@@ -570,6 +571,7 @@ export default function BilanganOperasiHitung({ resetSignal }: { resetSignal: nu
           key={activeLesson}
           visible
           context={`${lessons.find((lesson) => lesson.id === activeLesson)?.title ?? "Materi bilangan"}. Tahap ${guidedStep + 1}: ${guidedSteps[activeLesson][guidedStep].title}. ${guidedSteps[activeLesson][guidedStep].description}`}
+          {...creditStatusProps}
         />
       )}
       <RujukanPenyusunan material="bilangan" />
