@@ -5,6 +5,7 @@ import {
   getGeminiFailureReason,
 } from "../_shared/gemini.ts";
 import { DINO_AI_CREDIT_COSTS, DINO_AI_CREDIT_FEATURES, DINO_AI_USAGE_CONTEXTS } from "../_shared/dinoAiCreditPolicy.ts";
+import { requireMfaStepUp } from "../_shared/mfa.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -295,6 +296,8 @@ Deno.serve(async (request) => {
   const conversationHistory = firstUserMessageIndex === -1
     ? []
     : history.slice(firstUserMessageIndex);
+  const mfaResponse = await requireMfaStepUp(authClient, token, jsonResponse);
+  if (mfaResponse) return mfaResponse;
   const admin = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });

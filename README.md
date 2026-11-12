@@ -2,6 +2,8 @@
 
 DinoEdu Space adalah aplikasi React, TypeScript, dan Vite. Frontend memakai Supabase untuk autentikasi dan layanan aplikasi, termasuk Edge Functions.
 
+Sebelum rilis production/global, ikuti [Security release checklist](SECURITY-RELEASE-CHECKLIST.md).
+
 ## Menjalankan secara lokal
 
 1. Pasang dependensi:
@@ -43,18 +45,52 @@ Untuk deploy manual dari PowerShell, jalankan `npm.cmd ci`, `npm.cmd run build`,
 
 Nilai dengan awalan `VITE_` dimasukkan ke bundle frontend dan dapat dilihat pengguna. Gunakan hanya URL Supabase dan publishable key di sana. Jangan memasukkan `SUPABASE_SERVICE_ROLE_KEY`, API key Gemini, atau secret Midtrans ke environment frontend.
 
-Untuk menyiapkan perubahan lokal, meninjau file yang akan dikirim, lalu memicu deployment Cloudflare melalui integrasi GitHub:
+### Push perubahan melalui GitHub
+
+Jika sedang berada di `master`, buat feature branch terlebih dahulu. Push feature
+branch tidak men-deploy production; setelah review dan staging lolos, deployment
+Supabase dijalankan lebih dahulu. Merge PR ke `master` kemudian memicu deployment
+frontend Cloudflare melalui integrasi GitHub.
 
 ```powershell
-git status --short
-git diff --check
-git add -- README.md src supabase/functions supabase/migrations .node-version wrangler.jsonc
-git diff --cached --stat
-git commit -m "Unify DinoAI credits and fix Cloudflare deployment"
-git push origin master
+git switch -c security/harden-mfa-before-release
 ```
 
-Perintah `git add` di atas sengaja tidak mengambil file sementara `supabase/.temp`.
+Jalankan perintah berikut dari feature branch. Jika branch sudah ada, jangan
+buat ulang; pastikan `git branch --show-current` menampilkan branch tersebut.
+
+```powershell
+$Branch = git branch --show-current
+if ([string]::IsNullOrWhiteSpace($Branch) -or $Branch -eq "master") {
+  throw "Push perubahan melalui feature branch, bukan langsung ke master."
+}
+git status --short
+git diff --check
+git add -- README.md SECURITY-RELEASE-CHECKLIST.md public/_headers src supabase/functions supabase/migrations .node-version wrangler.jsonc
+git diff --cached --check
+git diff --cached --stat
+git commit -m "Harden MFA access before production release"
+git push -u origin $Branch
+```
+
+Perintah `git add` sengaja tidak mengambil file sementara `supabase/.temp`.
+Setelah PR disetujui dan pemeriksaan staging lolos, deploy Supabase dari commit
+yang disetujui mengikuti urutan pada bagian berikut. Merge PR ke `master` setelah
+deploy Supabase berhasil.
+
+Jika integrasi GitHub Cloudflare tidak digunakan, deploy Supabase terlebih
+dahulu mengikuti bagian berikut. Setelah berhasil, merge PR lalu jalankan deploy
+frontend manual dari `master`:
+
+```powershell
+git switch master
+git pull --ff-only origin master
+npm.cmd ci
+if ($LASTEXITCODE -ne 0) { throw "npm ci gagal" }
+npm.cmd run build
+if ($LASTEXITCODE -ne 0) { throw "Build frontend gagal" }
+npx.cmd wrangler deploy
+```
 
 ## Deploy Supabase
 
@@ -99,13 +135,9 @@ npx.cmd supabase migration list --linked
 npx.cmd supabase db push --linked --dry-run
 ```
 
-Periksa daftar migrasi pada dry run, lalu terapkan migrasi:
-
-```powershell
-npx.cmd supabase db push --linked
-```
-
-Deploy Edge Functions yang memakai aturan kredit bersama:
+Periksa daftar migrasi pada dry run. Jalankan bagian ini setelah commit ditinjau
+dan staging lolos. Deploy Edge Functions terlebih dahulu agar pemeriksaan MFA
+server aktif sebelum policy database diterapkan:
 
 ```powershell
 $Functions = @(
@@ -117,12 +149,21 @@ $Functions = @(
   "dinoai-lkpd",
   "dinoai-rubrik",
   "dinoai-evaluasi",
-  "midtrans-create-token-payment"
+  "midtrans-create-payment",
+  "midtrans-create-token-payment",
+  "midtrans-payment-status",
+  "midtrans-token-payment-status"
 )
 foreach ($FunctionName in $Functions) {
   npx.cmd supabase functions deploy $FunctionName --project-ref $ProjectRef
   if ($LASTEXITCODE -ne 0) { throw "Deploy function gagal: $FunctionName" }
 }
+```
+
+Setelah semua function berhasil dideploy, terapkan migrasi:
+
+```powershell
+npx.cmd supabase db push --linked
 ```
 
 Atur secret server melalui **Supabase Dashboard → Edge Functions → Secrets**. Gemini membutuhkan `GEMINI_API_KEY_DINO_AI`; fitur pembayaran Midtrans membutuhkan `MIDTRANS_SERVER_KEY`. `GEMINI_MODEL` dapat diatur opsional. Jangan menaruh secret tersebut di `.env.local` dengan awalan `VITE_`, di repository, atau di pengaturan hosting frontend. Setelah deploy, pastikan URL notifikasi Midtrans menunjuk ke Edge Function webhook yang digunakan oleh konfigurasi pembayaran proyek.

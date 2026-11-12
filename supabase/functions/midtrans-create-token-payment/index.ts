@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { requireMfaStepUp } from "../_shared/mfa.ts";
 async function readBoundedBody(req: Request, maxBytes: number): Promise<string | null> {
   const reader = req.body?.getReader()
   if (!reader) return ""
@@ -97,6 +98,8 @@ Deno.serve(async (req) => {
     if (authError || !user) {
       return jsonResponse({ error: "Sesi pengguna tidak valid." }, 401);
     }
+    const mfaResponse = await requireMfaStepUp(authClient, bearer, jsonResponse);
+    if (mfaResponse) return mfaResponse;
     const contentLength = Number(req.headers.get("content-length") ?? "0");
     if (Number.isFinite(contentLength) && contentLength > 8_000) {
       return jsonResponse({ error: "Request terlalu besar." }, 413);

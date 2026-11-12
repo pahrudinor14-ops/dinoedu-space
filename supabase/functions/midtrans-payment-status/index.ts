@@ -1,4 +1,5 @@
 ﻿import { createClient } from "npm:@supabase/supabase-js@2"
+import { requireMfaStepUp } from "../_shared/mfa.ts"
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -54,6 +55,8 @@ Deno.serve(async (req) => {
     })
     const { data: { user }, error: authError } = await authClient.auth.getUser(token)
     if (authError || !user) return jsonResponse({ error: "Sesi pengguna tidak valid." }, 401)
+    const mfaResponse = await requireMfaStepUp(authClient, token, jsonResponse)
+    if (mfaResponse) return mfaResponse
     const contentLength = Number(req.headers.get("content-length") ?? "0")
     if (Number.isFinite(contentLength) && contentLength > 4_096) {
       return jsonResponse({ error: "Request terlalu besar." }, 413)

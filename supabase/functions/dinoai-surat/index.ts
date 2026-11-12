@@ -5,6 +5,7 @@ import {
   getGeminiFailureReason,
 } from "../_shared/gemini.ts";
 import { DINO_AI_CREDIT_COSTS, DINO_AI_CREDIT_FEATURES } from "../_shared/dinoAiCreditPolicy.ts";
+import { requireMfaStepUp } from "../_shared/mfa.ts";
 const MAX_REQUEST_BYTES = 48_000;
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -280,6 +281,8 @@ Deno.serve(async (request) => {
   if (!user) {
     return jsonResponse({ error: "Sesi pengguna tidak valid. Silakan masuk kembali." }, 401);
   }
+  const mfaResponse = await requireMfaStepUp(authClient, token, jsonResponse);
+  if (mfaResponse) return mfaResponse;
   const admin = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
