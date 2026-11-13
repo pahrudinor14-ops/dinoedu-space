@@ -51,16 +51,24 @@ function PartMarker({
   onSelect: (part: SelectedPart) => void
 }) {
   return (
-    <mesh
+    <group
       position={position}
+      onPointerOver={() => { document.body.style.cursor = "pointer" }}
+      onPointerOut={() => { document.body.style.cursor = "" }}
       onClick={(event) => {
         event.stopPropagation()
         onSelect({ type, name, detail })
       }}
     >
+      <mesh>
+        <sphereGeometry args={[0.22, 12, 12]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+      <mesh>
       <sphereGeometry args={[0.075, 16, 16]} />
       <meshStandardMaterial color="#f97316" />
-    </mesh>
+      </mesh>
+    </group>
   )
 }
 
@@ -81,10 +89,9 @@ function Edge({
   )
 
   return (
-    <mesh
+    <group
       position={midpoint}
       quaternion={quaternion}
-      renderOrder={2}
       onPointerOver={() => { document.body.style.cursor = "pointer" }}
       onPointerOut={() => { document.body.style.cursor = "" }}
       onClick={(event) => {
@@ -96,9 +103,15 @@ function Edge({
         })
       }}
     >
+      <mesh>
+        <cylinderGeometry args={[0.12, 0.12, direction.length(), 8]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+      <mesh renderOrder={2}>
       <cylinderGeometry args={[0.035, 0.035, direction.length(), 8]} />
       <meshStandardMaterial color="#f59e0b" />
-    </mesh>
+      </mesh>
+    </group>
   )
 }
 

@@ -3,27 +3,42 @@ import Dino3DScene, { type DinoShape, type SelectedPart } from "./Dino3DScene"
 import BangunDatarInteraktif from "./BangunDatarInteraktif"
 import BilanganOperasiHitung from "./laboratorium/BilanganOperasiHitung"
 import DataPolaPemecahanMasalah from "./laboratorium/DataPolaPemecahanMasalah"
+import DinoLabAdventureMap from "./laboratorium/DinoLabAdventureMap"
+import DinoLabAdventureGame from "./laboratorium/DinoLabAdventureGame"
+import DinoLabIslandHub from "./laboratorium/DinoLabIslandHub"
 import DinoLabLogo from "./DinoLabLogo"
 import GuidedLearning from "./laboratorium/GuidedLearning"
 import ModeSelector, { type LearningMode } from "./laboratorium/ModeSelector"
 import PecahanRasioPengukuran from "./laboratorium/PecahanRasioPengukuran"
 import RujukanPenyusunan from "./laboratorium/RujukanPenyusunan"
 import ScreenScribble from "./laboratorium/ScreenScribble"
+import SimulasiGameEvaluasi from "./laboratorium/SimulasiGameEvaluasi"
+import {
+  ADVENTURE_ISLAND_IDS,
+  readAdventureLeaderboard,
+  readAdventurePlayerName,
+  readAdventureProgress,
+  sortLeaderboard,
+  writeAdventureLeaderboard,
+  writeAdventurePlayerName,
+  writeAdventureProgress,
+  type AdventureCompletion,
+  type AdventureIslandId,
+  type AdventureLeaderboardEntry,
+  type IslandProgressStatus,
+} from "./laboratorium/adventureProgress"
 import { supabase } from "../lib/supabase"
 import { DINO_AI_USAGE_CHANGED_EVENT } from "../lib/invokeDinoAI"
 import { DINO_AI_CREDIT_COSTS, creditLabel, type DinoAICreditStatus } from "../lib/dinoAiCreditPolicy"
 import {
   ArrowLeft,
-  ArrowRight,
   BarChart3,
   BookOpen,
   Calculator,
   CheckCircle2,
   CircleHelp,
-  Coins,
   Cuboid,
   Gamepad2,
-  LockKeyhole,
   PieChart,
   RotateCcw,
   Ruler,
@@ -88,13 +103,12 @@ const learningCategories = [
   {
     id: "simulasi",
     title: "Simulasi, game, dan evaluasi",
-    description: "Latih pemahaman melalui kegiatan interaktif, permainan, dan evaluasi.",
+    description: "Amati model 3D, temukan bagian kubus, selesaikan tantangan, dan buktikan pemahamanmu.",
     Icon: Gamepad2,
-    available: false,
+    available: true,
   },
 ] as const
 
-const availableLearningCategories = learningCategories.filter((category) => category.available).length
 type LearningCategoryId = (typeof learningCategories)[number]["id"]
 
 const lessons = [
@@ -194,10 +208,18 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
     const savedCategory = new URLSearchParams(window.location.search).get("materi")
     return learningCategories.find((category) => category.id === savedCategory && category.available)?.id ?? null
   })
+  const [selectedIsland, setSelectedIsland] = useState<AdventureIslandId | null>(() => {
+    const savedIsland = new URLSearchParams(window.location.search).get("pulau")
+    return ADVENTURE_ISLAND_IDS.find((island) => island === savedIsland) ?? null
+  })
+  const [islandProgress, setIslandProgress] = useState(readAdventureProgress)
+  const [leaderboard, setLeaderboard] = useState<AdventureLeaderboardEntry[]>(readAdventureLeaderboard)
+  const [playerName, setPlayerName] = useState(readAdventurePlayerName)
   const [geometryResetSignal, setGeometryResetSignal] = useState(0)
   const [fractionResetSignal, setFractionResetSignal] = useState(0)
   const [numberResetSignal, setNumberResetSignal] = useState(0)
   const [dataResetSignal, setDataResetSignal] = useState(0)
+  const [challengeResetSignal, setChallengeResetSignal] = useState(0)
   const [shape, setShape] = useState<ShapeType>("cube")
   const [mode, setMode] = useState<LearningMode>("lab")
   const [length, setLength] = useState(4)
@@ -286,20 +308,93 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
 
   useEffect(() => {
     window.scrollTo(0, 0)
-  }, [activeCategory])
+  }, [activeCategory, selectedIsland])
 
-  const openCategory = (categoryId: LearningCategoryId) => {
+  const updateAdventureUrl = (categoryId: LearningCategoryId | null, islandId: AdventureIslandId | null) => {
     const url = new URL(window.location.href)
-    url.searchParams.set("materi", categoryId)
+    if (categoryId) url.searchParams.set("materi", categoryId)
+    else url.searchParams.delete("materi")
+    if (islandId) url.searchParams.set("pulau", islandId)
+    else url.searchParams.delete("pulau")
     window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`)
+  }
+
+  const updateIslandProgress = (islandId: AdventureIslandId, status: IslandProgressStatus) => {
+    const nextProgress = {
+      ...islandProgress,
+      [islandId]: islandProgress[islandId] === "completed" && status === "learning" ? "completed" : status,
+    }
+    setIslandProgress(nextProgress)
+    writeAdventureProgress(nextProgress)
+  }
+
+  const openCategory = (categoryId: LearningCategoryId, keepIsland = false) => {
+    const nextIsland = keepIsland ? selectedIsland : null
+    updateAdventureUrl(categoryId, nextIsland)
+    setSelectedIsland(nextIsland)
     setActiveCategory(categoryId)
   }
 
-  const returnToCategories = () => {
-    const url = new URL(window.location.href)
-    url.searchParams.delete("materi")
-    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`)
+  const returnToMap = () => {
+    updateAdventureUrl(null, null)
+    setSelectedIsland(null)
     setActiveCategory(null)
+  }
+
+  const returnToIsland = () => {
+    updateAdventureUrl(null, selectedIsland)
+    setActiveCategory(null)
+  }
+
+  const selectIsland = (islandId: AdventureIslandId) => {
+    updateIslandProgress(islandId, "learning")
+    if (islandId === "bangun-ruang" || islandId === "tantangan") {
+      updateAdventureUrl(null, islandId)
+      setSelectedIsland(islandId)
+      setActiveCategory(null)
+      return
+    }
+    openCategory(islandId)
+  }
+
+  const savePlayerName = (name: string) => {
+    const cleanedName = name.trim().slice(0, 24) || "Penjelajah"
+    setPlayerName(cleanedName)
+    writeAdventurePlayerName(cleanedName)
+  }
+
+  const recordAdventureCompletion = (completion: AdventureCompletion) => {
+    const currentEntries = readAdventureLeaderboard()
+    if (!currentEntries.some((entry) => entry.id === completion.id)) {
+      const entry: AdventureLeaderboardEntry = {
+        ...completion,
+        points: completion.correctFirstTry * 100,
+      }
+      const nextEntries = sortLeaderboard([...currentEntries, entry]).slice(0, 50)
+      setLeaderboard(nextEntries)
+      writeAdventureLeaderboard(nextEntries)
+    }
+    const currentProgress = readAdventureProgress()
+    const nextProgress = {
+      ...currentProgress,
+      "bangun-ruang": "completed" as const,
+      tantangan: "completed" as const,
+    }
+    setIslandProgress(nextProgress)
+    writeAdventureProgress(nextProgress)
+  }
+
+  const startAdventure = () => {
+    if (selectedIsland) updateIslandProgress(selectedIsland, "learning")
+    openCategory("simulasi", true)
+  }
+
+  const openShapeLab = () => openCategory("bangun-ruang", true)
+
+  const handleHeaderBack = () => {
+    if (activeCategory && selectedIsland) return returnToIsland()
+    if (activeCategory || selectedIsland) return returnToMap()
+    onBack()
   }
 
   const metrics = getMetrics(shape, length, width, height, radius)
@@ -336,6 +431,7 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
     if (activeCategory === "pecahan") setFractionResetSignal((current) => current + 1)
     if (activeCategory === "bilangan") setNumberResetSignal((current) => current + 1)
     if (activeCategory === "data") setDataResetSignal((current) => current + 1)
+    if (activeCategory === "simulasi") setChallengeResetSignal((current) => current + 1)
   }
 
   const updateShape = (nextShape: ShapeType) => {
@@ -354,8 +450,8 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
     <div className="min-h-dvh bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border/50 bg-background/85 backdrop-blur-xl">
         <div className="relative mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
-          <button type="button" onClick={activeCategory ? returnToCategories : onBack} className="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition hover:bg-muted" aria-label={activeCategory ? "Kembali ke pilihan materi" : "Kembali ke dashboard"}>
-            <ArrowLeft className="h-4 w-4" /><span className="hidden sm:inline">{activeCategory ? "Semua materi" : "Kembali"}</span>
+          <button type="button" onClick={handleHeaderBack} className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition hover:bg-muted" aria-label={activeCategory ? (selectedIsland ? "Kembali ke pulau" : "Kembali ke peta DinoLab") : (selectedIsland ? "Kembali ke peta DinoLab" : "Kembali ke dashboard")}>
+            <ArrowLeft className="h-4 w-4" /><span className="hidden sm:inline">{activeCategory ? (selectedIsland ? "Pulau" : "Peta DinoLab") : (selectedIsland ? "Peta DinoLab" : "Kembali")}</span>
           </button>
           <div className={"flex min-w-0 items-center gap-2 " + (activeCategory ? "absolute left-1/2 -translate-x-1/2" : "")}>
             <DinoLabLogo className="h-9 w-9 shrink-0 object-contain" />
@@ -381,78 +477,30 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
         <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-emerald-300/10 blur-3xl" />
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-cyan-300/10 blur-3xl" />
         {activeCategory === null ? (
-          <div className="relative mx-auto max-w-7xl space-y-8 px-4 py-7 sm:px-6 sm:py-10">
-            <section className="relative overflow-hidden rounded-[2rem] border border-emerald-200/70 bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 px-6 py-8 text-white shadow-xl shadow-emerald-950/10 sm:px-10 sm:py-11">
-              <DinoLabLogo className="pointer-events-none absolute right-4 top-1/2 z-0 h-1/2 w-auto -translate-y-1/2 object-contain opacity-[0.10] sm:right-8" />
-              <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-16 h-64 w-64 rounded-full border-[28px] border-white/10" />
-              <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 right-1/3 h-48 w-48 rounded-full bg-cyan-200/15 blur-3xl" />
-              <div className="relative z-10 max-w-3xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-semibold text-emerald-50 backdrop-blur-sm">
-                  <Sparkles className="h-3.5 w-3.5" />Ruang eksplorasi matematika
-                </div>
-                <h2 className="mt-5 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">Pilih petualangan belajarmu</h2>
-                <p className="mt-4 max-w-2xl text-sm leading-6 text-emerald-50/95 sm:text-base sm:leading-7">
-                  Temukan berbagai topik matematika, lalu masuk ke materi untuk belajar dan bereksperimen. Bilangan dan operasi hitung, Pecahan, rasio dan pengukuran, Geometri, Bangun ruang, serta Data, pola, dan pemecahan masalah siap dijelajahi.
-                </p>
-                <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/15 px-3.5 py-2 text-xs font-semibold text-white sm:text-sm">
-                  <CheckCircle2 className="h-4 w-4 text-cyan-100" />{availableLearningCategories} dari {learningCategories.length} kategori tersedia
-                </div>
-                <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-emerald-50/95 sm:text-sm" role="status" aria-live="polite">
-                  <Coins className="h-4 w-4 shrink-0 text-amber-200" aria-hidden="true" />
-                  <span>
-                    {creditStatus
-                      ? `${creditStatus.dailyRemaining + creditStatus.purchasedRemaining} kredit tersedia (${creditStatus.dailyRemaining} harian + ${creditStatus.purchasedRemaining} pembelian)`
-                      : creditStatusLoading
-                        ? "Memuat kredit..."
-                        : creditStatusError ? "Saldo kredit belum dapat dimuat" : "Saldo kredit belum tersedia"}
-                  </span>
-                </div>
-                <p className="mt-2 text-xs leading-5 text-emerald-50/90">Materi interaktif DinoLab gratis. Analisis coretan AI menggunakan {creditLabel(DINO_AI_CREDIT_COSTS.dinoLabScribble)}; kuota harian dipakai dahulu dan direset pukul 00.00 WITA.</p>
-              </div>
-            </section>
-
-            <section aria-labelledby="kategori-laboratorium" className="space-y-4">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <h3 id="kategori-laboratorium" className="text-xl font-bold tracking-tight sm:text-2xl">Jelajahi kategori</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Pilih kategori untuk melihat materi yang tersedia.</p>
-                </div>
-                <span className="rounded-full bg-background/80 px-3 py-1.5 text-xs font-medium text-muted-foreground">{learningCategories.length} kategori</span>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {learningCategories.map(({ id, title, description, Icon, available }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    disabled={!available}
-                    onClick={() => {
-                      setMode("lab")
-                      openCategory(id)
-                    }}
-                    className={"group relative flex min-h-52 flex-col items-start rounded-2xl border bg-background/80 p-5 text-left shadow-sm transition sm:p-6 " + (available
-                      ? "border-emerald-300/80 shadow-emerald-950/5 hover:-translate-y-1 hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-950/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                      : "cursor-not-allowed border-border/70 opacity-75")}
-                    aria-label={title + (available ? ", buka materi" : ", segera hadir")}
-                  >
-                    <div className="flex w-full items-start justify-between gap-3">
-                      <div className={"flex h-12 w-12 items-center justify-center rounded-2xl " + (available ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground")}>
-                        <Icon className="h-6 w-6" />
-                      </div>
-                      <span className={"inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold " + (available ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground")}>
-                        {available ? <><CheckCircle2 className="h-3.5 w-3.5" />Tersedia</> : <><LockKeyhole className="h-3 w-3" />Segera hadir</>}
-                      </span>
-                    </div>
-                    <h4 className="mt-5 text-base font-bold leading-6">{title}</h4>
-                    <p className="mt-2 flex-1 text-sm leading-6 text-muted-foreground">{description}</p>
-                    {available && <span className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-emerald-700 dark:text-emerald-300">Buka materi<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></span>}
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <footer className="pt-2 text-center text-xs text-muted-foreground">DinoLab - Pilih kategori untuk mulai menjelajahi matematika.</footer>
-          </div>
+          selectedIsland === "bangun-ruang" || selectedIsland === "tantangan" ? (
+            <DinoLabIslandHub
+              island={selectedIsland}
+              status={islandProgress[selectedIsland]}
+              playerName={playerName}
+              onStartAdventure={startAdventure}
+              onOpenLaboratorium={openShapeLab}
+              onBackToMap={returnToMap}
+            />
+          ) : (
+            <DinoLabAdventureMap
+              progress={islandProgress}
+              leaderboard={leaderboard}
+              playerName={playerName}
+              creditCost={creditLabel(DINO_AI_CREDIT_COSTS.dinoLabScribble)}
+              creditSummary={creditStatus
+                ? `${creditStatus.dailyRemaining + creditStatus.purchasedRemaining} kredit tersedia (${creditStatus.dailyRemaining} harian + ${creditStatus.purchasedRemaining} pembelian).`
+                : creditStatusLoading
+                  ? "Memuat saldo kredit."
+                  : creditStatusError ? "Saldo kredit belum dapat dimuat." : "Saldo kredit belum tersedia."}
+              onPlayerNameSave={savePlayerName}
+              onSelectIsland={selectIsland}
+            />
+          )
         ) : activeCategory === "geometri" ? (
           <BangunDatarInteraktif
             resetSignal={geometryResetSignal}
@@ -481,6 +529,12 @@ export default function LaboratoriumDino({ onBack }: LaboratoriumDinoProps) {
             creditStatusLoading={creditStatusLoading}
             creditStatusError={creditStatusError}
           />
+        ) : activeCategory === "simulasi" ? (
+          selectedIsland === "tantangan" ? (
+            <DinoLabAdventureGame key={challengeResetSignal} playerName={playerName} onActivityComplete={recordAdventureCompletion} onBackToMap={returnToMap} />
+          ) : (
+            <SimulasiGameEvaluasi key={challengeResetSignal} playerName={playerName} onActivityComplete={recordAdventureCompletion} onBackToMap={returnToMap} />
+          )
         ) : (
         <div className="relative mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
           <section className="flex flex-wrap items-end justify-between gap-4">
